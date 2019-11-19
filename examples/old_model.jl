@@ -1,10 +1,4 @@
-using JuMP # used for mathematical programming
-#using Interact # used for enabling the slider
-#using Plots
-#using Cbc
-#using Suppressor
-#using Blink
-using Dates
+using JuMP
 
 function add_var(
         specs::Vector{Bool},
@@ -12,24 +6,24 @@ function add_var(
         Tech::Vector{Int64},
         Nodes::Vector{Int64},
         Lines::Vector{Int64},
-        Tsteps::Array{Int64}
-        #, Lol::Array{Int64}
-    )
+        Tsteps::Array{Int64})
+    #, Lol::Array{Int64}
+    #)
 
     ## Variables applied in any case
-    #@variable(model_ES, f[l in Lines, h in Tsteps])                     # transmission decision
-    @variable(model_ES, 0 <= g[t in Tech, n in Nodes, h in Tsteps])     # power output of generators
-    @variable(model_ES, 0 <= gen_cap[t in Tech, n in Nodes])            # generation capacity (to be fixed)
-    #@variable(model_ES, 0 <= trans_cap[l in Lines])                     # transmission capacity (to be fixed)
-    @variable(model_ES, 0 <= Lol[n in Nodes, h in Tsteps])              # loss of load introduced   Having this as a common variable, applies for any case
-    #@variable(model_ES, 0 <= RES[n in Nodes])                           # Renewables share to be fixed
+    #@variable(model_ES, f[l in Lines, h in Tsteps])  # transmission decision
+    @variable(model_ES, 0 <= g[t in Tech, n in Nodes, h in Tsteps]) # power output of generators
+    @variable(model_ES, 0 <= gen_cap[t in Tech, n in Nodes])        # generation capacity (to be fixed)
+    #@variable(model_ES, 0 <= trans_cap[l in Lines])                # transmission capacity (to be fixed)
+    @variable(model_ES, 0 <= Lol[n in Nodes, h in Tsteps])          # loss of load introduced   Having this as a common variable, applies for any case
+    #@variable(model_ES, 0 <= RES[n in Nodes])                      # Renewables share to be fixed
     #@fix_value(RES, 0.3, force = true)
 
     # Investment decision
     if specs[1]
-        @variable(model_ES, 0 <= gen_inv[t in Tech, n in Nodes])            # generation expansion
-        @variable(model_ES, 0 <= trans_inv[l in Lines])                     # transmission expansion
-        #@variable(model_ES, 0 <= Gbar[t in Tech])                           # generation expansion budget (to be fixed)
+        @variable(model_ES, 0 <= gen_inv[t in Tech, n in Nodes])  # generation expansion
+        @variable(model_ES, 0 <= trans_inv[l in Lines])           # transmission expansion
+        #@variable(model_ES, 0 <= Gbar[t in Tech])                # generation expansion budget (to be fixed)
         #@variable(model_ES, 0 <= Tbar)                  # transmission expansion budget (to be fixed)
         #@fix_value(Gbar)
         #@fix_value(Tbar)
@@ -49,9 +43,9 @@ function add_var(
     end
 
     if specs[7]
-        @variable(model_ES, 0 <= batteryLevel[n in Nodes, h in Tsteps])                       # Battery level variable
-        @variable(model_ES, 0 <= batteryInvestment[n in Nodes])             # investment in Battery for each node
-        #@variable(model_ES, 0 <= batteryCapacity[n in Nodes])               # Will be fixed
+        @variable(model_ES, 0 <= batteryLevel[n in Nodes, h in Tsteps])  # Battery level variable
+        @variable(model_ES, 0 <= batteryInvestment[n in Nodes])          # investment in Battery for each node
+        #@variable(model_ES, 0 <= batteryCapacity[n in Nodes])           # Will be fixed
     end
 
     return model_ES
@@ -80,11 +74,11 @@ function add_const(
         demand::Vector{Float64},                # total demand of each Node at each Tstep
         RES::Float64,                           # renewables share
         Tbar::Float64,                          # transmission max investment
-        Gbar::Vector{Float64}                   # generation expansion max investment
-        #batteryInvestment:: Array{Float64},    # for investmentlevel of storage
-        #batteryLevel::Array{Float64,2},        # battery level at each node and Tsteps
-        #f::Vector{Float64}                     # trans flow
-    )
+        Gbar::Vector{Float64})                   # generation expansion max investment
+    #batteryInvestment:: Array{Float64},    # for investmentlevel of storage
+    #batteryLevel::Array{Float64,2},        # battery level at each node and Tsteps
+    #f::Vector{Float64}                     # trans flow
+    #)
 
     ## Costs
     cost0 = 0
@@ -137,7 +131,6 @@ function add_const(
     cost0 = @expression(model_ES, sum(g[t,n,h]*GC[t] for t in Tech, n in Nodes, h in Tsteps) )#+
     #sum(f[l,h]*TC[l] for l in Lines, h in Tsteps))
 
-    # Investment decision
     if specs[1]
         ## Var definition
         gen_inv = Array{VariableRef,2}(undef,length(Tech),length(Nodes))
@@ -283,9 +276,6 @@ function add_const(
 end
 
 
-# TODO: merge vars and constraints
-# TODO: create enumeration class for specs
-
 #### NOTE: specs::Vector{Bool}
 # specs[1]: Investment planning (Capacity expansion)
 # specs[2]: Economic Dispatch
@@ -295,8 +285,6 @@ end
 # specs[6]: Security level
 # specs[7]: Storage
 
-specs=[true,false,false,false,false,true]
-typeof(specs)
 
 Tech = collect(1:5)
 Nodes = collect(1:5)
@@ -306,6 +294,7 @@ Rtech = [4,5] # INCLUDE HERE RENEWABLE ONES' INDEX
 #TODO demand =
 demand = 2000*rand(length(Tsteps))#,[2000*rand(length(Tsteps))], [2000*rand(length(Tsteps))], [2000*rand(length(Tsteps))], [2000*rand(length(Tsteps))]]
 
+# specs=[true,false,false,false,false,true]
 specs=[true,true,true,true,true,false,false]
 g_mini = float.([0,0,0,0,0])
 B = float([1,1,1,1,1.1])
@@ -329,4 +318,5 @@ model_ES = add_var(specs,model_ES,Tech,Nodes,Lines,Tsteps)
 model_ES = add_const(specs,model_ES,Tech,Nodes,Lines,Tsteps, g_mini,B,ru,rd,GenC,TC,GEC,TEC,GFC,SUC,SDC,TFC, Rtech, demand, RES, Tbar, Gbar)
 
 # using Gurobi
+# using Cbc
 # optimize!(model_ES, with_optimizer(Gurobi.Optimizer))
