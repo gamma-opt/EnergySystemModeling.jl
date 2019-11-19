@@ -73,14 +73,14 @@ function energy_system_model(
     @variable(model_ES, 0 <= batteryInvestment[n in Nodes])          # investment in Battery for each node
     #@variable(model_ES, 0 <= batteryCapacity[n in Nodes])           # Will be fixed
 
-    ## TODO: define constraints
-
+    # TODO: improve the way the costs are defined and handled
     ## Costs
     cost0 = 0
     cost1 = 0
     cost3 = 0
     cost4 = 0
 
+    ## Constraints
     cost0 = @expression(model_ES, sum(g[t,n,h]*GC[t] for t in Tech, n in Nodes, h in Tsteps) )#+
     #sum(f[l,h]*TC[l] for l in Lines, h in Tsteps))
 
@@ -94,43 +94,43 @@ function energy_system_model(
         # @NLconstraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], sum(g[t,n,h] for h in Tsteps, t in RTech)/(sum(g[t,n,h] for h in Tsteps, t in Tech)) >= RES)
         @constraint(model_ES, [t in [1,2,3], n in Nodes, h in Tsteps], sum(g[t,n,h] for h in Tsteps ) <= 600000)
 
-        # Case when battery is introduced
-        if specs.storage
-            @constraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], batteryLevel[n,h] <= batteryInvestment[n])
-            # Storage investments introduced TODO Include both incest and capacity
-
-            @constraint(
-                model_ES,
-                [t in Tech, n in Nodes, h in Tsteps[Tsteps.>1], l in Lines],
-                demand[h] - Lol[n,h] == sum(g[t,n,h] for t in Tech)
-                + batteryLevel[n, h-1] - batteryLevel[n, h]
-                + sum(Float64[f[l] for l in 1:length(Lines) if Lines[l][2] == n])    #Balance introduced with
-                - sum(Float64[f[l] for l in 1:length(Lines) if Lines[l][1] == n])
-            )
-            #TODO DEMAND
-
-            #NOTE: Outflow for Node 1:
-            #sum(Float64[flow[l] for l in 1:length(Lines) if Lines[l][1] == 1])
-
-            #Outflow for Node n:
-            #sum(Float64[flow[l] for l in 1:length(Lines) if Lines[l][1] == n])
-            #Inflow for Node n:
-            #sum(Float64[flow[l] for l in 1:length(Lines) if Lines[l][2] == n])
-
-            batteryInvestmentCost = 40000 #PUT A PROPER NUMBER there TODO do properly
-
-            cost4 = @expression(model_ES, batteryInvestment[n]*batteryInvestmentCost )
-        # else
-        #     @constraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], #, l in Lines],
-        #     demand[h] - Lol[n,h] .<= sum(g[t,n,h] for t in Tech)
-        #     #+ sum(Float64[f[l] for l in Lines if Lines[l][2] == n])
-        #     #- sum(Float64[f[l] for l in Lines if Lines[l][1] == n])
-        #     ) #TODO DEMAND
-        end
-
         ## Expansion costs
         cost1 = @expression(model_ES, sum(gen_inv[t,n]*GEC[t] for t in Tech, n in Nodes))# +
         #sum(trans_inv[l]*TEC for l in Lines))
+    end
+
+    # Case when battery is introduced
+    if specs.investment_planning && specs.storage
+        @constraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], batteryLevel[n,h] <= batteryInvestment[n])
+        # Storage investments introduced TODO Include both incest and capacity
+
+        @constraint(
+            model_ES,
+            [t in Tech, n in Nodes, h in Tsteps[Tsteps.>1], l in Lines],
+            demand[h] - Lol[n,h] == sum(g[t,n,h] for t in Tech)
+            + batteryLevel[n, h-1] - batteryLevel[n, h]
+            + sum(Float64[f[l] for l in 1:length(Lines) if Lines[l][2] == n])    #Balance introduced with
+            - sum(Float64[f[l] for l in 1:length(Lines) if Lines[l][1] == n])
+        )
+        #TODO DEMAND
+
+        #NOTE: Outflow for Node 1:
+        #sum(Float64[flow[l] for l in 1:length(Lines) if Lines[l][1] == 1])
+
+        #Outflow for Node n:
+        #sum(Float64[flow[l] for l in 1:length(Lines) if Lines[l][1] == n])
+        #Inflow for Node n:
+        #sum(Float64[flow[l] for l in 1:length(Lines) if Lines[l][2] == n])
+
+        batteryInvestmentCost = 40000 #PUT A PROPER NUMBER there TODO do properly
+
+        cost4 = @expression(model_ES, batteryInvestment[n]*batteryInvestmentCost )
+    # else
+    #     @constraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], #, l in Lines],
+    #     demand[h] - Lol[n,h] .<= sum(g[t,n,h] for t in Tech)
+    #     #+ sum(Float64[f[l] for l in Lines if Lines[l][2] == n])
+    #     #- sum(Float64[f[l] for l in Lines if Lines[l][1] == n])
+    #     ) #TODO DEMAND
     end
 
     if specs.unit_commitment
