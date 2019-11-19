@@ -142,9 +142,9 @@ function energy_system_model(
 
         ## Unit Commitment costs
         cost3 = @expression(model_ES, sum(u[t,n,h].*GFC[t] for t in Tech, n in Nodes, h in Tsteps) +
-        sum(su[t,n,h].*SUC[t] for t in Tech, n in Nodes, h in Tsteps) +
-        sum(sd[t,n,h].*SDC[t] for t in Tech, n in Nodes, h in Tsteps) +
-        sum(z[l,h].*TFC[l] for l in Lines, h in Tsteps) )
+            sum(su[t,n,h].*SUC[t] for t in Tech, n in Nodes, h in Tsteps) +
+            sum(sd[t,n,h].*SDC[t] for t in Tech, n in Nodes, h in Tsteps) +
+            sum(z[l,h].*TFC[l] for l in Lines, h in Tsteps) )
     elseif specs.economic_dispatch
         @constraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], g[t,n,h] <= gen_cap[t,n])           # Generation cap (depending on the investment)
         @constraint(model_ES, [t in Tech, n in Nodes, h in Tsteps], g[t,n,h] >= g_min[t])               # Minimum start-up power
@@ -164,11 +164,7 @@ function energy_system_model(
         )
     end
 
-    if specs.storage
-        @objective(model_ES, Min , cost0 + cost1 + cost3)
-    else
-        @objective(model_ES, Min , cost0 + cost1 + cost3 + cost4)
-    end
+    @objective(model_ES, Min , cost0 + cost1 + cost3 + cost4)
 
     return model
 end
