@@ -1,6 +1,8 @@
-module EnergySystemsModeling
+module EnergySystemModel
 
 using JuMP
+
+export Specs, energy_system_model
 
 struct Specs
     investment_planning::Bool  # Capcity expansion
@@ -12,9 +14,9 @@ struct Specs
     storage::Bool
 end
 
-"""Create energy systems model."""
-function energy_systems_model(
-        specs:: Specs,
+"""Create energy system model."""
+function energy_system_model(
+        specs::Specs,
         Tech::Vector{Int64},    # Technologies set
         Nodes::Vector{Int64},   # Nodes set
         Lines::Vector{Int64},   # Trans. lines set
@@ -36,7 +38,7 @@ function energy_systems_model(
         RES::Float64,           # renewables share
         Tbar::Float64,          # transmission max investment
         Gbar::Vector{Float64})  # generation expansion max investment
-        ):: Model
+        )::Model
 
     model = Model()
 

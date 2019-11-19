@@ -1,3 +1,3 @@
-# EnergySystemsModeling.jl
+# EnergySystemModel.jl
 
-Documentation for EnergySystemsModeling.jl
+Documentation for EnergySystemModel.jl

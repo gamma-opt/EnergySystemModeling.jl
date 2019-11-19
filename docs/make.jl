@@ -1,10 +1,10 @@
 using Documenter
-using EnergySystemsModeling
+using EnergySystemModel
 
 makedocs(
-    sitename = "EnergySystemsModeling",
+    sitename = "EnergySystemModel",
     format = Documenter.HTML(),
-    modules = [EnergySystemsModeling]
+    modules = [EnergySystemModel]
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
