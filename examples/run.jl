@@ -1,5 +1,6 @@
-using JuMP
-using Gurobi
+using JuMP, Gurobi
+
+push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModel
 
 # Parameters
