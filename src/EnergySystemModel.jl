@@ -37,7 +37,7 @@ function energy_system_model(
         demand::Vector{Float64},# total demand of each Node at each Tstep
         RES::Float64,           # renewables share
         Tbar::Float64,          # transmission max investment
-        Gbar::Vector{Float64})  # generation expansion max investment
+        Gbar::Vector{Float64}  # generation expansion max investment
         )::Model
 
     model = Model()
