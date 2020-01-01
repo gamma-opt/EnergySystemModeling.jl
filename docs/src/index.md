@@ -13,7 +13,7 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $G^r⊆G$: Renewable generation technologies
 
 ### Parameters
-*  $ρ_g∈\{0,1\}$: Availability of technology $g$
+*  $A_g∈\{0,1\}$: Availability of technology $g$
 *  $I_g^G$: Annualised investment cost for generation per MW of technology $g$ [€/MW]
 *  $M_g^G$: Annualised maintenance cost for generation per MW of technology $g$ [€/MW]
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]
@@ -26,7 +26,7 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $ξ$: Battery's roundtrip efficiency
 *  $I^S$: Annualised investment cost for storage per MW [€/MWh]
 *  $C^S$: Storage operational cost [€/MW]
-*  $s_{0,n}$: Initial storage at node $n$ [MWh]
+*  $b_{n}^0$: Initial storage at node $n$ [MWh]
 
 ### Variables
 *  $p_{g,t,n}$: Dispatch from technology $g$ in each time step $t$ at node $n$ [MWh]
@@ -34,13 +34,13 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $σ_{t,n}$: Loss of load in each time step $t$ at node $n$ [MWh]
 *  $f_{t,l}$: Transmission flow in each time step $t$ per line $l$ [MWh]
 *  $\bar{f}_l$: Transmission capacity per line $l$ [MW]
-*  $s_{t,n}$: Storage level in each time step $t$ at node $n$ [MWh]
-*  $\bar{s}_{n}$: Storage capacity at node $n$ [MWh]
-*  $c_{t,n}$: Charging in each time step $t$ at node $n$ [MWh]
-*  $d_{t,n}$: Discharging in each time step $t$ at node $n$ [MWh]
+*  $b_{t,n}$: Storage level in each time step $t$ at node $n$ [MWh]
+*  $\bar{b}_{n}$: Storage capacity at node $n$ [MWh]
+*  $b_{t,n}^{+}$: Charging in each time step $t$ at node $n$ [MWh]
+*  $b_{t,n}^{-}$: Discharging in each time step $t$ at node $n$ [MWh]
 
 ### Objective
-Minimize for $p_{g,t}, \bar{p}_g, σ_{t}, f_{t,l}, \bar{f}_l, c_{t}, d_{t}$
+Minimize for $p_{g,t}, \bar{p}_g, σ_{t}, f_{t,l}, \bar{f}_l, b_{t,n}^{+}, b_{t,n}^{-}$
 
 $$\begin{aligned}
 & ∑_{n∈N} ∑_{g∈G} (I_g^G+M_g^G)\bar{p}_{g,n} + \\
@@ -48,25 +48,26 @@ $$\begin{aligned}
 & ∑_{n∈N} ∑_{t∈T} C σ_{t} τ_{t} + \\
 & ∑_{l∈L} (I_l^F+M_l^F) \bar{f}_l + \\
 & ∑_{t∈T} ∑_{l∈L} KT ⋅ f_{t,l} τ_{t} + \\
-& ∑_{n∈N} I^S \bar{s}_n + \\
-& ∑_{n∈N} ∑_{t∈T} C^S (c_{t,n}+d_{t,n}) τ_{t}
+& ∑_{n∈N} I^S \bar{b}_n + \\
+& ∑_{n∈N} ∑_{t∈T} C^S (b_{t,n}^{+}+d_{t,n}^{-}) τ_{t}
 \end{aligned}$$
-FIXME: KT?
+
+FIXME: what is KT?
 
 ### Constraints
 #### Balance
 Energy balance $t=1$: $∀t∈\{1\}, n∈N$
 
-$$∑_{g∈G} p_{g,t,n} + σ_{t,n} + ∑_{(i,j)=l∈L∣j=n} f_{t,l} - ∑_{(i,j)=l∈L∣i=n} f_{t,l} + ξ s_{t,n} = D_{t,n}$$
+$$∑_{g∈G} p_{g,t,n} + σ_{t,n} + ∑_{(i,j)=l∈L∣j=n} f_{t,l} - ∑_{(i,j)=l∈L∣i=n} f_{t,l} + ξ b_{t,n} = D_{t,n}$$
 
 Energy balance $t>1$: $∀t∈t∖\{1\}, n∈N$
 
-$$∑_{g∈G} p_{g,t,n} + σ_{t,n} + ∑_{(i,j)=l∈L∣j=n} f_{t,l} - ∑_{(i,j)=l∈L∣i=n} f_{t,l} + ξ (s_{t,n}-s_{t-1,n}) = D_{t,n}$$
+$$∑_{g∈G} p_{g,t,n} + σ_{t,n} + ∑_{(i,j)=l∈L∣j=n} f_{t,l} - ∑_{(i,j)=l∈L∣i=n} f_{t,l} + ξ (b_{t,n}-b_{t-1,n}) = D_{t,n}$$
 
 #### Generation / Shedding
 Generation capacity: $∀g∈G, t∈T, n∈N$
 
-$$p_{g,t,n} ≤ ρ_g \bar{p}_g$$
+$$p_{g,t,n} ≤ A_g \bar{p}_g$$
 
 Min RES
 
@@ -82,27 +83,27 @@ Transmission capacity: $∀l∈L, t∈T$
 $$f_{t,l} ≤ \bar{f}_l$$
 
 #### Storage
-Charge / Discharge $t>1$: $∀t∈T, n∈N$
-
-$$\begin{aligned}
-c_{t,n}≥s_{t,n} - s_{t-1,n} \\
-d_{t,n}≥s_{t,n} - s_{t-1,n}
-\end{aligned}$$
-
 Charge / Discharge $t=1$: $∀t∈\{1\}, n∈N$
 
 $$\begin{aligned}
-c_{t,n}≥s_{t,n} - s_{0,n} \\
-d_{t,n}≥s_{t,n} - s_{0,n}
+b_{t,n}^{+}≥b_{t,n} - b_{n}^0 \\
+b_{t,n}^{-}≥b_{t,n} - b_{n}^0
+\end{aligned}$$
+
+Charge / Discharge $t>1$: $∀t∈T∖\{1\}, n∈N$
+
+$$\begin{aligned}
+b_{t,n}^{+}≥b_{t,n} - b_{t-1,n} \\
+b_{t,n}^{-}≥b_{t,n} - b_{t-1,n}
 \end{aligned}$$
 
 Storage capacity: $∀t∈T, n∈N$
 
-$$s_{t,n}≤\bar{s}_n$$
+$$b_{t,n}≤\bar{b}_n$$
 
 Storage: $∀n∈N$
 
-$$s_{t=T[end], n} = s_{0, n}$$
+$$b_{t=T[end], n} = b_{0, n}$$
 
 
 ## API
