@@ -121,7 +121,7 @@ p_{g,t,n} - p_{g,t-1,n} &≤ -r_g^{-}, \quad ∀t>1, n, g
 
 #### Voltage Angles
 
-$$(θ_{t,n}^1 - θ_{t,n}^2) B_l = p_{g,t,n_1} - p_{g,t,n_2}, \quad ∀t>1,g,l,n_1,n_2$$
+$$(θ_{t,n}^1 - θ_{t,n'}^2) B_l = p_{g,t,n} - p_{g,t,n'}, \quad ∀t>1,g,l,n,n'$$
 
 
 ## API
