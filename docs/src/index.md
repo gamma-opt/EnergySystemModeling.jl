@@ -9,8 +9,8 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
 *  $n∈N$: Nodes
-*  $l∈L$: Transmission lines, bidimensional vectors $(i,j)$ where $i,j∈V$
-*  $t∈T$: Time steps, depending on the numbber of clusters per month
+*  $l∈L$: Transmission lines, bidimensional vectors $(i,j)$ where $i,j∈N$
+*  $t∈T$: Time steps, depending on the number of clusters per month
 
 ### Parameters
 *  $A_g∈\{0,1\}$: Availability of technology $g$
@@ -19,8 +19,8 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]
 *  $τ_{t}$: Cluster size of $t$
 *  $C$: Shedding cost [€/MWh]
-*  $D_{t,n}$: Clustered demand per time step $t$ per node $n$ [MWh]
-*  $κ∈[0,1]$: Renewables participation required by the system (computed over the generation)
+*  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
+*  $κ∈[0,1]$: Renewables participation required by the system
 *  $I_l^F$: Annualised investment cost for transmission per line $l$ [€/MW]
 *  $M_l^F$: Annualised maintenance cost for transmission per line $l$ [€/MW]
 *  $ξ$: Battery's roundtrip efficiency
@@ -32,29 +32,29 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $B_l$: Susceptance per line $l$
 
 ### Variables
-*  $p_{g,t,n}≥0$: Dispatch from technology $g$ in each time step $t$ at node $n$ [MWh]
+*  $p_{g,n,t}≥0$: Dispatch from technology $g$ at node $n$ in each time step $t$ [MWh]
 *  $\bar{p}_{g,n}≥0$: Generation capacity invested in each technology $g$ at node $n$ [MW]
-*  $σ_{t,n}≥0$: Loss of load in each time step $t$ at node $n$ [MWh]
-*  $f_{t,l}≥0$: Transmission flow in each time step $t$ per line $l$ [MWh]
+*  $σ_{n,t}≥0$: Loss of load at node $n$ in each time step $t$ [MWh]
+*  $f_{l,t}≥0$: Transmission flow per line $l$ in each time step $t$ [MWh]
 *  $\bar{f}_l≥0$: Transmission capacity per line $l$ [MW]
-*  $b_{t,n}≥0$: Storage level in each time step $t$ at node $n$ [MWh]
+*  $b_{n,t}≥0$: Storage level at node $n$ in each time step $t$ [MWh]
 *  $\bar{b}_{n}≥0$: Storage capacity at node $n$ [MWh]
-*  $b_{t,n}^{+}≥0$: Charging in each time step $t$ at node $n$ [MWh]
-*  $b_{t,n}^{-}≥0$: Discharging in each time step $t$ at node $n$ [MWh]
-*  $θ^1_{t,n}≥0$: Voltage angle in each time step $t$ at node $n$
-*  $θ^2_{t,n}≥0$: Voltage angle in each time step $t$ at node $n$
+*  $b_{n,t}^{+}≥0$: Charging at node $n$ in each time step $t$ [MWh]
+*  $b_{n,t}^{-}≥0$: Discharging at node $n$ in each time step $t$ [MWh]
+*  $θ^1_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
+*  $θ^2_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 
 ### Objective
-Minimize for $p_{g,t}, \bar{p}_g, σ_{t}, f_{t,l}, \bar{f}_l, b_{t,n}^{+}, b_{t,n}^{-}$
+Minimize for $p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{n,t}^{+}, b_{n,t}^{-}$
 
 $$\begin{aligned}
-& \sum_{n} \sum_{g} (I_g^G+M_g^G)\bar{p}_{g,n} + \\
-& \sum_{n} \sum_{t} \sum_{g} C_g^G p_{g,t,n} τ_{t} + \\
-& \sum_{n} \sum_{t} C σ_{t} τ_{t} + \\
+& \sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n} + \\
+& \sum_{g,n,t} C_g^G p_{g,t,n} τ_{t} + \\
+& \sum_{n,t} C σ_{t} τ_{t} + \\
 & \sum_{l} (I_l^F+M_l^F) \bar{f}_l + \\
-& \sum_{t} \sum_{l} KT ⋅ f_{t,l} τ_{t} + \\
+& \sum_{l,t} KT ⋅ f_{t,l} τ_{t} + \\
 & \sum_{n} I^S \bar{b}_n + \\
-& \sum_{n} \sum_{t} C^S (b_{t,n}^{+}+d_{t,n}^{-}) τ_{t}
+& \sum_{n,t} C^S (b_{t,n}^{+}+d_{t,n}^{-}) τ_{t}
 \end{aligned}$$
 
 FIXME: what is KT?
@@ -63,65 +63,65 @@ FIXME: what is KT?
 #### Balance
 Energy balance $t=1$
 
-$$\sum_{g∈G} p_{g,t,n} + σ_{t,n} + \sum_{(i,j)=l∈L∣j=n} f_{t,l} - \sum_{(i,j)=l∈L∣i=n} f_{t,l} + ξ b_{t,n} = D_{t,n},\quad ∀t=1,n$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)=l∈L∣i=n} f_{l,t} + ξ b_{n,t} = D_{n,t},\quad ∀n,t=1$$
 
 Energy balance $t>1$
 
-$$\sum_{g∈G} p_{g,t,n} + σ_{t,n} + \sum_{(i,j)=l∈L∣j=n} f_{t,l} - \sum_{(i,j)=l∈L∣i=n} f_{t,l} + ξ (b_{t,n}-b_{t-1,n}) = D_{t,n},\quad ∀t>1,n$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)=l∈L∣i=n} f_{l,t} + ξ (b_{n,t}-b_{n,t-1}) = D_{n,t},\quad ∀n,t>1$$
 
 #### Generation / Shedding
 Generation capacity
 
-$$p_{g,t,n} ≤ A_g \bar{p}_g,\quad ∀g,t,n$$
+$$p_{g,n,t} ≤ A_g \bar{p}_g,\quad ∀g,n,t$$
 
-Min RES
+Minimum renewables share
 
-$$\sum_{n} \sum_{t} \sum_{g∈G^r} p_{g,t,n} ≥ κ \sum_{n} \sum_{t} \sum_{g} p_{g,t,n}$$
+$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t}$$
 
 Shedding upper bound
 
-$$σ_{t,n} ≤ C D_{t,n},\quad ∀t,n$$
+$$σ_{n,t} ≤ C D_{n,t},\quad ∀n,t$$
 
 #### Transmission
 Transmission capacity
 
-$$f_{t,l} ≤ \bar{f}_l,\quad ∀l,t$$
+$$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t$$
 
 #### Storage
-Charge / Discharge $t=1$
+Charge and discharge at $t=1$
 
 $$\begin{aligned}
-& b_{t,n}^{+}≥b_{t,n} - b_{n}^0 \\
-& b_{t,n}^{-}≥b_{t,n} - b_{n}^0,\quad ∀t=1, n
+& b_{n,t}^{+}≥b_{n,t} - b_{n}^0,\quad ∀n,t=1 \\
+& b_{n,t}^{-}≥b_{n,t} - b_{n}^0,\quad ∀n,t=1
 \end{aligned}$$
 
-Charge / Discharge $t>1$
+Charge and discharge at $t>1$
 
 $$\begin{aligned}
-& b_{t,n}^{+}≥b_{t,n} - b_{t-1,n} \\
-& b_{t,n}^{-}≥b_{t,n} - b_{t-1,n},\quad ∀t>1, n
+& b_{n,t}^{+}≥b_{n,t} - b_{n,t-1},\quad ∀n,t>1 \\
+& b_{n,t}^{-}≥b_{n,t} - b_{n,t-1},\quad ∀n,t>1
 \end{aligned}$$
 
 Storage capacity
 
-$$b_{t,n}≤\bar{b}_n,\quad ∀t,n$$
+$$b_{n,t}≤\bar{b}_n,\quad ∀n,t$$
 
 Storage
 
-$$b_{t=T[end], n} = b_{0, n},\quad ∀n$$
+$$b_{n,t=T_{end}} = b_{n,t=0},\quad ∀n$$
 
 FIXME: what is T[end]?
 
 #### Ramping Limits
 
 $$\begin{aligned}
-p_{g,t,n} - p_{g,t-1,n} &≥ r_g^{+}, \quad ∀t>1, n, g \\
-p_{g,t,n} - p_{g,t-1,n} &≤ -r_g^{-}, \quad ∀t>1, n, g
+p_{g,n,t} - p_{g,n,t-1} &≥ r_g^{+}, \quad ∀g,n,t>1 \\
+p_{g,n,t} - p_{g,n,t-1} &≤ -r_g^{-}, \quad ∀g,n,t>1
 \end{aligned}$$
 
 #### Voltage Angles
 
-$$(θ_{t,n}^1 - θ_{t,n'}^2) B_l = p_{g,t,n} - p_{g,t,n'}, \quad ∀t>1,g,l,n,n'$$
+$$(θ_{n,t}^1 - θ_{n',t}^2) B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 
 
 ## API
