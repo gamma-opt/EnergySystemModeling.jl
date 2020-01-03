@@ -23,6 +23,7 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $κ∈[0,1]$: Renewables participation required by the system
 *  $I_l^F$: Annualised investment cost for transmission per line $l$ [€/MW]
 *  $M_l^F$: Annualised maintenance cost for transmission per line $l$ [€/MW]
+*  $C_l^F$: Transmission cost per line $l$
 *  $ξ$: Battery's roundtrip efficiency
 *  $I^S$: Annualised investment cost for storage per MW [€/MWh]
 *  $C^S$: Storage operational cost [€/MW]
@@ -41,8 +42,8 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $\bar{b}_{n}≥0$: Storage capacity at node $n$ [MWh]
 *  $b_{n,t}^{+}≥0$: Charging at node $n$ in each time step $t$ [MWh]
 *  $b_{n,t}^{-}≥0$: Discharging at node $n$ in each time step $t$ [MWh]
-*  $θ^1_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
-*  $θ^2_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
+*  $θ_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
+*  $θ'_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 
 ### Objective
 Minimize for $p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{n,t}^{+}, b_{n,t}^{-}$
@@ -52,12 +53,11 @@ $$\begin{aligned}
 & \sum_{g,n,t} C_g^G p_{g,t,n} τ_{t} + \\
 & \sum_{n,t} C σ_{t} τ_{t} + \\
 & \sum_{l} (I_l^F+M_l^F) \bar{f}_l + \\
-& \sum_{l,t} KT ⋅ f_{t,l} τ_{t} + \\
+& \sum_{l,t} C_l^F ⋅ f_{t,l} τ_{t} + \\
 & \sum_{n} I^S \bar{b}_n + \\
 & \sum_{n,t} C^S (b_{t,n}^{+}+d_{t,n}^{-}) τ_{t}
 \end{aligned}$$
 
-FIXME: what is KT?
 
 ### Constraints
 #### Balance
@@ -108,9 +108,8 @@ $$b_{n,t}≤\bar{b}_n,\quad ∀n,t$$
 
 Storage
 
-$$b_{n,t=T_{end}} = b_{n,t=0},\quad ∀n$$
+$$b_{n,t=t_{end}} = b_{n,t=0},\quad ∀n$$
 
-FIXME: what is T[end]?
 
 #### Ramping Limits
 
@@ -121,7 +120,7 @@ p_{g,n,t} - p_{g,n,t-1} &≤ -r_g^{-}, \quad ∀g,n,t>1
 
 #### Voltage Angles
 
-$$(θ_{n,t}^1 - θ_{n',t}^2) B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
+$$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 
 
 ## API
