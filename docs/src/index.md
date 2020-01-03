@@ -23,7 +23,7 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $κ∈[0,1]$: Renewables participation required by the system
 *  $I_l^F$: Annualised investment cost for transmission per line $l$ [€/MW]
 *  $M_l^F$: Annualised maintenance cost for transmission per line $l$ [€/MW]
-*  $C_l^F$: Transmission cost per line $l$
+*  $C_l^F$: Transmission cost per line $l$ [€/MWh]
 *  $ξ$: Battery's roundtrip efficiency
 *  $I^S$: Annualised investment cost for storage per MW [€/MWh]
 *  $C^S$: Storage operational cost [€/MW]
