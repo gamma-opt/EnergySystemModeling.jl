@@ -14,20 +14,34 @@ Mathematical reference of the energy system model. The model presented here is s
 *  $s∈S$: Storage technologies
 
 ### Parameters
-*  $τ_{t}$: Cluster size of $t$
+Constant parameters
+
 *  $C$: Shedding cost [€/MWh]
 *  $κ∈[0,1]$: Renewables participation required by the system
+
+Time clustered parameters
+
+*  $τ_{t}$: Cluster size of $t$
 *  $A_{g,t}∈\{0,1\}$: Availability of technology $g$
 *  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
+
+Technology parameters
+
 *  $I_g^G$: Annualised investment cost for generation per MW of technology $g$ [€/MW]
 *  $M_g^G$: Annualised maintenance cost for generation per MW of technology $g$ [€/MW]
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]
 *  $r_g^{-}$: Relative ramp-down limit of technology $g$
 *  $r_g^{+}$: Relative ramp-up limit of technology $g$
+
+Transmission parameters
+
 *  $I_l^F$: Annualised investment cost for transmission per line $l$ [€/MW]
 *  $M_l^F$: Annualised maintenance cost for transmission per line $l$ [€/MW]
 *  $C_l^F$: Transmission cost per line $l$ [€/MWh]
 *  $B_l$: Susceptance per line $l$
+
+Storage parameters
+
 *  $ξ_s$: Round-trip efficiency of storage technology $s$
 *  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MWh]
 *  $C_s^S$: Storage operational cost of storage technology $s$ [€/MW]
@@ -132,20 +146,31 @@ $$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 
 
 ## Input
-Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include `README.md` file, which describes the instance. Users can distribute instances as `.zip` archives. As an example, we could have `instance` directory, with files:
+Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives.
 
-- `lines.csv`
-- `technologies.csv`
-- `storage.csv`
-- `demand.csv`
-- `availability.csv`
-- `parameters.json`
-- `README.md`
+We have `<instance>` directory, with files:
+
+- `parameters.json` -- Indexes and constant parameters.
+- `nodes/` -- Time clustered data from the nodes.
+  - `node_1.csv`
+  - `node_2.csv`
+  - ...
+- `transmission.csv` -- Transmission parameters.
+- `technology.csv` -- Technology parameters.
+- `storage.csv` -- Storage parameters.
+- `README.md` -- Description about the instance.
 
 The parameters naming convention is documented in the [Parameters](#parameters) section.
 
 
+## Output
+
+
 ## API
+```@docs
+load_parameters
+```
+
 ```@docs
 Specs
 ```

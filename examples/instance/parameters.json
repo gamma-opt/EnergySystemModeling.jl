@@ -1,0 +1,17 @@
+{
+  "indices": {
+    "G": ["wind", "solar", "coal", "gas_cc", "gas_oc"],
+    "G_r": ["wind", "solar"],
+    "N": ["SP", "DK", "DE"],
+    "L": {
+      "1": ["SP", "DE"],
+      "2": ["DK", "DE"]
+    },
+    "T": [],
+    "S": ["battery"]
+  },
+  "constants": {
+    "C": 1.0,
+    "kappa": 0.6
+  }
+}
