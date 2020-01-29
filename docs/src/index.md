@@ -16,8 +16,8 @@ Mathematical reference of the energy system model. The model presented here is s
 ### Parameters
 Constant parameters
 
-*  $C$: Shedding cost [€/MWh]
 *  $κ∈[0,1]$: Renewables participation required by the system
+*  $C$: Shedding cost [€/MWh]
 
 Time clustered parameters
 
