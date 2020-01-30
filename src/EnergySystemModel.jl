@@ -16,6 +16,7 @@ function load_parameters(instance_path)
     G_r = indices["G_r"]
     N = indices["N"]
     L = indices["L"]
+    # FIXME: clustering, time steps
     T = 1:indices["T"]
     S = indices["S"]
 
@@ -23,6 +24,7 @@ function load_parameters(instance_path)
     constants = p["constants"]
     κ = constants["kappa"]
     C = constants["C"]
+    # TODO: clustering, τ
 
     # Load time clustered parameters
     # We use DenseAxisArray because indices might be non-integers.
@@ -32,13 +34,18 @@ function load_parameters(instance_path)
     for n in N
         # Load node values from CSV files.
         df = CSV.read(joinpath(instance_path, "nodes", "$n.csv"))
-
-        # Compute the demands.
+        load_mod = Float64.(df.Load_mod)
+        wind_avaiable = Float64.(df.Avail_Win)
+        solar_available = Float64.(df.Avail_Sol)
         max_load = Float64.(df.Max_Load[1])
         dem_inc = Float64.(df.Dem_Inc[1])
-        demand[:, n] = dem_inc .* Float64.(df.Load_mod) .* max_load
-        wind[:, n] = Float64.(df.Avail_Win)
-        solar[:, n] = Float64.(df.Avail_Sol)
+
+        # TODO: clustering
+
+        # Compute the demands.
+        # demand[:, n] = dem_inc .* nothing .* max_load
+        # wind[:, n] = nothing
+        # solar[:, n] = nothing
     end
 
     # Load technology parameters
@@ -61,10 +68,13 @@ function load_parameters(instance_path)
     ξ_s = storage.xi
     I_s = storage.I
     C_s = storage.C
+    # TODO: initial storage
     # b⁰_sn = ...
 
     # Return tuple (maybe namedtuple?)
-    return (G, G_r, N, L, T, S, κ, C)
+    # TODO: return demand/availability
+    return (G, G_r, N, L, T, S, κ, C, I_g, M_g, C_g, r⁻, r⁺, I_l, M_l, C_l,
+            B_l, ξ_s, I_s, C_s)
 end
 
 """Specs"""
