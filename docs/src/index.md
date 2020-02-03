@@ -22,7 +22,7 @@ Constant parameters
 Time clustered parameters
 
 *  $τ_{t}$: Cluster size of $t$
-*  $A_{g,t}∈\{0,1\}$: Availability of technology $g$
+*  $A_{g,t}∈[0,1]$: Availability of technology $g$ (only renewables?)
 *  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
 
 Technology parameters

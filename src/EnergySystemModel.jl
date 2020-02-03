@@ -1,55 +1,44 @@
 module EnergySystemModel
 
-using JuMP, JSON, CSV
-using JuMP.Containers
+using JuMP, JSON, CSV, DataFrames
 
 export Specs, energy_system_model, load_parameters
 
 """Load parameters"""
 function load_parameters(instance_path)
     # Load indexes and constant parameters
-    p = JSON.parsefile(joinpath(instance_path, "parameters.json"))
+    indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
 
     # Indices
-    indices = p["indices"]
     G = indices["G"]
     G_r = indices["G_r"]
     N = indices["N"]
     L = indices["L"]
-    # FIXME: clustering, time steps
+    # FIXME: clustering, time steps, τ parameter
     T = 1:indices["T"]
     S = indices["S"]
 
     # Constant parameters
-    constants = p["constants"]
+    constants = JSON.parsefile(joinpath(instance_path, "constants.json"))
     κ = constants["kappa"]
     C = constants["C"]
-    # TODO: clustering, τ
 
     # Load time clustered parameters
-    # We use DenseAxisArray because indices might be non-integers.
-    demand = DenseAxisArray(zeros(length(T), length(N)), T, N)
-    wind = DenseAxisArray(zeros(length(T), length(N)), T, N)
-    solar = DenseAxisArray(zeros(length(T), length(N)), T, N)
+    D = zeros(length(T), length(N))
+    A_wind = zeros(length(T), length(N))
+    A_solar = zeros(length(T), length(N))
     for n in N
         # Load node values from CSV files.
-        df = CSV.read(joinpath(instance_path, "nodes", "$n.csv"))
-        load_mod = Float64.(df.Load_mod)
-        wind_avaiable = Float64.(df.Avail_Win)
-        solar_available = Float64.(df.Avail_Sol)
-        max_load = Float64.(df.Max_Load[1])
-        dem_inc = Float64.(df.Dem_Inc[1])
-
+        df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
         # TODO: clustering
-
-        # Compute the demands.
-        # demand[:, n] = dem_inc .* nothing .* max_load
-        # wind[:, n] = nothing
-        # solar[:, n] = nothing
+        D[:, n] = df.Dem_Inc[1] .* df.Load_mod .* df.Max_Load[1]
+        A_wind[:, n] = df.Avail_Win
+        A_solar[:, n] = df.Avail_Sol
     end
 
     # Load technology parameters
-    technology = CSV.read(joinpath(instance_path, "technology.csv"))
+    technology = joinpath(instance_path, "technology.csv") |>
+        CSV.read |> DataFrame
     I_g = technology.I
     M_g = technology.M
     C_g = technology.C
@@ -57,24 +46,24 @@ function load_parameters(instance_path)
     r⁺ = technology.r_plus
 
     # Load transmission parameters
-    transmission = CSV.read(joinpath(instance_path, "transmission.csv"))
+    transmission = joinpath(instance_path, "transmission.csv") |>
+        CSV.read |> DataFrame
     I_l = transmission.I
     M_l = transmission.M
     C_l = transmission.C
     B_l = transmission.B
 
     # Load storage parameters
-    storage = CSV.read(joinpath(instance_path, "storage.csv"))
+    storage = joinpath(instance_path, "storage.csv") |>
+        CSV.read |> DataFrame
     ξ_s = storage.xi
     I_s = storage.I
     C_s = storage.C
-    # TODO: initial storage
-    # b⁰_sn = ...
+    b⁰_sn = storage[:, [Symbol("b0_$n") for n in N]]
 
     # Return tuple (maybe namedtuple?)
-    # TODO: return demand/availability
-    return (G, G_r, N, L, T, S, κ, C, I_g, M_g, C_g, r⁻, r⁺, I_l, M_l, C_l,
-            B_l, ξ_s, I_s, C_s)
+    return (G, G_r, N, L, T, S, κ, C, D, A_wind, A_solar, I_g, M_g, C_g, r⁻,
+            r⁺, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)
 end
 
 """Specs"""
