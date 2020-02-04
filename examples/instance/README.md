@@ -1,4 +1,6 @@
 # Instance
+Indexing start from 1 following the Julia convention.
+
 Nodes
 
 - 1: SP

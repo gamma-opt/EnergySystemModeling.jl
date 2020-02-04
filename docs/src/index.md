@@ -70,11 +70,11 @@ $$f_1=\sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n}$$
 
 $$f_2=\sum_{g,n,t} C_g^G p_{g,t,n} τ_{t}$$
 
-$$f_3=\sum_{n,t} C σ_{t} τ_{t}$$
+$$f_3=\sum_{n,t} C σ_{n,t} τ_{t}$$
 
 $$f_4=\sum_{l} (I_l^F+M_l^F) \bar{f}_l$$
 
-$$f_5=\sum_{l,t} C_l^F ⋅ |f_{t,l}| τ_{t}$$
+$$f_5=\sum_{l,t} C_l^F ⋅ |f_{l,t}| τ_{t}$$
 
 $$f_6=\sum_{s,n} I_s^S \bar{b}_{s,n}$$
 
