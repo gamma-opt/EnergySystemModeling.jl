@@ -109,6 +109,8 @@ Transmission capacity
 
 $$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t$$
 
+$$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t$$
+
 #### Storage
 Charge and discharge at $t=1$
 
@@ -128,9 +130,9 @@ Storage capacity
 
 $$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t$$
 
-Storage
+Storage continuity
 
-$$b_{s,n,t=t_{end}} = b_{s,n,t=0},\quad ∀s,n$$
+$$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n$$
 
 
 #### Ramping Limits
