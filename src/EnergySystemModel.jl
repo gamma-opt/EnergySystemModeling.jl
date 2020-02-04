@@ -14,7 +14,7 @@ function load_parameters(instance_path)
     G_r = indices["G_r"] |> Array{Int}
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
-    # TODO: clustering, time steps, τ parameter
+    # TODO: clustering, time steps
     τ = 1
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
@@ -25,16 +25,17 @@ function load_parameters(instance_path)
     C = constants["C"]
 
     # Load time clustered parameters
+    τ_t = ones(length(T))  # TODO: compute from clustering
+    Q_nt = ones(length(N), length(T)) # TODO: load from file?
     D_nt = zeros(length(N), length(T))
-    A1_nt = zeros(length(N), length(T)) # wind
-    A2_nt = zeros(length(N), length(T)) # solar
+    A_gnt = ones(length(G), length(N), length(T))
     for n in N
         # Load node values from CSV files.
         df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
         # TODO: clustering
         D_nt[n, :] = df.Dem_Inc[1] .* df.Load_mod .* df.Max_Load[1]
-        A1_nt[n, :] = df.Avail_Win
-        A2_nt[n, :] = df.Avail_Sol
+        A_gnt[1, n, :] = df.Avail_Win
+        A_gnt[2, n, :] = df.Avail_Sol
     end
 
     # Load technology parameters
@@ -64,7 +65,7 @@ function load_parameters(instance_path)
     b⁰_sn = storage[:, [Symbol("b0_$n") for n in N]]
 
     # Return tuple (maybe namedtuple?)
-    return (G, G_r, N, L, T, S, κ, C, τ, A1_nt, A2_nt, D_nt, I_g, M_g,
+    return (G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_nt, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)
 end
 
@@ -75,15 +76,13 @@ end
 
 """Create energy system model."""
 function energy_system_model(
-            G, G_r, N, L, T, S, κ, C, τ, A1_nt, A2_nt, D_nt, I_g, M_g,
+            G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_nt, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)::Model
     # Create an instance of JuMP model.
     model = Model()
 
     # Indices of lines L
     L′ = 1:length(L)
-
-    # TODO: CS_P / τ parameter
 
     ## -- Variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
@@ -103,17 +102,17 @@ function energy_system_model(
     @expression(model, f1,
         sum((I_g[g]+M_g[g])*p̄_gn[g,n] for g in G, n in N))
     @expression(model, f2,
-        sum(C_g[g]*p_gnt[g,n,t]*τ for g in G, n in N, t in T))
+        sum(C_g[g]*p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T))
     @expression(model, f3,
-        sum(C*σ_nt[n,t]*τ for n in N, t in T))
+        sum(C*σ_nt[n,t]*τ_t[t] for n in N, t in T))
     @expression(model, f4,
         sum((I_l[l]+M_l[l])*f̄_l[l] for l in L′))
     @expression(model, f5,
-        sum(C_l[l]*f_lt_abs[l,t]*τ for l in L′, t in T))
+        sum(C_l[l]*f_lt_abs[l,t]*τ_t[t] for l in L′, t in T))
     @expression(model, f6,
         sum(I_s[s]*b̄_sn[s,n] for s in S, n in N))
     @expression(model, f7,
-        sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ for s in S, n in N, t in T))
+        sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ_t[t] for s in S, n in N, t in T))
     @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7)
 
     ## -- Constraints --
@@ -137,7 +136,10 @@ function energy_system_model(
         ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) ==
         D_nt[n,t])
 
-    # TODO: Generation capacity, GCN, parameter A
+    # Generation capacity
+    @constraint(model,
+        [g in G, n in N, t in T],
+        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_nt[n,t] + p̄_gn[g,n]))
 
     # Minimum renewables share
     @constraint(model,
