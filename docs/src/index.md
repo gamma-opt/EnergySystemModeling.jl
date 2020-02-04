@@ -23,8 +23,8 @@ Time clustered parameters
 
 *  $τ$: Number of time slices per month
 *  $τ_{t}$: Cluster size of $t$
-*  $Q_{n,t}$: ???
-*  $A_{g,t}∈[0,1]$: Availability of technology $g$
+*  $Q_{g,n}$: ???
+*  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
 *  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
 
 Technology parameters
@@ -96,7 +96,7 @@ $$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)
 #### Generation / Shedding
 Generation capacity
 
-$$p_{g,n,t} ≤ A_{g,n,t} (Q_{n,t} + \bar{p}_{g,n}),\quad ∀g,n,t$$
+$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t$$
 
 Minimum renewables share
 

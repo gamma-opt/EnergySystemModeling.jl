@@ -26,7 +26,7 @@ function load_parameters(instance_path)
 
     # Load time clustered parameters
     τ_t = ones(length(T))  # TODO: compute from clustering
-    Q_nt = ones(length(N), length(T)) # TODO: load from file?
+    Q_gn = ones(length(G), length(N)) # TODO: load from file?
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
     for n in N
@@ -65,7 +65,7 @@ function load_parameters(instance_path)
     b⁰_sn = storage[:, [Symbol("b0_$n") for n in N]]
 
     # Return tuple (maybe namedtuple?)
-    return (G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_nt, A_gnt, D_nt, I_g, M_g,
+    return (G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)
 end
 
@@ -76,7 +76,7 @@ end
 
 """Create energy system model."""
 function energy_system_model(
-            G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_nt, A_gnt, D_nt, I_g, M_g,
+            G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)::Model
     # Create an instance of JuMP model.
     model = Model()
@@ -139,7 +139,7 @@ function energy_system_model(
     # Generation capacity
     @constraint(model,
         [g in G, n in N, t in T],
-        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_nt[n,t] + p̄_gn[g,n]))
+        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
 
     # Minimum renewables share
     @constraint(model,
