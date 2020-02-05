@@ -172,7 +172,7 @@ We have `instance` directory, with files:
 - `storage.csv` -- Storage parameters.
 - `README.md` -- Description about the instance.
 
-The parameters naming convention is documented in the [Parameters](#parameters) section.
+The parameters naming convention is documented in the parameters section.
 
 
 ## Output
@@ -180,11 +180,11 @@ The parameters naming convention is documented in the [Parameters](#parameters) 
 
 ## API
 ```@docs
-load_parameters
+Specs
 ```
 
 ```@docs
-Specs
+load_parameters
 ```
 
 ```@docs

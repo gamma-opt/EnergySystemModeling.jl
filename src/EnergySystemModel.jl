@@ -2,9 +2,14 @@ module EnergySystemModel
 
 using JuMP, JSON, CSV, DataFrames
 
-export Specs, energy_system_model, load_parameters
+export Specs, load_parameters, energy_system_model
 
-"""Load parameters"""
+"""Specifies which parts of the optimization model to run."""
+struct Specs
+    # TODO: booleans
+end
+
+"""Loads the instance parameters from file."""
 function load_parameters(instance_path)
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
@@ -26,7 +31,7 @@ function load_parameters(instance_path)
 
     # Load time clustered parameters
     τ_t = ones(length(T))  # TODO: compute from clustering
-    Q_gn = ones(length(G), length(N)) # TODO: load from file?
+    Q_gn = zeros(length(G), length(N)) # TODO: load from file?
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
     for n in N
@@ -69,12 +74,7 @@ function load_parameters(instance_path)
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)
 end
 
-"""Specs"""
-struct Specs
-    # TODO: booleans
-end
-
-"""Create energy system model."""
+"""Creates the energy system model."""
 function energy_system_model(
             G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)::Model
