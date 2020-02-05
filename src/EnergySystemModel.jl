@@ -121,8 +121,8 @@ function energy_system_model(
         [s in S, n in N, t in [1]],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for (l,l′) in enumerate(L) if l′[1]==n) -
-        sum(f_lt[l,t] for (l,l′) in enumerate(L) if l′[2]==n) +
+        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if i==n) -
+        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if j==n) +
         ξ_s[s] * b_snt[s,n,t] ==
         D_nt[n,t])
 
@@ -131,8 +131,8 @@ function energy_system_model(
         [s in S, n in N, t in T[T.>1]],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for (l,l′) in enumerate(L) if l′[1]==n) -
-        sum(f_lt[l,t] for (l,l′) in enumerate(L) if l′[2]==n) +
+        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if i==n) -
+        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if j==n) +
         ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) ==
         D_nt[n,t])
 

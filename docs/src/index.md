@@ -5,7 +5,7 @@ Documentation for EnergySystemModel.jl
 ## Model
 Mathematical reference of the energy system model. The model presented here is similar to the model in [^1].
 
-### Indexes and Sets
+### Indices and Sets
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
 *  $n∈N$: Nodes
@@ -55,6 +55,7 @@ Storage parameters
 *  $\bar{p}_{g,n}≥0$: Generation capacity invested in each technology $g$ at node $n$ [MW]
 *  $σ_{n,t}≥0$: Loss of load at node $n$ in each time step $t$ [MWh]
 *  $f_{l,t}$: Transmission flow per line $l$ in each time step $t$ [MWh]
+*  $|f_{l,t}|$: Absolute value of transmission flow per line $l$ in each time step $t$ [MWh]
 *  $\bar{f}_l$: Transmission capacity per line $l$ [MW]
 *  $b_{s,n,t}≥0$: Storage level of storage $s$ at node $n$ in each time step $t$ [MWh]
 *  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MWh]
@@ -113,6 +114,12 @@ $$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t$$
 
 $$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t$$
 
+The absolute value of the transmission
+
+$$|f_{l,t}|≥f_{l,t},\quad ∀l,t$$
+
+$$|f_{l,t}|≥-f_{l,t},\quad ∀l,t$$
+
 #### Storage
 Charge and discharge at $t=1$
 
@@ -152,13 +159,14 @@ $$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 ## Input
 Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives.
 
-We have `<instance>` directory, with files:
+We have `instance` directory, with files:
 
-- `parameters.json` -- Indexes and constant parameters.
+- `indices.json` -- Indices.
 - `nodes/` -- Time clustered data from the nodes.
-  - `node_1.csv`
-  - `node_2.csv`
+  - `1.csv`
+  - `2.csv`
   - ...
+- `constants.json` -- Constant parameters.
 - `transmission.csv` -- Transmission parameters.
 - `technology.csv` -- Technology parameters.
 - `storage.csv` -- Storage parameters.
