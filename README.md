@@ -20,7 +20,7 @@ pkg> activate .
 pkg> instantiate
 ```
 
-In `examples` diretory there is `run.jl` script for running the [example instance](./examples/instance). However, to run the instance, we require an optimizer, such as Gurobi, CPLEX or Ipopt. Install your preferred optimizer, modify the script to use this optmizer and then run it using:
+In `examples` diretory there is `run.jl` script for running the [example instance](./examples/instance). However, to run the instance, we require an optimizer, such as [GLPK](https://github.com/JuliaOpt/GLPK.jl). Install your preferred optimizer, modify the script to use this optmizer and then run it using:
 ```bash
 julia run.jl
 ```

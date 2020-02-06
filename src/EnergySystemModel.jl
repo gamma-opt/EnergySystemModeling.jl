@@ -2,19 +2,48 @@ module EnergySystemModel
 
 using JuMP, JSON, CSV, DataFrames
 
-export Specs, load_parameters, energy_system_model
+export Specs, Parameters, load_parameters, energy_system_model
+
+"""Parameters"""
+struct Parameters
+    G::Array{Int}
+    G_r::Array{Int}
+    N::Array{Int}
+    L::Array{Array{Int}}
+    T::Array{Int}
+    S::Array{Int}
+    κ::AbstractFloat
+    C::AbstractFloat
+    τ::Int
+    τ_t::Array{Int}
+    Q_gn::Array{AbstractFloat, 2}
+    A_gnt::Array{AbstractFloat, 3}
+    D_nt::Array{AbstractFloat, 2}
+    I_g::Array{AbstractFloat}
+    M_g::Array{AbstractFloat}
+    C_g::Array{AbstractFloat}
+    r⁻_g::Array{AbstractFloat}
+    r⁺_g::Array{AbstractFloat}
+    I_l::Array{AbstractFloat}
+    M_l::Array{AbstractFloat}
+    C_l::Array{AbstractFloat}
+    B_l::Array{AbstractFloat}
+    ξ_s::Array{AbstractFloat}
+    I_s::Array{AbstractFloat}
+    C_s::Array{AbstractFloat}
+    b0_sn::Array{AbstractFloat, 2}
+end
 
 """Specifies which parts of the optimization model to run."""
 struct Specs
-    # TODO: booleans
-    # storage
-    # renewable target
-    # ramping 
-    # voltage angles
+    storage::Bool
+    renewable_target::Bool
+    ramping::Bool
+    voltage_angles::Bool
 end
 
 """Loads the instance parameters from file."""
-function load_parameters(instance_path)
+function load_parameters(instance_path):: Parameters
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
 
@@ -73,16 +102,43 @@ function load_parameters(instance_path)
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
     # Return tuple (maybe namedtuple?)
-    return (G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
+    return Parameters(G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g,
+                      M_g, C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s,
+                      b0_sn)
 end
 
 """Creates the energy system model."""
-function energy_system_model(
-            G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)::Model
+function energy_system_model(parameters::Parameters, specs::Specs)::Model
     # Create an instance of JuMP model.
     model = Model()
+
+    # Parameters
+    G = parameters.G
+    G_r = parameters.G_r
+    N = parameters.N
+    L = parameters.L
+    T = parameters.T
+    S = parameters.S
+    κ = parameters.κ
+    C = parameters.C
+    τ = parameters.τ
+    τ_t = parameters.τ_t
+    Q_gn = parameters.Q_gn
+    A_gnt = parameters.A_gnt
+    D_nt = parameters.D_nt
+    I_g = parameters.I_g
+    M_g = parameters.M_g
+    C_g = parameters.C_g
+    r⁻_g = parameters.r⁻_g
+    r⁺_g = parameters.r⁺_g
+    I_l = parameters.I_l
+    M_l = parameters.M_l
+    C_l = parameters.C_l
+    B_l = parameters.B_l
+    ξ_s = parameters.ξ_s
+    I_s = parameters.I_s
+    C_s = parameters.C_s
+    b0_sn = parameters.b0_sn
 
     # Indices of lines L
     L′ = 1:length(L)
@@ -145,9 +201,11 @@ function energy_system_model(
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
 
     # Minimum renewables share
-    @constraint(model,
-        sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) ≥
-        κ * sum(p_gnt[g,n,t] for g in G, n in N, t in T))
+    if specs.renewable_target
+        @constraint(model,
+            sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) ≥
+            κ * sum(p_gnt[g,n,t] for g in G, n in N, t in T))
+    end
 
     # Shedding upper bound
     @constraint(model,
@@ -170,44 +228,50 @@ function energy_system_model(
         [l in L′, t in T],
         f_lt_abs[l,t]≥-f_lt[l,t])
 
-    # Charge and discharge (t=1)
-    @constraint(model,
-        [s in S, n in N, t in [1]],
-        b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
-    @constraint(model,
-        [s in S, n in N, t in [1]],
-        b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
+    if specs.storage
+        # Charge and discharge (t=1)
+        @constraint(model,
+            [s in S, n in N, t in [1]],
+            b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
+        @constraint(model,
+            [s in S, n in N, t in [1]],
+            b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
 
-    # Charge and discharge (t>1)
-    @constraint(model,
-        [s in S, n in N, t in T[T.>1]],
-        b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
-    @constraint(model,
-        [s in S, n in N, t in T[T.>1]],
-        b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
+        # Charge and discharge (t>1)
+        @constraint(model,
+            [s in S, n in N, t in T[T.>1]],
+            b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
+        @constraint(model,
+            [s in S, n in N, t in T[T.>1]],
+            b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
 
-    # Storage capcity
-    @constraint(model,
-        [s in S, n in N, t in T],
-        b_snt[s,n,t]≤b̄_sn[s,n])
+        # Storage capcity
+        @constraint(model,
+            [s in S, n in N, t in T],
+            b_snt[s,n,t]≤b̄_sn[s,n])
 
-    # Storage
-    @constraint(model,
-        [s in S, n in N],
-        b_snt[s,n,1]==b_snt[s,n,T[end]])
+        # Storage
+        @constraint(model,
+            [s in S, n in N],
+            b_snt[s,n,1]==b_snt[s,n,T[end]])
+    end
 
-    # Ramping limits
-    @constraint(model,
-        [g in G, n in N, t in T[T.>1]],
-        p_gnt[g,n,t]-p_gnt[g,n,t-1]≥r⁺_g[g])
-    @constraint(model,
-        [g in G, n in N, t in T[T.>1]],
-        p_gnt[g,n,t]-p_gnt[g,n,t-1]≤r⁻_g[g])
+    if specs.ramping
+        # Ramping limits
+        @constraint(model,
+            [g in G, n in N, t in T[T.>1]],
+            p_gnt[g,n,t]-p_gnt[g,n,t-1]≥r⁺_g[g])
+        @constraint(model,
+            [g in G, n in N, t in T[T.>1]],
+            p_gnt[g,n,t]-p_gnt[g,n,t-1]≤r⁻_g[g])
+    end
 
-    # Voltage angles
-    @constraint(model,
-        [g in G, l in L′, n in N, n′ in N, t in T[T.>1]],
-        (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
+    if specs.voltage_angles
+        # Voltage angles
+        @constraint(model,
+            [g in G, l in L′, n in N, n′ in N, t in T[T.>1]],
+            (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
+    end
 
     return model
 end
