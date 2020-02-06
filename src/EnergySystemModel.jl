@@ -7,6 +7,10 @@ export Specs, load_parameters, energy_system_model
 """Specifies which parts of the optimization model to run."""
 struct Specs
     # TODO: booleans
+    # storage
+    # renewable target
+    # ramping 
+    # voltage angles
 end
 
 """Loads the instance parameters from file."""
