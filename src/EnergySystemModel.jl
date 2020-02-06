@@ -66,18 +66,17 @@ function load_parameters(instance_path)
     ξ_s = storage.xi
     I_s = storage.I
     C_s = storage.C
-    # TODO: convert to array
-    b⁰_sn = storage[:, [Symbol("b0_$n") for n in N]]
+    b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
     # Return tuple (maybe namedtuple?)
     return (G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)
+            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
 end
 
 """Creates the energy system model."""
 function energy_system_model(
             G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b⁰_sn)::Model
+            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)::Model
     # Create an instance of JuMP model.
     model = Model()
 
@@ -170,10 +169,10 @@ function energy_system_model(
     # Charge and discharge (t=1)
     @constraint(model,
         [s in S, n in N, t in [1]],
-        b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b⁰_sn[s,n])
+        b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
     @constraint(model,
         [s in S, n in N, t in [1]],
-        b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b⁰_sn[s,n])
+        b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
 
     # Charge and discharge (t>1)
     @constraint(model,
