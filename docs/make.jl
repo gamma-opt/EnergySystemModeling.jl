@@ -5,8 +5,11 @@ using EnergySystemModel
 
 makedocs(
     sitename = "EnergySystemModel",
-    format = Documenter.HTML(),
-    modules = [EnergySystemModel]
+    format = Documenter.HTML(
+        assets = ["assets/favicon.ico"]
+    ),
+    modules = [EnergySystemModel],
+    authors = "Lucas Condeixa, Fabricio Oliveira, Jaan Tollander de Balsch"
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
