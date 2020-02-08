@@ -4,7 +4,7 @@ using JuMP, JSON, CSV, DataFrames
 
 export Specs, Parameters, load_parameters, energy_system_model
 
-"""Parameters"""
+"""Input indices and parameters for the model."""
 struct Parameters
     G::Array{Int}
     G_r::Array{Int}
@@ -34,43 +34,59 @@ struct Parameters
     b0_sn::Array{AbstractFloat, 2}
 end
 
-"""Specifies which parts of the optimization model to run."""
+"""Specifation for which constraints to include to the model. Constraints that
+are not specified are included by default.
+
+# Arguments
+
+- `renewable_target::Bool`: Whether to include renewables target constraint.
+- `storage::Bool`: Whether to include storage constraints.
+- `ramping::Bool`: Whether to include ramping constraints.
+- `voltage_angles::Bool`: Whether to include voltage angle constraints.
+"""
 struct Specs
-    storage::Bool
     renewable_target::Bool
+    storage::Bool
     ramping::Bool
     voltage_angles::Bool
 end
 
-"""Loads the instance parameters from file."""
-function load_parameters(instance_path):: Parameters
+"""Loads the instance parameters from file. Returns an instance of Parameters
+struct.
+
+# Arguments
+
+- `instance_path::AbstractString`: Path to the instance directory.
+"""
+function load_parameters(instance_path::AbstractString):: Parameters
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
 
-    # Indices. Convert JSON values to right types.
+    # TODO: implement time period clustering: τ, T, τ_t
+
+    # Load indices. Convert JSON values to right types.
     G = indices["G"] |> Array{Int}
     G_r = indices["G_r"] |> Array{Int}
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
-    # TODO: clustering, time steps
     τ = 1
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
 
-    # Constant parameters
+    # Load constant parameters
     constants = JSON.parsefile(joinpath(instance_path, "constants.json"))
     κ = constants["kappa"]
     C = constants["C"]
 
     # Load time clustered parameters
-    τ_t = ones(length(T))  # TODO: compute from clustering
-    Q_gn = zeros(length(G), length(N)) # TODO: load from file?
+    τ_t = ones(length(T))
+    # TODO: load from file
+    Q_gn = zeros(length(G), length(N))
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
     for n in N
         # Load node values from CSV files.
         df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
-        # TODO: clustering
         D_nt[n, :] = df.Dem_Inc[1] .* df.Load_mod .* df.Max_Load[1]
         A_gnt[1, n, :] = df.Avail_Win
         A_gnt[2, n, :] = df.Avail_Sol
@@ -101,13 +117,19 @@ function load_parameters(instance_path):: Parameters
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
-    # Return tuple (maybe namedtuple?)
+    # Return Parameters struct
     return Parameters(G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g,
                       M_g, C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s,
                       b0_sn)
 end
 
-"""Creates the energy system model."""
+"""Creates the energy system model. Returns JuMP model.
+
+# Arguments
+
+- `parameters::Parameters`
+- `specs::Specs`
+"""
 function energy_system_model(parameters::Parameters, specs::Specs)::Model
     # Create an instance of JuMP model.
     model = Model()

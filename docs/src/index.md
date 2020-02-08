@@ -3,7 +3,7 @@ Documentation for EnergySystemModel.jl
 
 
 ## Model
-Mathematical reference of the energy system model. The model presented here is similar to the model in [^1].
+Mathematical reference for the energy system model. The model presented here is based on the model in [^1].
 
 ### Indices and Sets
 *  $g∈G$: Generation technologies
@@ -23,7 +23,7 @@ Time clustered parameters
 
 *  $τ$: Number of time slices per month
 *  $τ_{t}$: Cluster size of $t$
-*  $Q_{g,n}$: ???
+*  $Q_{g,n}$: Initial capacity
 *  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
 *  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
 
@@ -175,19 +175,11 @@ We have `instance` directory, with files:
 The parameters naming convention is documented in the parameters section.
 
 
-## Output
-
-
 ## API
 ```@docs
+Parameters
 Specs
-```
-
-```@docs
 load_parameters
-```
-
-```@docs
 energy_system_model
 ```
 
