@@ -18,7 +18,7 @@ Constant parameters
 
 *  $κ∈[0,1]$: Renewables participation required by the system
 *  $C$: Shedding cost [€/MWh]
-*  $\hat{C}$: Shedding capacity [€/MWh]
+*  $\bar{C}$: Shedding capacity [€/MWh]
 
 Time clustered parameters
 
@@ -106,7 +106,7 @@ $$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t}$$
 
 Shedding upper bound
 
-$$σ_{n,t} ≤ \hat{C} D_{n,t},\quad ∀n,t$$
+$$σ_{n,t} ≤ \bar{C} D_{n,t},\quad ∀n,t$$
 
 #### Transmission
 Transmission capacity
