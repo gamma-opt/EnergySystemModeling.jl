@@ -14,6 +14,7 @@ struct Parameters
     S::Array{Int}
     κ::AbstractFloat
     C::AbstractFloat
+    C̄::AbstractFloat
     τ::Int
     τ_t::Array{Int}
     Q_gn::Array{AbstractFloat, 2}
@@ -77,6 +78,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     constants = JSON.parsefile(joinpath(instance_path, "constants.json"))
     κ = constants["kappa"]
     C = constants["C"]
+    C̄ = constants["C_bar"]
 
     # Load time clustered parameters
     τ_t = ones(length(T))
@@ -118,7 +120,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
     # Return Parameters struct
-    return Parameters(G, G_r, N, L, T, S, κ, C, τ, τ_t, Q_gn, A_gnt, D_nt, I_g,
+    return Parameters(G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g,
                       M_g, C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s,
                       b0_sn)
 end
@@ -143,6 +145,7 @@ function energy_system_model(parameters::Parameters, specs::Specs)::Model
     S = parameters.S
     κ = parameters.κ
     C = parameters.C
+    C̄ = parameters.C̄
     τ = parameters.τ
     τ_t = parameters.τ_t
     Q_gn = parameters.Q_gn
@@ -232,7 +235,7 @@ function energy_system_model(parameters::Parameters, specs::Specs)::Model
     # Shedding upper bound
     @constraint(model,
         [n in N, t in T],
-        σ_nt[n,t] ≤ C * D_nt[n,t])
+        σ_nt[n,t] ≤ C̄ * D_nt[n,t])
 
     # Transmission capacity
     @constraint(model,

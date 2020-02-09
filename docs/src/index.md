@@ -18,6 +18,7 @@ Constant parameters
 
 *  $κ∈[0,1]$: Renewables participation required by the system
 *  $C$: Shedding cost [€/MWh]
+*  $\hat{C}$: Shedding capacity [€/MWh]
 
 Time clustered parameters
 
@@ -44,10 +45,10 @@ Transmission parameters
 
 Storage parameters
 
-*  $ξ_s$: Round-trip efficiency of storage technology $s$
 *  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MWh]
 *  $C_s^S$: Storage operational cost of storage technology $s$ [€/MW]
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
+*  $ξ_s$: Round-trip efficiency of storage technology $s$
 
 
 ### Variables
@@ -105,7 +106,7 @@ $$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t}$$
 
 Shedding upper bound
 
-$$σ_{n,t} ≤ C D_{n,t},\quad ∀n,t$$
+$$σ_{n,t} ≤ \hat{C} D_{n,t},\quad ∀n,t$$
 
 #### Transmission
 Transmission capacity
