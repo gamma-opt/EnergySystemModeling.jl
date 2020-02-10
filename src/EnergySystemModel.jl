@@ -4,6 +4,8 @@ using JuMP, JSON, CSV, DataFrames
 
 export Specs, Parameters, load_parameters, energy_system_model
 
+f(t, r) = r / (1 - (1 + r)^t)
+
 """Input indices and parameters for the model."""
 struct Parameters
     G::Array{Int}
@@ -94,20 +96,23 @@ function load_parameters(instance_path::AbstractString):: Parameters
         A_gnt[2, n, :] = df.Avail_Sol
     end
 
+    r = 0.05
+
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
         CSV.read |> DataFrame
-    I_g = technology.I
+    I_g = technology.cost .* f.(-technology.lifetime, r)
     M_g = technology.M
-    C_g = technology.C
+    C_g = technology.fuel_cost_1 ./ technology.fuel_cost_2 ./ 1000
     r⁻_g = technology.r_minus
     r⁺_g = technology.r_plus
 
     # Load transmission parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
         CSV.read |> DataFrame
-    I_l = transmission.I
     M_l = transmission.M
+    I_l = (transmission.cost .* transmission.dist .+ M_l) .*
+          f.(-transmission.lifetime, r)
     C_l = transmission.C
     B_l = transmission.B
 
@@ -115,14 +120,14 @@ function load_parameters(instance_path::AbstractString):: Parameters
     storage = joinpath(instance_path, "storage.csv") |>
         CSV.read |> DataFrame
     ξ_s = storage.xi
-    I_s = storage.I
+    I_s = storage.cost .* f.(-storage.lifetime, r)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
     # Return Parameters struct
-    return Parameters(G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g,
-                      M_g, C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s,
-                      b0_sn)
+    return Parameters(
+        G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
 end
 
 """Creates the energy system model. Returns JuMP model.

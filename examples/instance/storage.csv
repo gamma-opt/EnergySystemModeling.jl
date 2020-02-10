@@ -1,2 +1,2 @@
-s,xi,I,C,b0_1,b0_2,b0_3
-battery,1,1,1,1,1,1
+s,xi,C,cost,lifetime,b0_1,b0_2,b0_3
+battery,0.81,1E-10,160,20,0,0,0

@@ -1,6 +1,6 @@
-g,I,M,C,r_minus,r_plus
-wind,1,1,1,1,1
-solar,1,1,1,1,1
-coal,1,1,1,1,1
-gas_cc,1,1,1,1,1
-gas_oc,1,1,1,1,1
+name,g,M,cost,lifetime,fuel_cost_1,fuel_cost_2,r_minus,r_plus
+wind,1,60,1200,25,0,1,1,1
+solar,2,16,800,25,0,1,1,1
+coal,3,48,1600,40,11,0.45,1,1
+gas_cc,4,10,500,40,22,0.4,1,1
+gas_oc,5,16,800,40,22,0.6,1,1
