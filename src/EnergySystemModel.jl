@@ -4,7 +4,7 @@ using JuMP, JSON, CSV, DataFrames
 
 export Specs, Parameters, load_parameters, energy_system_model
 
-f(t, r) = r / (1 - (1 + r)^t)
+annuity(n, r) = (1 - (1 + r)^(-n)) / r
 
 """Input indices and parameters for the model."""
 struct Parameters
@@ -101,7 +101,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
         CSV.read |> DataFrame
-    I_g = technology.cost .* f.(-technology.lifetime, r)
+    I_g = technology.cost ./ annuity.(technology.lifetime, r)
     M_g = technology.M
     C_g = technology.fuel_cost_1 ./ technology.fuel_cost_2 ./ 1000
     r⁻_g = technology.r_minus
@@ -111,8 +111,8 @@ function load_parameters(instance_path::AbstractString):: Parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
         CSV.read |> DataFrame
     M_l = transmission.M
-    I_l = (transmission.cost .* transmission.dist .+ M_l) .*
-          f.(-transmission.lifetime, r)
+    I_l = (transmission.cost .* transmission.dist .+ M_l) ./
+          annuity.(transmission.lifetime, r)
     C_l = transmission.C
     B_l = transmission.B
 
@@ -120,7 +120,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     storage = joinpath(instance_path, "storage.csv") |>
         CSV.read |> DataFrame
     ξ_s = storage.xi
-    I_s = storage.cost .* f.(-storage.lifetime, r)
+    I_s = storage.cost ./ annuity.(storage.lifetime, r)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
