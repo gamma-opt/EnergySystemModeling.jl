@@ -55,8 +55,44 @@ function plot_storage(b_snt, b̄_sn, S, n, T)
     return p
 end
 
-function plot_storage_capacity(b̄_sn, S, n)
+function plot_storage_capacities(b̄_sn, S, n)
     bar(S, [b̄_sn[s, n] for s in S],
        xlabel=L"s",
        ylabel=L"b̄_{s,n}")
+end
+
+# Overload functions for signature: parameters::Parameters, model::Model, ...
+
+function plot_generation_dispatch(
+        parameters::Parameters, model::Model, n::Integer)
+    plot_generation_dispatch(
+        value.(model[:p_gnt]), value.(model[:p̄_gn]),
+        parameters.G, n, parameters.T)
+end
+
+function plot_generation_capacities(
+        parameters::Parameters, model::Model, n::Integer)
+    plot_generation_capacities(value.(model[:p̄_gn]), parameters.G, n)
+end
+
+function plot_transmission_flow(
+        parameters::Parameters, model::Model, l::Integer)
+    plot_transmission_flow(
+        value.(model[:f_lt]), value.(model[:f̄_l]),
+        l, parameters.T)
+end
+
+function plot_transmission_capacities(parameters::Parameters, model::Model)
+    plot_transmission_capacities(value.(model[:f̄_l]), parameters.L)
+end
+
+function plot_storage(parameters::Parameters, model::Model, n::Integer)
+    plot_storage(
+        value.(model[:b_snt]), value.(model[:b̄_sn]),
+        parameters.S, n, parameters.T)
+end
+
+function plot_storage_capacities(
+        parameters::Parameters, model::Model, n::Integer)
+    plot_storage_capacities(value.(model[:b̄_sn]), parameters.S, n)
 end
