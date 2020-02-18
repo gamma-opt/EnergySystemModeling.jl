@@ -3,7 +3,7 @@ Documentation for EnergySystemModel.jl
 
 
 ## Model
-Mathematical reference for the energy system model. The model presented here is based on the model in [^1].
+Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. The units are expressed in the square brackets.
 
 ### Indices and Sets
 *  $g∈G$: Generation technologies
@@ -23,12 +23,12 @@ Constant parameters
 Time clustered parameters
 
 *  $τ$: Number of time slices per month
-*  $τ_{t}$: Cluster size of $t$
-*  $Q_{g,n}$: Initial capacity
+*  $τ_{t}$: Duration of time period $t$ [h]
+*  $Q_{g,n}$: Initial capacity [MW]
 *  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
 *  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
 
-Technology parameters
+Generation technology parameters
 
 *  $I_g^G$: Annualised investment cost for generation per MW of technology $g$ [€/MW]
 *  $M_g^G$: Annualised maintenance cost for generation per MW of technology $g$ [€/MW]
@@ -52,22 +52,38 @@ Storage parameters
 
 
 ### Variables
+Generation technology variables
+
 *  $p_{g,n,t}≥0$: Dispatch from technology $g$ at node $n$ in each time step $t$ [MWh]
 *  $\bar{p}_{g,n}≥0$: Generation capacity invested in each technology $g$ at node $n$ [MW]
+
+Shedding variables
+
 *  $σ_{n,t}≥0$: Loss of load at node $n$ in each time step $t$ [MWh]
+
+Transmission variables
+
 *  $f_{l,t}$: Transmission flow per line $l$ in each time step $t$ [MWh]
 *  $|f_{l,t}|$: Absolute value of transmission flow per line $l$ in each time step $t$ [MWh]
 *  $\bar{f}_l$: Transmission capacity per line $l$ [MW]
+
+Storage variables
+
 *  $b_{s,n,t}≥0$: Storage level of storage $s$ at node $n$ in each time step $t$ [MWh]
 *  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MWh]
 *  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MWh]
 *  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MWh]
+
+Voltage angle variables
+
 *  $θ_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 *  $θ'_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 
 ### Objective
-The objective
-$$\mathrm{minimize}_{p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{s,n,t}^{+}, b_{s,n,t}^{-}} (f_1 + ... + f_7)$$
+The objective is
+
+$$\mathrm{minimize}_{p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{s,n,t}^{+}, b_{s,n,t}^{-}} (f_1 + ... + f_7),$$
+
 where
 
 $$f_1=\sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n}$$
@@ -82,7 +98,7 @@ $$f_5=\sum_{l,t} C_l^F ⋅ |f_{l,t}| τ_{t}$$
 
 $$f_6=\sum_{s,n} I_s^S \bar{b}_{s,n}$$
 
-$$f_7=\sum_{s,n,t} C_s^S (b_{s,n,t}^{+}+d_{s,n,t}^{-}) τ_{t}$$
+$$f_7=\sum_{s,n,t} C_s^S (b_{s,n,t}^{+}+b_{s,n,t}^{-}) τ_{t}$$
 
 
 ### Constraints

@@ -7,6 +7,18 @@ The library is authored by *Lucas Condeixa*, *Fabricio Oliveira*, and *Jaan Toll
 ## Usage
 Inside the `examples` directory, we have [`run.jl`](./examples/run.jl) file, which demonstrates the usage of this library by running the example [instance](./examples/instance).
 
+```julia
+using JuMP
+using EnergySystemModel
+
+parameters = load_parameters("instance")
+specs = Specs(true, true, false, false)
+model = energy_system_model(parameters, specs)
+
+using Gurobi
+optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
+optimize!(model, optimizer)
+```
 
 ## Installation
 This library can be installed directly from GitHub
@@ -29,7 +41,7 @@ Before we can run the `examples/run.jl` script, we require an optimizer for solv
 pkg> add GLPK
 ```
 
-Alternatively, you could choose to install a different solver. In this case, you need to modify the code inside `run.jl` file. Now, we can run the script.
+Alternatively, you could choose to install a different solver such as Gurobi, a powerful commercial solver. In this case, you need to modify the code inside `run.jl` file. Now, we can run the script.
 ```bash
 julia run.jl
 ```
