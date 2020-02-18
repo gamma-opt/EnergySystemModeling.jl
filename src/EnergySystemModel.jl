@@ -4,21 +4,27 @@ using JuMP, JSON, CSV, DataFrames
 
 export Specs, Parameters, load_parameters, energy_system_model
 
-annuity(n, r) = (1 - (1 + r)^(-n)) / r
+"""Immediate formula for the present value of an annuity.
+
+# Arguments
+* `n::Integer`: Number of payments.
+* `r::AbstractFloat`: Interest rate.
+"""
+annuity(n::Integer, r::AbstractFloat) = (1 - (1 + r)^(-n)) / r
 
 """Input indices and parameters for the model."""
 struct Parameters
-    G::Array{Int}
-    G_r::Array{Int}
-    N::Array{Int}
-    L::Array{Array{Int}}
-    T::Array{Int}
-    S::Array{Int}
+    G::Array{Integer}
+    G_r::Array{Integer}
+    N::Array{Integer}
+    L::Array{Array{Integer}}
+    T::Array{Integer}
+    S::Array{Integer}
     κ::AbstractFloat
     C::AbstractFloat
     C̄::AbstractFloat
-    τ::Int
-    τ_t::Array{Int}
+    τ::Integer
+    τ_t::Array{Integer}
     Q_gn::Array{AbstractFloat, 2}
     A_gnt::Array{AbstractFloat, 3}
     D_nt::Array{AbstractFloat, 2}
@@ -81,6 +87,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     κ = constants["kappa"]
     C = constants["C"]
     C̄ = constants["C_bar"]
+    interest_rate = constants["interest_rate"]
 
     # Load time clustered parameters
     τ_t = ones(length(T))
@@ -96,12 +103,10 @@ function load_parameters(instance_path::AbstractString):: Parameters
         A_gnt[2, n, :] = df.Avail_Sol
     end
 
-    r = 0.05
-
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
         CSV.read |> DataFrame
-    I_g = technology.cost ./ annuity.(technology.lifetime, r)
+    I_g = technology.cost ./ annuity.(technology.lifetime, interest_rate)
     M_g = technology.M
     C_g = technology.fuel_cost_1 ./ technology.fuel_cost_2 ./ 1000
     r⁻_g = technology.r_minus
@@ -112,7 +117,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
         CSV.read |> DataFrame
     M_l = transmission.M
     I_l = (transmission.cost .* transmission.dist .+ M_l) ./
-          annuity.(transmission.lifetime, r)
+          annuity.(transmission.lifetime, interest_rate)
     C_l = transmission.C
     B_l = transmission.B
 
@@ -120,7 +125,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     storage = joinpath(instance_path, "storage.csv") |>
         CSV.read |> DataFrame
     ξ_s = storage.xi
-    I_s = storage.cost ./ annuity.(storage.lifetime, r)
+    I_s = storage.cost ./ annuity.(storage.lifetime, interest_rate)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
