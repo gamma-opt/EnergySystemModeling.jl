@@ -12,7 +12,7 @@ end
 function plot_generation_dispatch(p_gnt, p̄_gn, G, n, T)
     p = plot()
     for g in G
-        plot!(p, T, [p_gnt[g, 1, t] for t in T],
+        plot!(p, T, [p_gnt[g, n, t] for t in T],
               alpha=0.3,
               xlabel=L"t",
               ylabel=L"p_{g,n,t}")
@@ -29,9 +29,9 @@ end
 
 function plot_transmission_flow(f_lt, f̄_l, l, T)
     p = plot(T, [f_lt[l, t] for t in T],
-         xlabel=L"t",
-         ylabel=L"f_{l,t}",
-         alpha=0.3)
+             xlabel=L"t",
+             ylabel=L"f_{l,t}",
+             alpha=0.3)
     plot!(p, T, [f̄_l[l] for t in T])
     return p
 end
@@ -57,8 +57,8 @@ end
 
 function plot_storage_capacities(b̄_sn, S, n)
     bar(S, [b̄_sn[s, n] for s in S],
-       xlabel=L"s",
-       ylabel=L"b̄_{s,n}")
+        xlabel=L"s",
+        ylabel=L"b̄_{s,n}")
 end
 
 # Overload functions for signature: parameters::Parameters, model::Model, ...

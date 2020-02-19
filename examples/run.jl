@@ -16,3 +16,32 @@ model = energy_system_model(parameters, specs)
 using Gurobi
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
 optimize!(model, optimizer)
+
+@info "Plotting"
+using Plots
+output = "output"
+if !ispath(output)
+    mkdir(output)
+end
+
+savefig(plot_objective_values(model::Model),
+        joinpath(output, "objectives.svg"))
+
+for n in parameters.N
+    savefig(plot_generation_dispatch(parameters, model, n),
+            joinpath(output, "generation_dispatch_n$n.svg"))
+    savefig(plot_generation_capacities(parameters, model, n),
+            joinpath(output, "generation_capacities_n$n.svg"))
+    savefig(plot_storage(parameters, model, n),
+            joinpath(output, "storage_n$n.svg"))
+    savefig(plot_storage_capacities(parameters, model, n),
+           joinpath(output, "storage_capacities_n$n.svg"))
+end
+
+for l in 1:length(parameters.L)
+    savefig(plot_transmission_flow(parameters, model, l),
+            joinpath(output, "transmission_flow_l$l.svg"))
+end
+
+savefig(plot_transmission_capacities(parameters, model),
+        joinpath(output, "transmission_capacities.svg"))
