@@ -1,7 +1,7 @@
 using JuMP, Plots, LaTeXStrings
 
 function plot_generation_dispatch(p_gnt, p̄_gn, G, n, T)
-    p = plot()
+    p = plot(legend=false)
     for g in G
         plot!(p, T, [p_gnt[g, n, t] for t in T],
               alpha=0.3,
@@ -15,14 +15,16 @@ end
 function plot_generation_capacities(p̄_gn, G, n)
     bar(G, [p̄_gn[g, n] for g in G],
         xlabel=L"g",
-        ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}")
+        ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
+        legend=false)
 end
 
 function plot_transmission_flow(f_lt, f̄_l, l, T)
     p = plot(T, [f_lt[l, t] for t in T],
              xlabel=L"t",
              ylabel=L"f_{l,t}\,\mathrm{[MWh]}",
-             alpha=0.3)
+             alpha=0.3,
+             legend=false)
     plot!(p, T, [f̄_l[l] for t in T])
     return p
 end
@@ -31,11 +33,12 @@ function plot_transmission_capacities(f̄_l, L)
     L′ = 1:length(L)
     bar(L′, [f̄_l[l] for l in L′],
         xlabel=L"l",
-        ylabel=L"\bar{f}_l\,\mathrm{[MW]}")
+        ylabel=L"\bar{f}_l\,\mathrm{[MW]}",
+        legend=false)
 end
 
 function plot_storage(b_snt, b̄_sn, S, n, T)
-    p = plot()
+    p = plot(legend=false)
     for s in S
         plot!(p, T, [b_snt[s, n, t] for t in T],
               xlabel=L"t",
@@ -49,7 +52,8 @@ end
 function plot_storage_capacities(b̄_sn, S, n)
     bar(S, [b̄_sn[s, n] for s in S],
         xlabel=L"s",
-        ylabel=L"b̄_{s,n}\,\mathrm{[MW]}")
+        ylabel=L"b̄_{s,n}\,\mathrm{[MW]}",
+        legend=false)
 end
 
 # Overload functions for signature: parameters::Parameters, model::Model, ...
@@ -62,7 +66,8 @@ function plot_objective_values(model::Model)
     bar(fs, vs,
         xlabel="Objective function",
         ylabel="EUR",
-        title=title)
+        title=title,
+        legend=false)
 end
 
 """Plot generation dispatch."""

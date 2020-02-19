@@ -3,6 +3,12 @@ using Logging, JuMP
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModel
 
+@info "Create output directory"
+output = "output"
+if !ispath(output)
+    mkdir(output)
+end
+
 @info "Loading parameters"
 parameters = load_parameters("instance")
 specs = Specs(true, true, false, false)
@@ -14,15 +20,12 @@ model = energy_system_model(parameters, specs)
 # using GLPK
 # optimizer = with_optimizer(GLPK.Optimizer, tm_lim = 60000)
 using Gurobi
-optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
+optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60,
+                           LogFile=joinpath(output, "gurobi.log"))
 optimize!(model, optimizer)
 
 @info "Plotting"
 using Plots
-output = "output"
-if !ispath(output)
-    mkdir(output)
-end
 
 savefig(plot_objective_values(model::Model),
         joinpath(output, "objectives.svg"))
