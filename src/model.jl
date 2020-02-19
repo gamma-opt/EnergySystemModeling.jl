@@ -1,12 +1,15 @@
 using JuMP, JSON, CSV, DataFrames
 
-"""Immediate formula for the present value of an annuity.
+"""Equivalent annual cost (EAC)
 
 # Arguments
+* `cost::Real`: Net present value of a project.
 * `n::Integer`: Number of payments.
-* `r::AbstractFloat`: Interest rate.
+* `r::Real`: Interest rate.
 """
-present_annuity(n::Integer, r::AbstractFloat) = (1 - (1 + r)^(-n)) / r
+function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
+    cost / ((1 - (1 + r)^(-n)) / r)
+end
 
 """Input indices and parameters for the model."""
 struct Parameters
@@ -102,7 +105,9 @@ function load_parameters(instance_path::AbstractString):: Parameters
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
         CSV.read |> DataFrame
-    I_g = technology.cost ./ present_annuity.(technology.lifetime, interest_rate)
+    # I_g = technology.cost ./ present_annuity_factor.(technology.lifetime, interest_rate)
+    I_g = equivalent_annual_cost.(
+              technology.cost, technology.lifetime, interest_rate)
     M_g = technology.M
     C_g = technology.fuel_cost_1 ./ technology.fuel_cost_2 ./ 1000
     r⁻_g = technology.r_minus
@@ -112,8 +117,10 @@ function load_parameters(instance_path::AbstractString):: Parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
         CSV.read |> DataFrame
     M_l = transmission.M
-    I_l = (transmission.cost .* transmission.dist .+ M_l) ./
-          present_annuity.(transmission.lifetime, interest_rate)
+    # I_l = (transmission.cost .* transmission.dist .+ M_l) ./
+    #       present_annuity_factor.(transmission.lifetime, interest_rate)
+    I_l = equivalent_annual_cost.(transmission.cost .* transmission.dist .+ M_l,
+                                  transmission.lifetime, interest_rate)
     C_l = transmission.C
     B_l = transmission.B
 
@@ -121,7 +128,8 @@ function load_parameters(instance_path::AbstractString):: Parameters
     storage = joinpath(instance_path, "storage.csv") |>
         CSV.read |> DataFrame
     ξ_s = storage.xi
-    I_s = storage.cost ./ present_annuity.(storage.lifetime, interest_rate)
+    # I_s = storage.cost ./ present_annuity_factor.(storage.lifetime, interest_rate)
+    I_s = equivalent_annual_cost.(storage.cost, storage.lifetime, interest_rate)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 

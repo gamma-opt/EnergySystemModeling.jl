@@ -70,9 +70,9 @@ Transmission variables
 Storage variables
 
 *  $b_{s,n,t}≥0$: Storage level of storage $s$ at node $n$ in each time step $t$ [MWh]
-*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MWh]
-*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MWh]
-*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MWh]
+*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MW]
+*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MW]
+*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MW]
 
 Voltage angle variables
 
@@ -84,7 +84,7 @@ The objective is
 
 $$\mathrm{minimize}_{p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{s,n,t}^{+}, b_{s,n,t}^{-}} (f_1 + ... + f_7),$$
 
-where
+where the individual objectives are
 
 $$f_1=\sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n}$$
 
@@ -193,11 +193,28 @@ The parameters naming convention is documented in the parameters section.
 
 
 ## API
+### Model
 ```@docs
 Parameters
 Specs
 load_parameters
 energy_system_model
+```
+
+### Plotting
+```@docs
+plot_objective_values
+plot_generation_dispatch
+plot_generation_capacities
+plot_transmission_flow
+plot_transmission_capacities
+plot_storage
+plot_storage_capacities
+```
+
+### Utility
+```@docs
+equivalent_annual_cost
 ```
 
 ## References

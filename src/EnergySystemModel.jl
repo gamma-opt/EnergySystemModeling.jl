@@ -1,7 +1,11 @@
 module EnergySystemModel
 
 include("model.jl")
-export Specs, Parameters, load_parameters, energy_system_model
+export Specs,
+    Parameters,
+    load_parameters,
+    energy_system_model,
+    equivalent_annual_cost
 
 include("plotting.jl")
 export plot_objective_values,
