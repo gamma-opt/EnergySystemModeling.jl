@@ -9,7 +9,8 @@ using JuMP, JSON, CSV, DataFrames
 * `r::Real`: Interest rate.
 """
 function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
-    cost / ((1 - (1 + r)^(-n)) / r)
+    factor = if iszero(r) n else (1 - (1 + r)^(-n)) / r end
+    cost / factor
 end
 
 """Input indices and parameters for the model."""
@@ -134,6 +135,19 @@ function load_parameters(instance_path::AbstractString):: Parameters
     return Parameters(
         G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
+end
+
+"""Save results
+
+# Arguments
+
+- `parameters::Parameters`
+- `model::Model`
+- `output_path::AbstractString`
+"""
+function save_results(parameters::Parameters, model::Model,
+                      output_path::AbstractString)
+    # TODO:
 end
 
 """Creates the energy system model. Returns JuMP model.
