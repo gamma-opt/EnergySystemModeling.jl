@@ -5,6 +5,13 @@ Documentation for EnergySystemModel.jl
 ## Model
 Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. The units are expressed in the square brackets.
 
+### Utility
+We will calculate annualised costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula.
+
+$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},$$
+
+where $c$ is the net present cost of the project, $n$ is the number of periods and $r$ is the interest rate.
+
 ### Indices and Sets
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
@@ -19,6 +26,7 @@ Constant parameters
 *  $κ∈[0,1]$: Renewables participation required by the system
 *  $C$: Shedding cost [€/MWh]
 *  $\bar{C}$: Shedding capacity [€/MWh]
+*  $r≥0$: Interest rate
 
 Time clustered parameters
 
