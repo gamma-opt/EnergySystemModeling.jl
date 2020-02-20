@@ -86,7 +86,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
     κ = constants["kappa"]
     C = constants["C"]
     C̄ = constants["C_bar"]
-    interest_rate = constants["interest_rate"]
+    interest_rate = constants["r"]
 
     # Load time clustered parameters
     τ_t = ones(length(T))
