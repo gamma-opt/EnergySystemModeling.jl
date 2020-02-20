@@ -8,7 +8,7 @@ Mathematical reference for the energy system model. The model presented here is 
 ### Utility
 We will calculate annualised costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula.
 
-$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},$$
+$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n$$
 
 where $c$ is the net present cost of the project, $n$ is the number of payments and $r$ is the interest rate.
 
@@ -38,22 +38,22 @@ Time clustered parameters
 
 Generation technology parameters
 
-*  $I_g^G$: Annualised investment cost for generation per MW of technology $g$ [€/MW]
+*  $I_g^G$: Annualised investment cost for generation per MW of technology $g$ [€/MW]. Calculated as $I_g^G=EAC(c_g, t_g, r)$ where $c_g$ is the cost and $t_g$ is lifetime of technology $g$.
 *  $M_g^G$: Annualised maintenance cost for generation per MW of technology $g$ [€/MW]
-*  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]
+*  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]. Calculated as $c_g/c'_g/1000$ where $c_g$ is fuel cost 1 and $c'_g$ fuel cost 2 of technology $g.$
 *  $r_g^{-}$: Relative ramp-down limit of technology $g$
 *  $r_g^{+}$: Relative ramp-up limit of technology $g$
 
 Transmission parameters
 
-*  $I_l^F$: Annualised investment cost for transmission per line $l$ [€/MW]
+*  $I_l^F$: Annualised investment cost for transmission per line $l$ [€/MW]. Calculated as $I_l^F=EAC(c_l⋅d_l + M_l^F, t_l, r)$ where $c_l$ is cost per kilometer and $d_l$ distance in kilometers, $t_l$ the lifetime of transmission line $l.$
 *  $M_l^F$: Annualised maintenance cost for transmission per line $l$ [€/MW]
 *  $C_l^F$: Transmission cost per line $l$ [€/MWh]
 *  $B_l$: Susceptance per line $l$
 
 Storage parameters
 
-*  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MWh]
+*  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MWh]. Calculated as $I_s^S=EAC(c_s, t_s, r)$ where $c_s$ is the cost and $t_s$ the lifetime of storage $s.$
 *  $C_s^S$: Storage operational cost of storage technology $s$ [€/MW]
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
 *  $ξ_s$: Round-trip efficiency of storage technology $s$
