@@ -1,13 +1,15 @@
 using JuMP, Plots, LaTeXStrings
 
 function plot_generation_dispatch(p_gnt, p̄_gn, G, n, T)
-    p = plot(legend=false)
+    p = plot(legend=:outertopright)
     for g in G
         plot!(p, T, [p_gnt[g, n, t] for t in T],
               alpha=0.3,
               xlabel=L"t",
-              ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}")
-        plot!(p, T, [p̄_gn[g, n] for t in T])
+              ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+              label="g$g")
+        plot!(p, T, [p̄_gn[g, n] for t in T],
+              label="")
     end
     return p
 end
@@ -54,6 +56,17 @@ function plot_storage_capacities(b̄_sn, S, n)
         xlabel=L"s",
         ylabel=L"b̄_{s,n}\,\mathrm{[MW]}",
         legend=false)
+end
+
+function plot_loss_of_load(σ_nt, N, T)
+    p = plot(legend=:outertopright)
+    for n in N
+        plot!(p, T, [σ_nt[n, t] for t in T],
+              xlabel="t",
+              ylabel=L"σ_{n,t}",
+              label="n$n")
+    end
+    return p
 end
 
 # Overload functions for signature: parameters::Parameters, model::Model, ...
@@ -108,4 +121,9 @@ end
 function plot_storage_capacities(
         parameters::Parameters, model::Model, n::Integer)
     plot_storage_capacities(value.(model[:b̄_sn]), parameters.S, n)
+end
+
+"""Plot loss of load."""
+function plot_loss_of_load(parameters::Parameters, model::Model)
+    plot_loss_of_load(value.(model[:σ_nt]), parameters.N, parameters.T)
 end

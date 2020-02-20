@@ -48,3 +48,6 @@ end
 
 savefig(plot_transmission_capacities(parameters, model),
         joinpath(output, "transmission_capacities.svg"))
+
+savefig(plot_loss_of_load(parameters, model),
+        joinpath(output, "loss_of_load.svg"))

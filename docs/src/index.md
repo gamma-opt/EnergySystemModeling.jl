@@ -218,6 +218,7 @@ plot_transmission_flow
 plot_transmission_capacities
 plot_storage
 plot_storage_capacities
+plot_loss_of_load
 ```
 
 ### Utility
