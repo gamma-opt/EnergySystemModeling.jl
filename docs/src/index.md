@@ -10,7 +10,7 @@ We will calculate annualised costs using [*equivalent annual cost (EAC)*](https:
 
 $$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},$$
 
-where $c$ is the net present cost of the project, $n$ is the number of periods and $r$ is the interest rate.
+where $c$ is the net present cost of the project, $n$ is the number of payments and $r$ is the interest rate.
 
 ### Indices and Sets
 *  $g∈G$: Generation technologies
