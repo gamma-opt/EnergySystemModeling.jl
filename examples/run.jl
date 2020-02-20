@@ -11,7 +11,12 @@ end
 
 @info "Loading parameters"
 parameters = load_parameters("instance")
-specs = Specs(true, true, false, false)
+specs = Specs(
+    renewable_target=true,
+    storage=true,
+    ramping=false,
+    voltage_angles=false
+)
 
 @info "Creating the energy system model"
 model = energy_system_model(parameters, specs)

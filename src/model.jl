@@ -1,3 +1,4 @@
+import Base.@kwdef
 using JuMP, JSON, CSV, DataFrames
 
 """Equivalent annual cost (EAC)
@@ -52,7 +53,7 @@ are not specified are included by default.
 - `ramping::Bool`: Whether to include ramping constraints.
 - `voltage_angles::Bool`: Whether to include voltage angle constraints.
 """
-struct Specs
+@kwdef struct Specs
     renewable_target::Bool
     storage::Bool
     ramping::Bool
