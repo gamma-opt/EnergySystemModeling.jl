@@ -206,6 +206,7 @@ The parameters naming convention is documented in the parameters section.
 Parameters
 Specs
 load_parameters
+save_results
 energy_system_model
 ```
 

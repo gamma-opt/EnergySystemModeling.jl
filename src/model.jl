@@ -137,7 +137,7 @@ function load_parameters(instance_path::AbstractString):: Parameters
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
 end
 
-"""Save results
+"""Save results, including parameter, variable, and objective values.
 
 # Arguments
 

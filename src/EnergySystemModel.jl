@@ -4,6 +4,7 @@ include("model.jl")
 export Specs,
     Parameters,
     load_parameters,
+    save_results,
     energy_system_model,
     equivalent_annual_cost
 
