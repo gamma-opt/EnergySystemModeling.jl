@@ -11,8 +11,13 @@ Inside the `examples` directory, we have [`run.jl`](./examples/run.jl) file, whi
 using JuMP
 using EnergySystemModel
 
-parameters = load_parameters("instance")
-specs = Specs(true, true, false, false)
+parameters = load_parameters(joinpath("examples", "instance"))
+specs = Specs(
+    renewable_target=true,
+    storage=true,
+    ramping=false,
+    voltage_angles=false
+)
 model = energy_system_model(parameters, specs)
 
 using Gurobi
