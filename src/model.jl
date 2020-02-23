@@ -1,5 +1,8 @@
-import Base.@kwdef
 using JuMP, JSON, CSV, DataFrames
+
+const variables = [:p_gnt, :p̄_gn, :σ_nt, :f_lt, :f_lt_abs, :f̄_l, :b_snt,
+                   :b̄_sn, :b⁺_snt, :b⁻_snt, :θ_nt, :θ′_nt]
+const objectives = [:f1, :f2, :f3, :f4, :f5, :f6, :f7]
 
 """Equivalent annual cost (EAC)
 
@@ -54,7 +57,7 @@ are not specified are included by default.
 - `ramping::Bool`: Whether to include ramping constraints.
 - `voltage_angles::Bool`: Whether to include voltage angle constraints.
 """
-@kwdef struct Specs
+Base.@kwdef struct Specs
     renewable_target::Bool
     storage::Bool
     ramping::Bool
@@ -137,6 +140,9 @@ function load_parameters(instance_path::AbstractString):: Parameters
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
 end
 
+data(a::Number) = a
+data(a::JuMP.Containers.DenseAxisArray) = a.data
+
 """Save results, including parameter, variable, and objective values.
 
 # Arguments
@@ -147,7 +153,24 @@ end
 """
 function save_results(parameters::Parameters, model::Model,
                       output_path::AbstractString)
-    # TODO:
+    # Save parameter values
+    open(joinpath(output_path, "parameters.json"), "w") do io
+        JSON.print(io, parameters)
+    end
+
+    # Save variable values
+    d1 = Dict(variable => value.(model[variable]) |> data
+              for variable in variables)
+    open(joinpath(output_path, "variables.json"), "w") do io
+        JSON.print(io, d1)
+    end
+
+    # Save objective values
+    d2 = Dict(objective => value.(model[objective]) |> data
+              for objective in objectives)
+    open(joinpath(output_path, "objectives.json"), "w") do io
+        JSON.print(io, d2)
+    end
 end
 
 """Creates the energy system model. Returns JuMP model.
@@ -158,9 +181,6 @@ end
 - `specs::Specs`
 """
 function energy_system_model(parameters::Parameters, specs::Specs)::Model
-    # Create an instance of JuMP model.
-    model = Model()
-
     # Parameters
     G = parameters.G
     G_r = parameters.G_r
@@ -192,6 +212,9 @@ function energy_system_model(parameters::Parameters, specs::Specs)::Model
 
     # Indices of lines L
     L′ = 1:length(L)
+
+    # Create an instance of JuMP model.
+    model = Model()
 
     ## -- Variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)

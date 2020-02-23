@@ -29,6 +29,9 @@ optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60,
                            LogFile=joinpath(output, "gurobi.log"))
 optimize!(model, optimizer)
 
+@info "Save results"
+save_results(parameters, model, output)
+
 @info "Plotting"
 using Plots
 
