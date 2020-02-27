@@ -30,7 +30,7 @@ optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60,
 optimize!(model, optimizer)
 
 @info "Save results"
-save_results(parameters, model, output)
+save_results(specs, parameters, model, output)
 
 @info "Plotting"
 using Plots

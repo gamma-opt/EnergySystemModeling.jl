@@ -23,6 +23,8 @@ model = energy_system_model(parameters, specs)
 using Gurobi
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
 optimize!(model, optimizer)
+
+save_results(specs, model, parameters, joinpath("examples", "output"))
 ```
 
 ## Installation

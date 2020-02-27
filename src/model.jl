@@ -152,20 +152,28 @@ end
 data(a::Number) = a
 data(a::JuMP.Containers.DenseAxisArray) = a.data
 
-"""Save results, including parameter, variable, and objective values. Creates following JSON files to `output_path`.
+"""Save results, including parameter, variable, and objective values. Writes
+the following JSON files to `output_path`.
 
+- `specs.json`
 - `parameters.json`
 - `variables.json`
 - `objectives.json`
 
 # Arguments
 
+- `specs`::Specs
 - `parameters::Parameters`
 - `model::Model`
 - `output_path::AbstractString`
 """
-function save_results(parameters::Parameters, model::Model,
+function save_results(specs::Specs, parameters::Parameters, model::Model,
                       output_path::AbstractString)
+    # Save specs values
+    open(joinpath(output_path, "specs.json"), "w") do io
+        JSON.print(io, specs)
+    end
+
     # Save parameter values
     open(joinpath(output_path, "parameters.json"), "w") do io
         JSON.print(io, parameters)
