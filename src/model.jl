@@ -64,8 +64,17 @@ Base.@kwdef struct Specs
     voltage_angles::Bool
 end
 
-"""Loads the instance parameters from file. Returns an instance of Parameters
-struct.
+"""Loads parameter values for an instance from CSV and JSON files and returns Parameters type. Reads the following files from `instance_path`.
+
+- `indices.json` with fields `G`, `G_r`, `N`, `L`, `T`, `S`
+- `constants.json` with fields `kappa`, `C`, `C_bar`, `r`
+- `nodes/` -- Time clustered data from the nodes with fields `Dem_Inc`, `Load_mod`, `Max_Load`, `Avail_Win`, `Avail_Sol`
+  - `1.csv`
+  - `2.csv`
+  - ...
+- `technology.csv` with fields `cost`, `lifetime`, `M`, `fuel_cost_1`, `fuel_cost_2`, `r_minus`, `r_plus`
+- `transmission.csv` with fields `M`, `cost`, `dist`, `lifetime`, `C`, `B`
+- `storage.csv` with fields `xi`, `cost`, `lifetime`, `C`, `b0_1, ..., b0_n`
 
 # Arguments
 
@@ -143,7 +152,11 @@ end
 data(a::Number) = a
 data(a::JuMP.Containers.DenseAxisArray) = a.data
 
-"""Save results, including parameter, variable, and objective values.
+"""Save results, including parameter, variable, and objective values. Creates following JSON files to `output_path`.
+
+- `parameters.json`
+- `variables.json`
+- `objectives.json`
 
 # Arguments
 

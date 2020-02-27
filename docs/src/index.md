@@ -1,18 +1,14 @@
-# EnergySystemModel.jl
-Documentation for EnergySystemModel.jl
-
-
-## Model
+# Energy System Model
 Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. The units are expressed in the square brackets.
 
-### Utility
+## Utility
 We will calculate annualised costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula.
 
 $$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n$$
 
 where $c$ is the net present cost of the project, $n$ is the number of payments and $r$ is the interest rate.
 
-### Indices and Sets
+## Indices and Sets
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
 *  $n∈N$: Nodes
@@ -20,7 +16,7 @@ where $c$ is the net present cost of the project, $n$ is the number of payments 
 *  $t∈T$: Time steps, depending on the number of clusters per month
 *  $s∈S$: Storage technologies
 
-### Parameters
+## Parameters
 Constant parameters
 
 *  $κ∈[0,1]$: Renewables participation required by the system
@@ -87,7 +83,7 @@ Voltage angle variables
 *  $θ_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 *  $θ'_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 
-### Objective
+## Objective
 The objective is
 
 $$\mathrm{minimize}_{p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{s,n,t}^{+}, b_{s,n,t}^{-}} (f_1 + ... + f_7),$$
@@ -109,8 +105,8 @@ $$f_6=\sum_{s,n} I_s^S \bar{b}_{s,n}$$
 $$f_7=\sum_{s,n,t} C_s^S (b_{s,n,t}^{+}+b_{s,n,t}^{-}) τ_{t}$$
 
 
-### Constraints
-#### Balance
+## Constraints
+### Balance
 Energy balance $t=1$
 
 $$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)=l∈L∣i=n} f_{l,t} + ξ_s b_{s,n,t} = D_{n,t},\quad ∀s,n,t=1$$
@@ -119,7 +115,7 @@ Energy balance $t>1$
 
 $$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)=l∈L∣i=n} f_{l,t} + ξ_s (b_{s,n,t}-b_{s,n,t-1}) = D_{n,t},\quad ∀s,n,t>1$$
 
-#### Generation / Shedding
+### Generation / Shedding
 Generation capacity
 
 $$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t$$
@@ -132,7 +128,7 @@ Shedding upper bound
 
 $$σ_{n,t} ≤ \bar{C} D_{n,t},\quad ∀n,t$$
 
-#### Transmission
+### Transmission
 Transmission capacity
 
 $$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t$$
@@ -145,7 +141,7 @@ $$|f_{l,t}|≥f_{l,t},\quad ∀l,t$$
 
 $$|f_{l,t}|≥-f_{l,t},\quad ∀l,t$$
 
-#### Storage
+### Storage
 Charge and discharge at $t=1$
 
 $$\begin{aligned}
@@ -169,63 +165,17 @@ Storage continuity
 $$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n$$
 
 
-#### Ramping Limits
+### Ramping Limits
 
 $$\begin{aligned}
 p_{g,n,t} - p_{g,n,t-1} &≥ r_g^{+}, \quad ∀g,n,t>1 \\
 p_{g,n,t} - p_{g,n,t-1} &≤ -r_g^{-}, \quad ∀g,n,t>1
 \end{aligned}$$
 
-#### Voltage Angles
+### Voltage Angles
 
 $$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 
-
-## Input
-Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives.
-
-We have `instance` directory, with files:
-
-- `indices.json` -- Indices.
-- `nodes/` -- Time clustered data from the nodes.
-  - `1.csv`
-  - `2.csv`
-  - ...
-- `constants.json` -- Constant parameters.
-- `transmission.csv` -- Transmission parameters.
-- `technology.csv` -- Technology parameters.
-- `storage.csv` -- Storage parameters.
-- `README.md` -- Description about the instance.
-
-The parameters naming convention is documented in the parameters section.
-
-
-## API
-### Model
-```@docs
-Parameters
-Specs
-load_parameters
-save_results
-energy_system_model
-```
-
-### Plotting
-```@docs
-plot_objective_values
-plot_generation_dispatch
-plot_generation_capacities
-plot_transmission_flow
-plot_transmission_capacities
-plot_storage
-plot_storage_capacities
-plot_loss_of_load
-```
-
-### Utility
-```@docs
-equivalent_annual_cost
-```
 
 ## References
 
