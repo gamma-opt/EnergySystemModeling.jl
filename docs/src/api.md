@@ -3,7 +3,9 @@
 ```@docs
 Parameters
 Specs
-load_parameters
+Variables
+Objectives
+Parameters(::AbstractString)
 ```
 
 ## Model

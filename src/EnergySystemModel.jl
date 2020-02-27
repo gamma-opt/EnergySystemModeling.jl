@@ -3,7 +3,8 @@ module EnergySystemModel
 include("model.jl")
 export Specs,
     Parameters,
-    load_parameters,
+    Variables,
+    Objectives,
     save_results,
     energy_system_model,
     equivalent_annual_cost

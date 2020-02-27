@@ -1,9 +1,5 @@
 using JuMP, JSON, CSV, DataFrames
 
-const variables = [:p_gnt, :p̄_gn, :σ_nt, :f_lt, :f_lt_abs, :f̄_l, :b_snt,
-                   :b̄_sn, :b⁺_snt, :b⁻_snt, :θ_nt, :θ′_nt]
-const objectives = [:f1, :f2, :f3, :f4, :f5, :f6, :f7]
-
 """Equivalent annual cost (EAC)
 
 # Arguments
@@ -51,7 +47,6 @@ end
 are not specified are included by default.
 
 # Arguments
-
 - `renewable_target::Bool`: Whether to include renewables target constraint.
 - `storage::Bool`: Whether to include storage constraints.
 - `ramping::Bool`: Whether to include ramping constraints.
@@ -64,7 +59,34 @@ Base.@kwdef struct Specs
     voltage_angles::Bool
 end
 
-"""Loads parameter values for an instance from CSV and JSON files and returns Parameters type. Reads the following files from `instance_path`.
+"""Variable values."""
+struct Variables
+    p_gnt::Array{AbstractFloat, 3}
+    p̄_gn::Array{AbstractFloat, 2}
+    σ_nt::Array{AbstractFloat, 2}
+    f_lt::Array{AbstractFloat, 2}
+    f_lt_abs::Array{AbstractFloat, 2}
+    f̄_l::Array{AbstractFloat}
+    b_snt::Array{AbstractFloat, 3}
+    b̄_sn::Array{AbstractFloat, 2}
+    b⁺_snt::Array{AbstractFloat, 3}
+    b⁻_snt::Array{AbstractFloat, 3}
+    θ_nt::Array{AbstractFloat, 2}
+    θ′_nt::Array{AbstractFloat, 2}
+end
+
+"""Objective values."""
+struct Objectives
+    f1::AbstractFloat
+    f2::AbstractFloat
+    f3::AbstractFloat
+    f4::AbstractFloat
+    f5::AbstractFloat
+    f6::AbstractFloat
+    f7::AbstractFloat
+end
+
+"""Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instance_path`.
 
 - `indices.json` with fields `G`, `G_r`, `N`, `L`, `T`, `S`
 - `constants.json` with fields `kappa`, `C`, `C_bar`, `r`
@@ -77,10 +99,9 @@ end
 - `storage.csv` with fields `xi`, `cost`, `lifetime`, `C`, `b0_1, ..., b0_n`
 
 # Arguments
-
 - `instance_path::AbstractString`: Path to the instance directory.
 """
-function load_parameters(instance_path::AbstractString):: Parameters
+function Parameters(instance_path::AbstractString)
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
 
@@ -144,13 +165,37 @@ function load_parameters(instance_path::AbstractString):: Parameters
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
     # Return Parameters struct
-    return Parameters(
+    Parameters(
         G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
 end
 
 data(a::Number) = a
 data(a::JuMP.Containers.DenseAxisArray) = a.data
+
+"""Extract variable values from model.
+
+# Arguments
+- `model::Model`
+"""
+function Variables(model::Model)
+    d = Dict(variable => value.(model[variable]) |> data
+             for variable in fieldnames(Variables))
+    Variables(d[:p_gnt], d[:p̄_gn], d[:σ_nt], d[:f_lt], d[:f_lt_abs], d[:f̄_l],
+              d[:b_snt], d[:b̄_sn], d[:b⁺_snt], d[:b⁻_snt], d[:θ_nt], d[:θ′_nt])
+end
+
+"""Extract objective values from model.
+
+# Arguments
+- `model::Model`
+"""
+function Objectives(model::Model)
+    d = Dict(objective => value.(model[objective]) |> data
+             for objective in fieldnames(Objectives))
+    Objectives(d[:f1], d[:f2], d[:f3], d[:f4], d[:f5], d[:f6], d[:f7])
+end
+
 
 """Save results, including parameter, variable, and objective values. Writes
 the following JSON files to `output_path`.
@@ -161,14 +206,15 @@ the following JSON files to `output_path`.
 - `objectives.json`
 
 # Arguments
-
-- `specs`::Specs
+- `specs::Specs`
 - `parameters::Parameters`
-- `model::Model`
+- `variables::Variables`
+- `objectives::Objectives`
 - `output_path::AbstractString`
 """
-function save_results(specs::Specs, parameters::Parameters, model::Model,
-                      output_path::AbstractString)
+function save_results(
+        specs::Specs, parameters::Parameters, variables::Variables,
+        objectives::Objectives, output_path::AbstractString)
     # Save specs values
     open(joinpath(output_path, "specs.json"), "w") do io
         JSON.print(io, specs)
@@ -180,24 +226,19 @@ function save_results(specs::Specs, parameters::Parameters, model::Model,
     end
 
     # Save variable values
-    d1 = Dict(variable => value.(model[variable]) |> data
-              for variable in variables)
     open(joinpath(output_path, "variables.json"), "w") do io
-        JSON.print(io, d1)
+        JSON.print(io, variables)
     end
 
     # Save objective values
-    d2 = Dict(objective => value.(model[objective]) |> data
-              for objective in objectives)
     open(joinpath(output_path, "objectives.json"), "w") do io
-        JSON.print(io, d2)
+        JSON.print(io, objectives)
     end
 end
 
 """Creates the energy system model. Returns JuMP model.
 
 # Arguments
-
 - `parameters::Parameters`
 - `specs::Specs`
 """

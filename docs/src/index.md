@@ -200,7 +200,7 @@ $$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 
 
 ## Instance
-Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives. We recommend checking out the example instance in `examples/instance` for reference. We describe the input format in [`load_parameters`](@ref) and the resulting output format in [`save_results`](@ref).
+Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives. We recommend checking out the example instance in `examples/instance` for reference. We describe the input format in [`Parameters`](@ref) and the resulting output format in [`save_results`](@ref).
 
 ## References
 [^1]: Pineda, S., & Morales, J. M. (2018). Chronological time-period clustering for optimal capacity expansion planning with storage. IEEE Transactions on Power Systems, 33(6), 7162–7170. https://doi.org/10.1109/TPWRS.2018.2842093

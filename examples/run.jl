@@ -10,7 +10,7 @@ if !ispath(output)
 end
 
 @info "Loading parameters"
-parameters = load_parameters("instance")
+parameters = Parameters("instance")
 specs = Specs(
     renewable_target=true,
     storage=true,
@@ -22,15 +22,17 @@ specs = Specs(
 model = energy_system_model(parameters, specs)
 
 @info "Optimizing the model"
-# using GLPK
-# optimizer = with_optimizer(GLPK.Optimizer, tm_lim = 60000)
 using Gurobi
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60,
                            LogFile=joinpath(output, "gurobi.log"))
 optimize!(model, optimizer)
 
+@info "Extract results"
+variables = Variables(model)
+objectives = Objectives(model)
+
 @info "Save results"
-save_results(specs, parameters, model, output)
+save_results(specs, parameters, variables, objectives, output)
 
 @info "Plotting"
 using Plots

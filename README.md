@@ -24,7 +24,10 @@ using Gurobi
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
 optimize!(model, optimizer)
 
-save_results(specs, model, parameters, joinpath("examples", "output"))
+variables = Variables(model)
+objectives = Objectives(model)
+save_results(specs, parameters, variables, objectives,
+             joinpath("examples", "output"))
 ```
 
 ## Installation
