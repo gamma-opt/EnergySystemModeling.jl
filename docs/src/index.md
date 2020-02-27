@@ -1,20 +1,24 @@
 # Energy System Model
-Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. The units are expressed in the square brackets.
+Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units using square brackets.
 
 ## Utility
-We will calculate annualised costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula.
+We calculate annualized costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula
 
-$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n$$
+$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n,$$
 
-where $c$ is the net present cost of the project, $n$ is the number of payments and $r$ is the interest rate.
+where $c$ is the net present cost of the project, $n$ is the number of payments, and $r$ is the interest rate.
 
 ## Indices and Sets
+Indices and sets define the different objects and dimensions in the model.
+
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
 *  $n∈N$: Nodes
 *  $l∈L$: Transmission lines, bidimensional vectors $(i,j)$ where $i,j∈N$
 *  $t∈T$: Time steps, depending on the number of clusters per month
 *  $s∈S$: Storage technologies
+
+In the code, we store both indices and parameters in the [`Parameters`](@ref) struct.
 
 ## Parameters
 Constant parameters
@@ -84,28 +88,44 @@ Voltage angle variables
 *  $θ'_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 
 ## Objective
-The objective is
+We define the objective as cost minimization
 
-$$\mathrm{minimize}_{p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{s,n,t}^{+}, b_{s,n,t}^{-}} (f_1 + ... + f_7),$$
+$$\mathrm{minimize}_{p_{g,t}, \bar{p}_g, σ_{t}, f_{l,t}, \bar{f}_l, b_{s,n,t}^{+}, b_{s,n,t}^{-}} (f_1 + ... + f_7).$$
 
-where the individual objectives are
+The individual objectives are defined as follows.
+
+Investment and maintenance cost of generation capacity
 
 $$f_1=\sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n}$$
 
+The operational cost of generation dispatch
+
 $$f_2=\sum_{g,n,t} C_g^G p_{g,t,n} τ_{t}$$
+
+Shedding cost
 
 $$f_3=\sum_{n,t} C σ_{n,t} τ_{t}$$
 
+Investment and maintenance cost of transmission capacity
+
 $$f_4=\sum_{l} (I_l^F+M_l^F) \bar{f}_l$$
+
+The operational cost of transmission flow
 
 $$f_5=\sum_{l,t} C_l^F ⋅ |f_{l,t}| τ_{t}$$
 
+Investment cost of storage capacity
+
 $$f_6=\sum_{s,n} I_s^S \bar{b}_{s,n}$$
+
+The operational cost of storage
 
 $$f_7=\sum_{s,n,t} C_s^S (b_{s,n,t}^{+}+b_{s,n,t}^{-}) τ_{t}$$
 
 
 ## Constraints
+Within the code, we use [`Specs`](@ref) struct to control whether we include certain constraints in the model.
+
 ### Balance
 Energy balance $t=1$
 
@@ -166,6 +186,7 @@ $$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n$$
 
 
 ### Ramping Limits
+Ramping limit up and down
 
 $$\begin{aligned}
 p_{g,n,t} - p_{g,n,t-1} &≥ r_g^{+}, \quad ∀g,n,t>1 \\
@@ -173,10 +194,13 @@ p_{g,n,t} - p_{g,n,t-1} &≤ -r_g^{-}, \quad ∀g,n,t>1
 \end{aligned}$$
 
 ### Voltage Angles
+Faraday law for accounting voltage angles
 
 $$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
 
 
-## References
+## Instance
+Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives. We recommend checking out the example instance in `examples/instance` for reference. We describe the input format in [`load_parameters`](@ref) and the resulting output format in [`save_results`](@ref).
 
+## References
 [^1]: Pineda, S., & Morales, J. M. (2018). Chronological time-period clustering for optimal capacity expansion planning with storage. IEEE Transactions on Power Systems, 33(6), 7162–7170. https://doi.org/10.1109/TPWRS.2018.2842093
