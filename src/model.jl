@@ -3,18 +3,6 @@ using JuMP, JSON, CSV, DataFrames
 """Define energy system model type as JuMP.Model."""
 EnergySystemModel = Model
 
-"""Equivalent annual cost (EAC)
-
-# Arguments
-* `cost::Real`: Net present value of a project.
-* `n::Integer`: Number of payments.
-* `r::Real`: Interest rate.
-"""
-function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
-    factor = if iszero(r) n else (1 - (1 + r)^(-n)) / r end
-    cost / factor
-end
-
 """Input indices and parameters for the model."""
 struct Parameters
     G::Array{Integer}
@@ -87,6 +75,18 @@ struct Objectives
     f5::AbstractFloat
     f6::AbstractFloat
     f7::AbstractFloat
+end
+
+"""Equivalent annual cost (EAC)
+
+# Arguments
+* `cost::Real`: Net present value of a project.
+* `n::Integer`: Number of payments.
+* `r::Real`: Interest rate.
+"""
+function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
+    factor = if iszero(r) n else (1 - (1 + r)^(-n)) / r end
+    cost / factor
 end
 
 """Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instance_path`.
