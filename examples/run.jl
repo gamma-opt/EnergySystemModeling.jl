@@ -19,7 +19,7 @@ specs = Specs(
 )
 
 @info "Creating the energy system model"
-model = energy_system_model(parameters, specs)
+model = EnergySystemModel(parameters, specs)
 
 @info "Optimizing the model"
 using Gurobi, JuMP

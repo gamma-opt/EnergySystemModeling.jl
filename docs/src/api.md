@@ -13,7 +13,7 @@ Objectives(::EnergySystemModel)
 
 ## Model
 ```@docs
-energy_system_model
+EnergySystemModel(::Params, ::Specs)
 ```
 
 ## Output

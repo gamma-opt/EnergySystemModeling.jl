@@ -17,7 +17,7 @@ specs = Specs(
     ramping=false,
     voltage_angles=false
 )
-model = energy_system_model(parameters, specs)
+model = EnergySystemModel(parameters, specs)
 
 using Gurobi, JuMP
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)

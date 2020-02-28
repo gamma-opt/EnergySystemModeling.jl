@@ -7,7 +7,6 @@ export EnergySystemModel,
     Variables,
     Objectives,
     save_results,
-    energy_system_model,
     equivalent_annual_cost
 
 include("plotting.jl")

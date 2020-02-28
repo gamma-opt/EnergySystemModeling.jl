@@ -227,7 +227,7 @@ end
 - `parameters::Params`
 - `specs::Specs`
 """
-function energy_system_model(parameters::Params, specs::Specs)::Model
+function EnergySystemModel(parameters::Params, specs::Specs)
     @unpack G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn =
             parameters
