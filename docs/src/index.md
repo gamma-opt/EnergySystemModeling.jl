@@ -1,4 +1,4 @@
-# Energy System Model
+# Energy System Modeling
 Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units using square brackets.
 
 ## Utility

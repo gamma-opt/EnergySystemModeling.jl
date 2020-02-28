@@ -1,7 +1,8 @@
-module EnergySystemModel
+module EnergySystemModeling
 
 include("model.jl")
-export Specs,
+export EnergySystemModel,
+    Specs,
     Parameters,
     Variables,
     Objectives,

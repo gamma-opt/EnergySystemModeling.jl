@@ -1,7 +1,7 @@
 using Logging, JuMP
 
 push!(LOAD_PATH, dirname(@__DIR__))
-using EnergySystemModel
+using EnergySystemModeling
 
 @info "Create output directory"
 output = "output"

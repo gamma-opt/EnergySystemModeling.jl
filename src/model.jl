@@ -1,5 +1,8 @@
 using JuMP, JSON, CSV, DataFrames
 
+"""Define energy system model type as JuMP.Model."""
+EnergySystemModel = Model
+
 """Equivalent annual cost (EAC)
 
 # Arguments
@@ -176,9 +179,9 @@ data(a::JuMP.Containers.DenseAxisArray) = a.data
 """Extract variable values from model.
 
 # Arguments
-- `model::Model`
+- `model::EnergySystemModel`
 """
-function Variables(model::Model)
+function Variables(model::EnergySystemModel)
     d = Dict(variable => value.(model[variable]) |> data
              for variable in fieldnames(Variables))
     Variables(d[:p_gnt], d[:p̄_gn], d[:σ_nt], d[:f_lt], d[:f_lt_abs], d[:f̄_l],
@@ -188,22 +191,16 @@ end
 """Extract objective values from model.
 
 # Arguments
-- `model::Model`
+- `model::EnergySystemModel`
 """
-function Objectives(model::Model)
+function Objectives(model::EnergySystemModel)
     d = Dict(objective => value.(model[objective]) |> data
              for objective in fieldnames(Objectives))
     Objectives(d[:f1], d[:f2], d[:f3], d[:f4], d[:f5], d[:f6], d[:f7])
 end
 
 
-"""Save results, including parameter, variable, and objective values. Writes
-the following JSON files to `output_path`.
-
-- `specs.json`
-- `parameters.json`
-- `variables.json`
-- `objectives.json`
+"""Write specs, parameters, variables, and objectives into JSON files to `output_path`.
 
 # Arguments
 - `specs::Specs`
@@ -215,28 +212,16 @@ the following JSON files to `output_path`.
 function save_results(
         specs::Specs, parameters::Parameters, variables::Variables,
         objectives::Objectives, output_path::AbstractString)
-    # Save specs values
-    open(joinpath(output_path, "specs.json"), "w") do io
-        JSON.print(io, specs)
-    end
-
-    # Save parameter values
-    open(joinpath(output_path, "parameters.json"), "w") do io
-        JSON.print(io, parameters)
-    end
-
-    # Save variable values
-    open(joinpath(output_path, "variables.json"), "w") do io
-        JSON.print(io, variables)
-    end
-
-    # Save objective values
-    open(joinpath(output_path, "objectives.json"), "w") do io
-        JSON.print(io, objectives)
+    filenames = ["specs", "parameters", "variables", "objectives"]
+    objects = [specs, parameters, variables, objectives]
+    for (filename, object) in zip(filenames, objects)
+        open(joinpath(output_path, "$filename.json"), "w") do io
+            JSON.print(io, object)
+        end
     end
 end
 
-"""Creates the energy system model. Returns JuMP model.
+"""Creates the energy system model.
 
 # Arguments
 - `parameters::Parameters`
@@ -276,7 +261,7 @@ function energy_system_model(parameters::Parameters, specs::Specs)::Model
     L′ = 1:length(L)
 
     # Create an instance of JuMP model.
-    model = Model()
+    model = EnergySystemModel()
 
     ## -- Variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)

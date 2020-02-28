@@ -1,11 +1,14 @@
 # API
 ## Input
 ```@docs
+EnergySystemModel
 Parameters
 Specs
 Variables
 Objectives
 Parameters(::AbstractString)
+Variables(::EnergySystemModel)
+Objectives(::EnergySystemModel)
 ```
 
 ## Model
