@@ -65,8 +65,8 @@ function plot_loss_of_load(σ_nt, N, T)
     p = plot(legend=:outertopright)
     for n in N
         plot!(p, T, [σ_nt[n, t] for t in T],
-              xlabel="t",
-              ylabel=L"σ_{n,t}",
+              xlabel=L"t",
+              ylabel=L"\sigma_{n,t}",
               label="n$n")
     end
     return p
