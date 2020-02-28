@@ -1,4 +1,4 @@
-using Logging, JuMP
+using Logging
 
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
@@ -10,7 +10,7 @@ if !ispath(output)
 end
 
 @info "Loading parameters"
-parameters = Parameters("instance")
+parameters = Params("instance")
 specs = Specs(
     renewable_target=true,
     storage=true,
@@ -22,7 +22,7 @@ specs = Specs(
 model = energy_system_model(parameters, specs)
 
 @info "Optimizing the model"
-using Gurobi
+using Gurobi, JuMP
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60,
                            LogFile=joinpath(output, "gurobi.log"))
 optimize!(model, optimizer)

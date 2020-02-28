@@ -2,11 +2,11 @@
 ## Input
 ```@docs
 EnergySystemModel
-Parameters
+Params
 Specs
 Variables
 Objectives
-Parameters(::AbstractString)
+Params(::AbstractString)
 Variables(::EnergySystemModel)
 Objectives(::EnergySystemModel)
 ```

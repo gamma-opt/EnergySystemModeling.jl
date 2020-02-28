@@ -3,7 +3,7 @@ module EnergySystemModeling
 include("model.jl")
 export EnergySystemModel,
     Specs,
-    Parameters,
+    Params,
     Variables,
     Objectives,
     save_results,

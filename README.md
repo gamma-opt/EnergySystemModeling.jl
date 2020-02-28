@@ -8,10 +8,9 @@ The library is authored by *Lucas Condeixa*, *Fabricio Oliveira*, and *Jaan Toll
 Inside the `examples` directory, we have [`run.jl`](./examples/run.jl) file, which demonstrates the usage of this library by running the example [instance](./examples/instance).
 
 ```julia
-using JuMP
 using EnergySystemModeling
 
-parameters = load_parameters(joinpath("examples", "instance"))
+parameters = Params(joinpath("examples", "instance"))
 specs = Specs(
     renewable_target=true,
     storage=true,
@@ -20,7 +19,7 @@ specs = Specs(
 )
 model = energy_system_model(parameters, specs)
 
-using Gurobi
+using Gurobi, JuMP
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
 optimize!(model, optimizer)
 

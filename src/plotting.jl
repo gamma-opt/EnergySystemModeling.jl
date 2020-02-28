@@ -72,7 +72,7 @@ function plot_loss_of_load(σ_nt, N, T)
     return p
 end
 
-# Overload functions for signature: parameters::Parameters, model::Model, ...
+# Overload functions for signature: parameters::Params, model::Model, ...
 
 """Plot objective value and individual objective values."""
 function plot_objective_values(objectives::Objectives)
@@ -88,43 +88,43 @@ end
 
 """Plot generation dispatch."""
 function plot_generation_dispatch(
-        parameters::Parameters, variables::Variables, n::Integer)
+        parameters::Params, variables::Variables, n::Integer)
     plot_generation_dispatch(
         variables.p_gnt, variables.p̄_gn, parameters.G, n, parameters.T)
 end
 
 """Plot generation capacities."""
 function plot_generation_capacities(
-        parameters::Parameters, variables::Variables, n::Integer)
+        parameters::Params, variables::Variables, n::Integer)
     plot_generation_capacities(variables.p̄_gn, parameters.G, n)
 end
 
 """Plot transmission flow."""
 function plot_transmission_flow(
-        parameters::Parameters, variables::Variables, l::Integer)
+        parameters::Params, variables::Variables, l::Integer)
     plot_transmission_flow(
         variables.f_lt, variables.f̄_l, l, parameters.T)
 end
 
 """Plot transmission capacities."""
 function plot_transmission_capacities(
-        parameters::Parameters, variables::Variables)
+        parameters::Params, variables::Variables)
     plot_transmission_capacities(variables.f̄_l, parameters.L)
 end
 
 """Plot storage."""
-function plot_storage(parameters::Parameters, variables::Variables, n::Integer)
+function plot_storage(parameters::Params, variables::Variables, n::Integer)
     plot_storage(
         variables.b_snt, variables.b̄_sn, parameters.S, n, parameters.T)
 end
 
 """Plot storage capacities."""
 function plot_storage_capacities(
-        parameters::Parameters, variables::Variables, n::Integer)
+        parameters::Params, variables::Variables, n::Integer)
     plot_storage_capacities(variables.b̄_sn, parameters.S, n)
 end
 
 """Plot loss of load."""
-function plot_loss_of_load(parameters::Parameters, variables::Variables)
+function plot_loss_of_load(parameters::Params, variables::Variables)
     plot_loss_of_load(variables.σ_nt, parameters.N, parameters.T)
 end

@@ -1,10 +1,10 @@
-using JuMP, JSON, CSV, DataFrames
+using JuMP, JSON, CSV, DataFrames, Parameters
 
 """Define energy system model type as JuMP.Model."""
-EnergySystemModel = Model
+const EnergySystemModel = Model
 
 """Input indices and parameters for the model."""
-struct Parameters
+struct Params
     G::Array{Integer}
     G_r::Array{Integer}
     N::Array{Integer}
@@ -43,7 +43,7 @@ are not specified are included by default.
 - `ramping::Bool`: Whether to include ramping constraints.
 - `voltage_angles::Bool`: Whether to include voltage angle constraints.
 """
-Base.@kwdef struct Specs
+@with_kw struct Specs
     renewable_target::Bool
     storage::Bool
     ramping::Bool
@@ -104,7 +104,7 @@ end
 # Arguments
 - `instance_path::AbstractString`: Path to the instance directory.
 """
-function Parameters(instance_path::AbstractString)
+function Params(instance_path::AbstractString)
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
 
@@ -167,8 +167,8 @@ function Parameters(instance_path::AbstractString)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
-    # Return Parameters struct
-    Parameters(
+    # Return Params struct
+    Params(
         G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
 end
@@ -204,13 +204,13 @@ end
 
 # Arguments
 - `specs::Specs`
-- `parameters::Parameters`
+- `parameters::Params`
 - `variables::Variables`
 - `objectives::Objectives`
 - `output_path::AbstractString`
 """
 function save_results(
-        specs::Specs, parameters::Parameters, variables::Variables,
+        specs::Specs, parameters::Params, variables::Variables,
         objectives::Objectives, output_path::AbstractString)
     filenames = ["specs", "parameters", "variables", "objectives"]
     objects = [specs, parameters, variables, objectives]
@@ -224,11 +224,11 @@ end
 """Creates the energy system model.
 
 # Arguments
-- `parameters::Parameters`
+- `parameters::Params`
 - `specs::Specs`
 """
-function energy_system_model(parameters::Parameters, specs::Specs)::Model
-    # Parameters
+function energy_system_model(parameters::Params, specs::Specs)::Model
+    # TODO: @unpack
     G = parameters.G
     G_r = parameters.G_r
     N = parameters.N
