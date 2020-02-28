@@ -228,34 +228,9 @@ end
 - `specs::Specs`
 """
 function energy_system_model(parameters::Params, specs::Specs)::Model
-    # TODO: @unpack
-    G = parameters.G
-    G_r = parameters.G_r
-    N = parameters.N
-    L = parameters.L
-    T = parameters.T
-    S = parameters.S
-    κ = parameters.κ
-    C = parameters.C
-    C̄ = parameters.C̄
-    τ = parameters.τ
-    τ_t = parameters.τ_t
-    Q_gn = parameters.Q_gn
-    A_gnt = parameters.A_gnt
-    D_nt = parameters.D_nt
-    I_g = parameters.I_g
-    M_g = parameters.M_g
-    C_g = parameters.C_g
-    r⁻_g = parameters.r⁻_g
-    r⁺_g = parameters.r⁺_g
-    I_l = parameters.I_l
-    M_l = parameters.M_l
-    C_l = parameters.C_l
-    B_l = parameters.B_l
-    ξ_s = parameters.ξ_s
-    I_s = parameters.I_s
-    C_s = parameters.C_s
-    b0_sn = parameters.b0_sn
+    @unpack G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
+            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn =
+            parameters
 
     # Indices of lines L
     L′ = 1:length(L)
