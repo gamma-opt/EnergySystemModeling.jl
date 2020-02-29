@@ -1,23 +1,24 @@
 # API
-## Input
-```@docs
-EnergySystemModel
-Params
-Specs
-Variables
-Objectives
-Params(::AbstractString)
-Variables(::EnergySystemModel)
-Objectives(::EnergySystemModel)
-```
-
 ## Model
 ```@docs
+EnergySystemModel
+Specs
+Params
+Variables
+Objectives
 EnergySystemModel(::Params, ::Specs)
+```
+
+## Input
+```@docs
+equivalent_annual_cost
+Params(::AbstractString)
 ```
 
 ## Output
 ```@docs
+Variables(::EnergySystemModel)
+Objectives(::EnergySystemModel)
 save_results
 ```
 
@@ -31,9 +32,4 @@ plot_transmission_capacities
 plot_storage
 plot_storage_capacities
 plot_loss_of_load
-```
-
-## Utility
-```@docs
-equivalent_annual_cost
 ```

@@ -3,6 +3,22 @@ using JuMP, JSON, CSV, DataFrames, Parameters
 """Define energy system model type as JuMP.Model."""
 const EnergySystemModel = Model
 
+"""Specifation for which constraints to include to the model. Constraints that
+are not specified are included by default.
+
+# Arguments
+- `renewable_target::Bool`: Whether to include renewables target constraint.
+- `storage::Bool`: Whether to include storage constraints.
+- `ramping::Bool`: Whether to include ramping constraints.
+- `voltage_angles::Bool`: Whether to include voltage angle constraints.
+"""
+@with_kw struct Specs
+    renewable_target::Bool
+    storage::Bool
+    ramping::Bool
+    voltage_angles::Bool
+end
+
 """Input indices and parameters for the model."""
 struct Params
     G::Array{Integer}
@@ -32,22 +48,6 @@ struct Params
     I_s::Array{AbstractFloat}
     C_s::Array{AbstractFloat}
     b0_sn::Array{AbstractFloat, 2}
-end
-
-"""Specifation for which constraints to include to the model. Constraints that
-are not specified are included by default.
-
-# Arguments
-- `renewable_target::Bool`: Whether to include renewables target constraint.
-- `storage::Bool`: Whether to include storage constraints.
-- `ramping::Bool`: Whether to include ramping constraints.
-- `voltage_angles::Bool`: Whether to include voltage angle constraints.
-"""
-@with_kw struct Specs
-    renewable_target::Bool
-    storage::Bool
-    ramping::Bool
-    voltage_angles::Bool
 end
 
 """Variable values."""
