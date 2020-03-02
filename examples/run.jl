@@ -5,9 +5,7 @@ using EnergySystemModeling
 
 @info "Create output directory"
 output = "output"
-if !ispath(output)
-    mkdir(output)
-end
+mkpath(output)
 
 @info "Loading parameters"
 parameters = Params("instance")
@@ -32,7 +30,10 @@ variables = Variables(model)
 objectives = Objectives(model)
 
 @info "Save results"
-save_results(specs, parameters, variables, objectives, output)
+save_json(specs, joinpath(output, "specs.json"))
+save_json(parameters, joinpath(output, "parameters.json"))
+save_json(variables, joinpath(output, "variables.json"))
+save_json(objectives, joinpath(output, "objectives.json"))
 
 @info "Plotting"
 using Plots

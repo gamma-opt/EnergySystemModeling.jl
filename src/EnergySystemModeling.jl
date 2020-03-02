@@ -6,7 +6,7 @@ export EnergySystemModel,
     Params,
     Variables,
     Objectives,
-    save_results,
+    save_json,
     equivalent_annual_cost
 
 include("plotting.jl")

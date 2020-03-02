@@ -199,28 +199,6 @@ function Objectives(model::EnergySystemModel)
     Objectives(d[:f1], d[:f2], d[:f3], d[:f4], d[:f5], d[:f6], d[:f7])
 end
 
-
-"""Write specs, parameters, variables, and objectives into JSON files to `output_path`.
-
-# Arguments
-- `specs::Specs`
-- `parameters::Params`
-- `variables::Variables`
-- `objectives::Objectives`
-- `output_path::AbstractString`
-"""
-function save_results(
-        specs::Specs, parameters::Params, variables::Variables,
-        objectives::Objectives, output_path::AbstractString)
-    filenames = ["specs", "parameters", "variables", "objectives"]
-    objects = [specs, parameters, variables, objectives]
-    for (filename, object) in zip(filenames, objects)
-        open(joinpath(output_path, "$filename.json"), "w") do io
-            JSON.print(io, object)
-        end
-    end
-end
-
 """Creates the energy system model.
 
 # Arguments
@@ -369,4 +347,16 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     end
 
     return model
+end
+
+"""Save object into JSON file.
+
+# Arguments
+- `object`
+- `output_path::AbstractString`: Full filepath, e.g., `path.json`.
+"""
+function save_json(object, filepath::AbstractString)
+    open(filepath, "w") do io
+        JSON.print(io, object)
+    end
 end

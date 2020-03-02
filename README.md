@@ -25,8 +25,10 @@ optimize!(model, optimizer)
 
 variables = Variables(model)
 objectives = Objectives(model)
-save_results(specs, parameters, variables, objectives,
-             joinpath("examples", "output"))
+save_json(specs, joinpath("output", "specs.json"))
+save_json(parameters, joinpath("output", "parameters.json"))
+save_json(variables, joinpath("output", "variables.json"))
+save_json(objectives, joinpath("output", "objectives.json"))
 ```
 
 ## Installation

@@ -19,7 +19,7 @@ Params(::AbstractString)
 ```@docs
 Variables(::EnergySystemModel)
 Objectives(::EnergySystemModel)
-save_results
+save_json
 ```
 
 ## Plotting
