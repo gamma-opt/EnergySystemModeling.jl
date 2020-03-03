@@ -182,10 +182,8 @@ data(a::JuMP.Containers.DenseAxisArray) = a.data
 - `model::EnergySystemModel`
 """
 function Variables(model::EnergySystemModel)
-    d = Dict(variable => value.(model[variable]) |> data
-             for variable in fieldnames(Variables))
-    Variables(d[:p_gnt], d[:p̄_gn], d[:σ_nt], d[:f_lt], d[:f_lt_abs], d[:f̄_l],
-              d[:b_snt], d[:b̄_sn], d[:b⁺_snt], d[:b⁻_snt], d[:θ_nt], d[:θ′_nt])
+    tup = Tuple(value.(model[i]) |> data for i in fieldnames(Variables))
+    Variables(tup...)
 end
 
 """Extract objective values from model.
@@ -194,9 +192,8 @@ end
 - `model::EnergySystemModel`
 """
 function Objectives(model::EnergySystemModel)
-    d = Dict(objective => value.(model[objective]) |> data
-             for objective in fieldnames(Objectives))
-    Objectives(d[:f1], d[:f2], d[:f3], d[:f4], d[:f5], d[:f6], d[:f7])
+    tup = Tuple(value.(model[i]) |> data for i in fieldnames(Objectives))
+    Objectives(tup...)
 end
 
 """Creates the energy system model.
