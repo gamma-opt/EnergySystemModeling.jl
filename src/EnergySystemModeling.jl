@@ -1,6 +1,7 @@
 module EnergySystemModeling
 
 include("model.jl")
+include("io.jl")
 export EnergySystemModel,
     Specs,
     Params,

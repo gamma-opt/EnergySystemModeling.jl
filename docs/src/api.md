@@ -9,14 +9,10 @@ Objectives
 EnergySystemModel(::Params, ::Specs)
 ```
 
-## Input
+## IO
 ```@docs
 equivalent_annual_cost
 Params(::AbstractString)
-```
-
-## Output
-```@docs
 Variables(::EnergySystemModel)
 Objectives(::EnergySystemModel)
 save_json
