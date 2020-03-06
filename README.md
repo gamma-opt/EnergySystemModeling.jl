@@ -25,11 +25,40 @@ optimize!(model, optimizer)
 
 variables = Variables(model)
 objectives = Objectives(model)
+```
+
+Saving values to JSON.
+```julia
 save_json(specs, joinpath("output", "specs.json"))
 save_json(parameters, joinpath("output", "parameters.json"))
 save_json(variables, joinpath("output", "variables.json"))
 save_json(objectives, joinpath("output", "objectives.json"))
 ```
+
+Loading values from JSON.
+```julia
+specs = load_json(Specs, joinpath("output", "specs.json"))
+parameters = load_json(Params, joinpath("output", "parameters.json"))
+variables = load_json(Variables, joinpath("output", "variables.json"))
+objectives = load_json(Objectives, joinpath("output", "objectives.json"))
+```
+
+We can generate plots using the following functions.
+```julia
+plot_objective_values(objectives)
+for n in parameters.N
+    plot_generation_dispatch(parameters, variables, n)
+    plot_generation_capacities(parameters, variables, n)
+    plot_storage(parameters, variables, n)
+    plot_storage_capacities(parameters, variables, n)
+end
+for l in 1:length(parameters.L)
+    plot_transmission_flow(parameters, variables, l)
+end
+plot_transmission_capacities(parameters, variables)
+plot_loss_of_load(parameters, variables)
+```
+
 
 ## Installation
 This library can be installed directly from GitHub
