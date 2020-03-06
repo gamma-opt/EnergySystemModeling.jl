@@ -16,6 +16,7 @@ Params(::AbstractString)
 Variables(::EnergySystemModel)
 Objectives(::EnergySystemModel)
 save_json
+load_json
 ```
 
 ## Plotting
