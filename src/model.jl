@@ -20,7 +20,7 @@ are not specified are included by default.
 end
 
 """Input indices and parameters for the model."""
-struct Params
+@with_kw struct Params
     G::Array{Integer, 1}
     G_r::Array{Integer, 1}
     N::Array{Integer, 1}
@@ -51,7 +51,7 @@ struct Params
 end
 
 """Variable values."""
-struct Variables
+@with_kw struct Variables
     p_gnt::Array{AbstractFloat, 3}
     p̄_gn::Array{AbstractFloat, 2}
     σ_nt::Array{AbstractFloat, 2}
@@ -67,7 +67,7 @@ struct Variables
 end
 
 """Objective values."""
-struct Objectives
+@with_kw struct Objectives
     f1::AbstractFloat
     f2::AbstractFloat
     f3::AbstractFloat
@@ -149,101 +149,106 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7)
 
     ## -- Constraints --
+    # Transmission lines from node n
+    L⁻(n) = (l for (l,(i,j)) in zip(L′,L) if i==n)
+    # Transmission lines to node n
+    L⁺(n) = (l for (l,(i,j)) in zip(L′,L) if j==n)
+
     # Energy balance (t=1)
     @constraint(model,
-        [s in S, n in N, t in [1]],
+        b1[s in S, n in N, t in [1]],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if i==n) -
-        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if j==n) +
+        sum(f_lt[l,t] for l in L⁺(n)) -
+        sum(f_lt[l,t] for l in L⁻(n)) +
         ξ_s[s] * b_snt[s,n,t] ==
         D_nt[n,t])
 
     # Energy balance (t>1)
     @constraint(model,
-        [s in S, n in N, t in T[T.>1]],
+        b2[s in S, n in N, t in T[T.>1]],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if i==n) -
-        sum(f_lt[l,t] for (l,(i,j)) in zip(L′,L) if j==n) +
+        sum(f_lt[l,t] for l in L⁺(n)) -
+        sum(f_lt[l,t] for l in L⁻(n)) +
         ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) ==
         D_nt[n,t])
 
     # Generation capacity
     @constraint(model,
-        [g in G, n in N, t in T],
+        g1[g in G, n in N, t in T],
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
 
     # Minimum renewables share
     if specs.renewable_target
-        @constraint(model,
+        @constraint(model, g2,
             sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) ≥
             κ * sum(p_gnt[g,n,t] for g in G, n in N, t in T))
     end
 
     # Shedding upper bound
     @constraint(model,
-        [n in N, t in T],
+        g3[n in N, t in T],
         σ_nt[n,t] ≤ C̄ * D_nt[n,t])
 
     # Transmission capacity
     @constraint(model,
-        [l in L′, t in T],
+        t1[l in L′, t in T],
         f_lt[l,t]≤f̄_l[l])
     @constraint(model,
-        [l in L′, t in T],
+        t2[l in L′, t in T],
         f_lt[l,t]≥-f̄_l[l])
 
     # Absolute value of transmission
     @constraint(model,
-        [l in L′, t in T],
+        t3[l in L′, t in T],
         f_lt_abs[l,t]≥f_lt[l,t])
     @constraint(model,
-        [l in L′, t in T],
+        t4[l in L′, t in T],
         f_lt_abs[l,t]≥-f_lt[l,t])
 
     if specs.storage
         # Charge and discharge (t=1)
         @constraint(model,
-            [s in S, n in N, t in [1]],
+            s1[s in S, n in N, t in [1]],
             b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
         @constraint(model,
-            [s in S, n in N, t in [1]],
+            s2[s in S, n in N, t in [1]],
             b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
 
         # Charge and discharge (t>1)
         @constraint(model,
-            [s in S, n in N, t in T[T.>1]],
+            s3[s in S, n in N, t in T[T.>1]],
             b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
         @constraint(model,
-            [s in S, n in N, t in T[T.>1]],
+            s4[s in S, n in N, t in T[T.>1]],
             b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
 
         # Storage capcity
         @constraint(model,
-            [s in S, n in N, t in T],
+            s5[s in S, n in N, t in T],
             b_snt[s,n,t]≤b̄_sn[s,n])
 
         # Storage
         @constraint(model,
-            [s in S, n in N],
+            s6[s in S, n in N],
             b_snt[s,n,1]==b_snt[s,n,T[end]])
     end
 
     if specs.ramping
         # Ramping limits
         @constraint(model,
-            [g in G, n in N, t in T[T.>1]],
+            r1[g in G, n in N, t in T[T.>1]],
             p_gnt[g,n,t]-p_gnt[g,n,t-1]≥r⁺_g[g])
         @constraint(model,
-            [g in G, n in N, t in T[T.>1]],
+            r2[g in G, n in N, t in T[T.>1]],
             p_gnt[g,n,t]-p_gnt[g,n,t-1]≤r⁻_g[g])
     end
 
     if specs.voltage_angles
         # Voltage angles
         @constraint(model,
-            [g in G, l in L′, n in N, n′ in N, t in T[T.>1]],
+            v1[g in G, l in L′, n in N, n′ in N, t in T[T.>1]],
             (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
     end
 

@@ -6,6 +6,8 @@ Specs
 Params
 Variables
 Objectives
+Variables(::EnergySystemModel)
+Objectives(::EnergySystemModel)
 EnergySystemModel(::Params, ::Specs)
 ```
 
@@ -13,8 +15,6 @@ EnergySystemModel(::Params, ::Specs)
 ```@docs
 equivalent_annual_cost
 Params(::AbstractString)
-Variables(::EnergySystemModel)
-Objectives(::EnergySystemModel)
 save_json
 load_json
 ```

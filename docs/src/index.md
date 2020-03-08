@@ -1,5 +1,5 @@
 # Energy System Modeling
-Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units using square brackets.
+Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units of parameters and variables using square brackets. In the code, we implement the model as [`EnergySystemModel(::Params, ::Specs)`](@ref) method, which constructs an [`EnergySystemModel`](@ref) instance.
 
 ## Utility
 We calculate annualized costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula
@@ -17,8 +17,6 @@ Indices and sets define the different objects and dimensions in the model.
 *  $l∈L$: Transmission lines, bidimensional vectors $(i,j)$ where $i,j∈N$
 *  $t∈T$: Time steps, depending on the number of clusters per month
 *  $s∈S$: Storage technologies
-
-In the code, we store both indices and parameters in the [`Params`](@ref) struct.
 
 ## Parameters
 Constant parameters
@@ -58,8 +56,9 @@ Storage parameters
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
 *  $ξ_s$: Round-trip efficiency of storage technology $s$
 
+In the code, we store both indices and parameters in the [`Params`](@ref) struct.
 
-### Variables
+## Variables
 Generation technology variables
 
 *  $p_{g,n,t}≥0$: Dispatch from technology $g$ at node $n$ in each time step $t$ [MWh]
@@ -87,6 +86,8 @@ Voltage angle variables
 *  $θ_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 *  $θ'_{n,t}≥0$: Voltage angle at node $n$ in each time step $t$
 
+We use [`Variables`](@ref) struct to store the variable values after optimization. We can query the values from the model using [`Variables(::EnergySystemModel)`](@ref) method.
+
 ## Objective
 We define the objective as cost minimization
 
@@ -96,111 +97,122 @@ The individual objectives are defined as follows.
 
 Investment and maintenance cost of generation capacity
 
-$$f_1=\sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n}$$
+$$f_1=\sum_{g,n} (I_g^G+M_g^G)\bar{p}_{g,n} \tag{f1}$$
 
 The operational cost of generation dispatch
 
-$$f_2=\sum_{g,n,t} C_g^G p_{g,t,n} τ_{t}$$
+$$f_2=\sum_{g,n,t} C_g^G p_{g,t,n} τ_{t} \tag{f2}$$
 
 Shedding cost
 
-$$f_3=\sum_{n,t} C σ_{n,t} τ_{t}$$
+$$f_3=\sum_{n,t} C σ_{n,t} τ_{t} \tag{f3}$$
 
 Investment and maintenance cost of transmission capacity
 
-$$f_4=\sum_{l} (I_l^F+M_l^F) \bar{f}_l$$
+$$f_4=\sum_{l} (I_l^F+M_l^F) \bar{f}_l \tag{f4}$$
 
 The operational cost of transmission flow
 
-$$f_5=\sum_{l,t} C_l^F ⋅ |f_{l,t}| τ_{t}$$
+$$f_5=\sum_{l,t} C_l^F ⋅ |f_{l,t}| τ_{t} \tag{f5}$$
 
 Investment cost of storage capacity
 
-$$f_6=\sum_{s,n} I_s^S \bar{b}_{s,n}$$
+$$f_6=\sum_{s,n} I_s^S \bar{b}_{s,n} \tag{f6}$$
 
 The operational cost of storage
 
-$$f_7=\sum_{s,n,t} C_s^S (b_{s,n,t}^{+}+b_{s,n,t}^{-}) τ_{t}$$
+$$f_7=\sum_{s,n,t} C_s^S (b_{s,n,t}^{+}+b_{s,n,t}^{-}) τ_{t} \tag{f7}$$
 
+We use [`Objectives`](@ref) struct to store the objetive values after optimization. We can query the values from the model using [`Objectives(::EnergySystemModel)`](@ref) method.
 
 ## Constraints
-Within the code, we use [`Specs`](@ref) struct to control whether we include certain constraints in the model.
+In this section, we list all the constraints in the energy system model and explain their function. Each constraint is named in the code using the equation labels. We can then access the individual constraints using the standard JuMP syntax, for example, `model[:b1]`.
+
+We use the [`Specs`](@ref) struct to control whether we include certain constraints in the model.
 
 ### Balance
+Transmission lines from node $n$
+
+$$L_n^-=\{l∈L∣(i,j)=l, i=n\}$$
+
+Transmission lines to node $n$
+
+$$L_n^+=\{l∈L∣(i,j)=l, j=n\}$$
+
 Energy balance $t=1$
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)=l∈L∣i=n} f_{l,t} + ξ_s b_{s,n,t} = D_{n,t},\quad ∀s,n,t=1$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^+} f_{l,t} - \sum_{l∈L_n^-} f_{l,t} + ξ_s b_{s,n,t} = D_{n,t},\quad ∀s,n,t=1 \tag{b1}$$
 
 Energy balance $t>1$
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{(i,j)=l∈L∣j=n} f_{l,t} - \sum_{(i,j)=l∈L∣i=n} f_{l,t} + ξ_s (b_{s,n,t}-b_{s,n,t-1}) = D_{n,t},\quad ∀s,n,t>1$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^+} f_{l,t} - \sum_{l∈L_n^-} f_{l,t} + ξ_s (b_{s,n,t}-b_{s,n,t-1}) = D_{n,t},\quad ∀s,n,t>1 \tag{b2}$$
 
-### Generation / Shedding
+### Generation
 Generation capacity
 
-$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t$$
+$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t \tag{g1}$$
 
 Minimum renewables share
 
-$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t}$$
+$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t} \tag{g2}$$
 
+### Shedding
 Shedding upper bound
 
-$$σ_{n,t} ≤ \bar{C} D_{n,t},\quad ∀n,t$$
+$$σ_{n,t} ≤ \bar{C} D_{n,t},\quad ∀n,t \tag{g3}$$
 
 ### Transmission
 Transmission capacity
 
-$$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t$$
+$$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
 
-$$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t$$
+$$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t \tag{t2}$$
 
 The absolute value of the transmission
 
-$$|f_{l,t}|≥f_{l,t},\quad ∀l,t$$
+$$|f_{l,t}|≥f_{l,t},\quad ∀l,t \tag{t3}$$
 
-$$|f_{l,t}|≥-f_{l,t},\quad ∀l,t$$
+$$|f_{l,t}|≥-f_{l,t},\quad ∀l,t \tag{t4}$$
 
 ### Storage
 Charge and discharge at $t=1$
 
-$$\begin{aligned}
-& b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \\
-& b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1
-\end{aligned}$$
+$$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s1}$$
+
+$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s2}$$
 
 Charge and discharge at $t>1$
 
-$$\begin{aligned}
-& b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \\
-& b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1
-\end{aligned}$$
+$$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s3}$$
+
+$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s4}$$
 
 Storage capacity
 
-$$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t$$
+$$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t \tag{s5}$$
 
 Storage continuity
 
-$$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n$$
+$$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n \tag{s6}$$
 
 
 ### Ramping Limits
 Ramping limit up and down
 
-$$\begin{aligned}
-p_{g,n,t} - p_{g,n,t-1} &≥ r_g^{+}, \quad ∀g,n,t>1 \\
-p_{g,n,t} - p_{g,n,t-1} &≤ -r_g^{-}, \quad ∀g,n,t>1
-\end{aligned}$$
+$$p_{g,n,t} - p_{g,n,t-1} ≥ r_g^{+}, \quad ∀g,n,t>1 \tag{r1}$$
+
+$$p_{g,n,t} - p_{g,n,t-1} ≤ -r_g^{-}, \quad ∀g,n,t>1 \tag{r2}$$
 
 ### Voltage Angles
 Faraday law for accounting voltage angles
 
-$$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1$$
+$$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1 \tag{v1}$$
 
 
-## Instance
-Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives. We recommend checking out the example instance in `examples/instance` for reference. We describe the input format in [`Params(::AbstractString)`](@ref). Output can be save into JSON using [`save_json`](@ref) and loaded from JSON using [`load_json`](@ref).
+## Instances
+Users can provide input parameters for different instances as a directory containing CSV and JSON files, and also include a README file, which describes the instance. Users can distribute instances as `.zip` archives. We provide an example instance in `examples/instance` as a reference. We describe the input format in [`Params(::AbstractString)`](@ref).
+
+We can write [`Specs`](@ref), [`Params`](@ref), [`Variables`](@ref), and [`Objectives`](@ref) structs into JSON files using [`save_json`](@ref) and read them from JSON files using [`load_json`](@ref).
 
 
 ## References
