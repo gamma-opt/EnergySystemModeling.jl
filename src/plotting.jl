@@ -1,7 +1,10 @@
 using Plots, LaTeXStrings
 
 function plot_generation_dispatch(p_gnt, p̄_gn, G, n, T)
-    p = plot(legend=:outertopright)
+    p = plot(
+        legend=:outertopright,
+        size=(780, 400)
+    )
     for g in G
         plot!(p, T, [p_gnt[g, n, t] for t in T],
               alpha=0.3,
@@ -27,7 +30,8 @@ function plot_transmission_flow(f_lt, f̄_l, l, T)
              xlabel=L"t",
              ylabel=L"f_{l,t}\,\mathrm{[MWh]}",
              alpha=0.3,
-             legend=false)
+             legend=false,
+             size=(780, 400))
     plot!(p, T, [f̄_l[l] for t in T])
     return p
 end
@@ -41,13 +45,14 @@ function plot_transmission_capacities(f̄_l, L)
         legend=false)
 end
 
-function plot_storage(b_snt, b̄_sn, S, n, T)
+function plot_storage_level(b_snt, b̄_sn, S, n, T)
     p = plot(legend=false)
     for s in S
         plot!(p, T, [b_snt[s, n, t] for t in T],
               xlabel=L"t",
               ylabel=L"b_{s,n,t}\,\mathrm{[MWh]}",
-              alpha=0.3)
+              alpha=0.3,
+              size=(780, 400))
         plot!(p, T, [b̄_sn[s, n] for t in T])
     end
     return p
@@ -62,7 +67,10 @@ function plot_storage_capacities(b̄_sn, S, n)
 end
 
 function plot_loss_of_load(σ_nt, N, T)
-    p = plot(legend=:outertopright)
+    p = plot(
+        legend=:outertopright,
+        size=(780, 400)
+    )
     for n in N
         plot!(p, T, [σ_nt[n, t] for t in T],
               xlabel=L"t",
@@ -112,9 +120,9 @@ function plot_transmission_capacities(
     plot_transmission_capacities(variables.f̄_l, parameters.L)
 end
 
-"""Plot storage."""
-function plot_storage(parameters::Params, variables::Variables, n::Integer)
-    plot_storage(
+"""Plot storage level."""
+function plot_storage_level(parameters::Params, variables::Variables, n::Integer)
+    plot_storage_level(
         variables.b_snt, variables.b̄_sn, parameters.S, n, parameters.T)
 end
 

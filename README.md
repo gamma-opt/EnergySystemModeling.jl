@@ -49,7 +49,7 @@ plot_objective_values(objectives)
 for n in parameters.N
     plot_generation_dispatch(parameters, variables, n)
     plot_generation_capacities(parameters, variables, n)
-    plot_storage(parameters, variables, n)
+    plot_storage_level(parameters, variables, n)
     plot_storage_capacities(parameters, variables, n)
 end
 for l in 1:length(parameters.L)

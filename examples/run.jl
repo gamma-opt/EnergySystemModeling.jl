@@ -46,7 +46,7 @@ for n in parameters.N
             joinpath(output, "generation_dispatch_n$n.svg"))
     savefig(plot_generation_capacities(parameters, variables, n),
             joinpath(output, "generation_capacities_n$n.svg"))
-    savefig(plot_storage(parameters, variables, n),
+    savefig(plot_storage_level(parameters, variables, n),
             joinpath(output, "storage_n$n.svg"))
     savefig(plot_storage_capacities(parameters, variables, n),
            joinpath(output, "storage_capacities_n$n.svg"))
