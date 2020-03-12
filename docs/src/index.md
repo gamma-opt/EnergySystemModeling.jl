@@ -23,12 +23,11 @@ Constant parameters
 
 *  $κ∈[0,1]$: Renewables participation required by the system
 *  $C$: Shedding cost [€/MWh]
-*  $\bar{C}$: Shedding capacity [€/MWh]
+*  $\bar{C}$: Shedding capacity [MWh]
 *  $r≥0$: Interest rate
 
 Time clustered parameters
 
-*  $τ$: Number of time slices per month
 *  $τ_{t}$: Duration of time period $t$ [h]
 *  $Q_{g,n}$: Initial capacity [MW]
 *  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
@@ -51,8 +50,8 @@ Transmission parameters
 
 Storage parameters
 
-*  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MWh]. Calculated as $I_s^S=EAC(c_s, t_s, r)$ where $c_s$ is the cost and $t_s$ the lifetime of storage $s.$
-*  $C_s^S$: Storage operational cost of storage technology $s$ [€/MW]
+*  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MW]. Calculated as $I_s^S=EAC(c_s, t_s, r)$ where $c_s$ is the (upfront) investment cost and $t_s$ the lifetime of storage $s.$
+*  $C_s^S$: Storage operational cost of storage technology $s$ [€/MWh]
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
 *  $ξ_s$: Round-trip efficiency of storage technology $s$
 
