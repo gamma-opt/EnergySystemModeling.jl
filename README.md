@@ -1,5 +1,5 @@
 # EnergySystemModeling.jl
-Julia library for solving the *transmission capacity expansion problem*, implemented as *linear program* using JuMP.
+Julia library for solving the *transmission capacity expansion problem*, implemented as *linear program* using JuMP. The [documentation](https://jaantollander.github.com/EnergySystemModeling.jl) contains more details about the model.
 
 The library is authored by *Lucas Condeixa*, *Fabricio Oliveira*, and *Jaan Tollander de Balsch* in Systems Analysis Laboratory in Aalto university.
 
@@ -8,21 +8,28 @@ The library is authored by *Lucas Condeixa*, *Fabricio Oliveira*, and *Jaan Toll
 Inside the `examples` directory, we have [`run.jl`](./examples/run.jl) file, which demonstrates the usage of this library by running the example [instance](./examples/instance).
 
 ```julia
+using Gurobi, JuMP
 using EnergySystemModeling
 
+# Load parameters.
 parameters = Params(joinpath("examples", "instance"))
+
+# Define specs.
 specs = Specs(
     renewable_target=true,
     storage=true,
     ramping=false,
     voltage_angles=false
 )
+
+# Create the model.
 model = EnergySystemModel(parameters, specs)
 
-using Gurobi, JuMP
+# Optimizer the model using Gurobi optimizer.
 optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
 optimize!(model, optimizer)
 
+# Extract values from the model.
 variables = Variables(model)
 objectives = Objectives(model)
 ```
@@ -43,21 +50,7 @@ variables = load_json(Variables, joinpath("output", "variables.json"))
 objectives = load_json(Objectives, joinpath("output", "objectives.json"))
 ```
 
-We can generate plots using the following functions.
-```julia
-plot_objective_values(objectives)
-for n in parameters.N
-    plot_generation_dispatch(parameters, variables, n)
-    plot_generation_capacities(parameters, variables, n)
-    plot_storage_level(parameters, variables, n)
-    plot_storage_capacities(parameters, variables, n)
-end
-for l in 1:length(parameters.L)
-    plot_transmission_flow(parameters, variables, l)
-end
-plot_transmission_capacities(parameters, variables)
-plot_loss_of_load(parameters, variables)
-```
+We recommend to check out the [documentation for plotting](https://jaantollander.github.com/EnergySystemModeling.jl/plotting/).
 
 
 ## Installation
@@ -70,18 +63,38 @@ pkg> add https://github.com/jaantollander/EnergySystemModeling.jl
 ## Development
 Install [Julia](https://julialang.org/) programming language.
 
+Clone the repository
+```bash
+git clone https://github.com/jaantollander/EnergySystemModeling.jl
+```
+
 In the project root directory, install packages locally using Julia's package manager.
 ```
 pkg> activate .
 pkg> instantiate
 ```
 
-Before we can run the `examples/run.jl` script, we require an optimizer for solving the linear program. One such solver is [GLPK](https://github.com/JuliaOpt/GLPK.jl), an open-source solver for linear programming. We can install it using Julia's package manager.
-```
-pkg> add GLPK
-```
+Install a solver such as Gurobi.
 
-Alternatively, you could choose to install a different solver such as Gurobi, a powerful commercial solver. In this case, you need to modify the code inside `run.jl` file. Now, we can run the script.
+
+## Installing Solver
+It's up to the user to choose a suitable solver for solving the JuMP model. For small instances, GLPK is sufficient, but for large instances, we recommend commercial solvers such as Gurobi or CPLEX.
+
+Gurobi is a powerful commercial optimizer that provides a free academic license. We can interface with Gurobi in Julia using [`Gurobi.jl`](https://github.com/JuliaOpt/Gurobi.jl). Here are the steps to install Julia and Gurobi to run the program:
+
+1) Obtain a license of *Gurobi* and install Gurobi solver by following the instructions on [Gurobi's website](http://www.gurobi.com/).
+
+2) Make sure the `GUROBI_HOME` environmental variable is set to the path of the Gurobi directory. This is part of standard installation. The Gurobi library will be searched for in `GUROBI_HOME/lib` on Unix platforms and `GUROBI_HOME\bin` on Windows. If the library is not found, check that your version is listed in `deps/build.jl`. The environmental variable can be set by appending `export GUROBI_HOME="<path>/gurobi811/linux64"` to `.bashrc` file. Replace the `<path>`, platform `linux64` and version number `811` with the values of your Gurobi installation.
+
+3) Install `Gurobi.jl` in Julia's package manager by running commands
+   ```
+   pkg> add Gurobi
+   pkg> build Gurobi
+   ```
+
+
+## Documentation
+The project documentation is created using [Documenter.jl](https://juliadocs.github.io/Documenter.jl/stable/). To build the documentation, navigate inside the `docs` directory and run the command
 ```bash
-julia run.jl
+julia make.jl
 ```
