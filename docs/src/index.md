@@ -130,21 +130,21 @@ In this section, we list all the constraints in the energy system model and expl
 We use the [`Specs`](@ref) struct to control whether we include certain constraints in the model.
 
 ### Balance
-Transmission lines from node $n$
-
-$$L_n^-=\{l∈L∣(i,j)=l, i=n\}$$
-
 Transmission lines to node $n$
 
-$$L_n^+=\{l∈L∣(i,j)=l, j=n\}$$
+$$L_n^-=\{l∈L∣i∈N,(i,n)=l\}$$
+
+Transmission lines from node $n$
+
+$$L_n^+=\{l∈L∣j∈N,(n,j)=l\}$$
 
 Energy balance $t=1$
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^+} f_{l,t} - \sum_{l∈L_n^-} f_{l,t} + ξ_s b_{s,n,t} = D_{n,t},\quad ∀s,n,t=1 \tag{b1}$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_{l,t} + ξ_s b_{s,n,t} = D_{n,t},\quad ∀s,n,t=1 \tag{b1}$$
 
 Energy balance $t>1$
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^+} f_{l,t} - \sum_{l∈L_n^-} f_{l,t} + ξ_s (b_{s,n,t}-b_{s,n,t-1}) = D_{n,t},\quad ∀s,n,t>1 \tag{b2}$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_{l,t} + ξ_s (b_{s,n,t}-b_{s,n,t-1}) = D_{n,t},\quad ∀s,n,t>1 \tag{b2}$$
 
 ### Generation
 Generation capacity

@@ -149,18 +149,18 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7)
 
     ## -- Constraints --
-    # Transmission lines from node n
-    L⁻(n) = (l for (l,(i,j)) in zip(L′,L) if i==n)
     # Transmission lines to node n
-    L⁺(n) = (l for (l,(i,j)) in zip(L′,L) if j==n)
+    L⁻(n) = (l for (l,(i,j)) in zip(L′,L) if j==n)
+    # Transmission lines from node n
+    L⁺(n) = (l for (l,(i,j)) in zip(L′,L) if i==n)
 
     # Energy balance (t=1)
     @constraint(model,
         b1[s in S, n in N, t in [1]],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for l in L⁺(n)) -
-        sum(f_lt[l,t] for l in L⁻(n)) +
+        sum(f_lt[l,t] for l in L⁻(n)) -
+        sum(f_lt[l,t] for l in L⁺(n)) +
         ξ_s[s] * b_snt[s,n,t] ==
         D_nt[n,t])
 
@@ -169,8 +169,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b2[s in S, n in N, t in T[T.>1]],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for l in L⁺(n)) -
-        sum(f_lt[l,t] for l in L⁻(n)) +
+        sum(f_lt[l,t] for l in L⁻(n)) -
+        sum(f_lt[l,t] for l in L⁺(n)) +
         ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) ==
         D_nt[n,t])
 
