@@ -1,12 +1,7 @@
 # Energy System Modeling
 Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units of parameters and variables using square brackets. In the code, we implement the model as [`EnergySystemModel(::Params, ::Specs)`](@ref) method, which constructs an [`EnergySystemModel`](@ref) instance.
 
-## Utility
-We calculate annualized costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula
-
-$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n,$$
-
-where $c$ is the net present cost of the project, $n$ is the number of payments, and $r$ is the interest rate.
+The model considers that each time period might encompass varaible number of hours, as a result of using input data that has been clustered. Otherwise, each time period refers to one hour.
 
 ## Indices and Sets
 Indices and sets define the different objects and dimensions in the model.
@@ -14,24 +9,19 @@ Indices and sets define the different objects and dimensions in the model.
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
 *  $n∈N$: Nodes
-*  $l∈L$: Transmission lines, bidimensional vectors $(i,j)$ where $i,j∈N$
-*  $t∈T$: Time steps, depending on the number of clusters per month
+*  $l∈L$: Transmission lines, refers to a pair of nodes $(i,j)$ where $i,j∈N$
+*  $t∈T$: Time periods
 *  $s∈S$: Storage technologies
 
 ## Parameters
-Constant parameters
+General parameters
 
-*  $κ∈[0,1]$: Renewables participation required by the system
+*  $κ∈[0,1]$: Fraction of the demand that must be met by renewable generation
 *  $C$: Shedding cost [€/MWh]
 *  $\bar{C}$: Shedding capacity [MWh]
 *  $r≥0$: Interest rate
-
-Time clustered parameters
-
-*  $τ_{t}$: Duration of time period $t$ [h]
-*  $Q_{g,n}$: Initial capacity [MW]
-*  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
-*  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
+*  $τ_{t}$: Number of hours clustered in time period $t$ [h]
+*  $D_{n,t}$: Demand per node $n$ per time period $t$ [MWh]
 
 Generation technology parameters
 
@@ -40,6 +30,8 @@ Generation technology parameters
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]. Calculated as $c_g/c'_g/1000$ where $c_g$ is fuel cost 1 and $c'_g$ fuel cost 2 of technology $g.$
 *  $r_g^{-}$: Relative ramp-down limit of technology $g$
 *  $r_g^{+}$: Relative ramp-up limit of technology $g$
+*  $Q_{g,n}$: Initial capacity [MW]
+*  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
 
 Transmission parameters
 
@@ -55,7 +47,15 @@ Storage parameters
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
 *  $ξ_s$: Round-trip efficiency of storage technology $s$
 
-In the code, we store both indices and parameters in the [`Params`](@ref) struct.
+
+Remarks:
+
+*  In the code, we store both indices and parameters in the [`Params`](@ref) struct. 
+*  All annualized costs are calculated using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) given by
+
+$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n,$$
+
+where $c$ is the net present cost of the project, $n$ is the number of periods, and $r$ is the interest rate.
 
 ## Variables
 Generation technology variables
