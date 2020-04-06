@@ -76,9 +76,9 @@ Transmission variables
 Storage variables
 
 *  $b_{s,n,t}≥0$: Storage level of storage $s$ at node $n$ in each time step $t$ [MWh]
-*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MW]
-*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MW]
-*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MW]
+*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MWh]
+*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MWh]
+*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MWh]
 
 Voltage angle variables
 
@@ -149,16 +149,16 @@ $$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_
 ### Generation
 Generation capacity
 
-$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t \tag{g1}$$
+$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}) τ_{t}, \quad ∀g,n,t \tag{g1}$$
 
 Minimum renewables share
 
-$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t} \tag{g2}$$
+$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} (D_{n,t} - σ_{n,t}) \tag{g2}$$
 
 ### Shedding
 Shedding upper bound
 
-$$σ_{n,t} ≤ \bar{C} D_{n,t},\quad ∀n,t \tag{g3}$$
+$$σ_{n,t} ≤ \bar{C},\quad ∀n,t \tag{g3}$$
 
 ### Transmission
 Transmission capacity
@@ -167,7 +167,7 @@ $$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
 
 $$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t \tag{t2}$$
 
-The absolute value of the transmission
+These auxiliary constraints  are used to capture the absolute value of the transmission for the objective function.
 
 $$|f_{l,t}|≥f_{l,t},\quad ∀l,t \tag{t3}$$
 
@@ -178,17 +178,17 @@ Charge and discharge at $t=1$
 
 $$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s1}$$
 
-$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s2}$$
+$$b_{s,n,t}^{-}≥b_{s,n}^0 - b_{s,n,t},\quad ∀s,n,t=1 \tag{s2}$$
 
 Charge and discharge at $t>1$
 
 $$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s3}$$
 
-$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s4}$$
+$$b_{s,n,t}^{-}≥b_{s,n,t-1} - b_{s,n,t},\quad ∀s,n,t>1 \tag{s4}$$
 
 Storage capacity
 
-$$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t \tag{s5}$$
+$$b_{s,n,t}≤\bar{b}_{s,n}τ_{t},\quad ∀s,n,t \tag{s5}$$
 
 Storage continuity
 
@@ -198,9 +198,9 @@ $$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n \tag{s6}$$
 ### Ramping Limits
 Ramping limit up and down
 
-$$p_{g,n,t} - p_{g,n,t-1} ≥ r_g^{+}, \quad ∀g,n,t>1 \tag{r1}$$
+$$p_{g,n,t} - p_{g,n,t-1} ≥ r_g^{+}\bar{p}_{g,n,t}, \quad ∀g,n,t>1 \tag{r1}$$
 
-$$p_{g,n,t} - p_{g,n,t-1} ≤ -r_g^{-}, \quad ∀g,n,t>1 \tag{r2}$$
+$$p_{g,n,t} - p_{g,n,t-1} ≤ -r_g^{-}\bar{p}_{g,n,t}, \quad ∀g,n,t>1 \tag{r2}$$
 
 ### Voltage Angles
 Faraday law for accounting voltage angles
