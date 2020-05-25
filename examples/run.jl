@@ -21,9 +21,10 @@ model = EnergySystemModel(parameters, specs)
 
 @info "Optimizing the model"
 using Gurobi, JuMP
-optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60,
-                           LogFile=joinpath(output, "gurobi.log"))
-optimize!(model, optimizer)
+optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => 10*60,
+                                      "LogFile" => joinpath(output, "gurobi.log"))
+set_optimizer(model, optimizer)
+optimize!(model)
 
 @info "Extract results"
 variables = Variables(model)
