@@ -1,12 +1,7 @@
 # Energy System Modeling
 Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units of parameters and variables using square brackets. In the code, we implement the model as [`EnergySystemModel(::Params, ::Specs)`](@ref) method, which constructs an [`EnergySystemModel`](@ref) instance.
 
-## Utility
-We calculate annualized costs using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) formula
-
-$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n,$$
-
-where $c$ is the net present cost of the project, $n$ is the number of payments, and $r$ is the interest rate.
+The model considers that each time period might encompass varaible number of hours, as a result of using input data that has been clustered. Otherwise, each time period refers to one hour.
 
 ## Indices and Sets
 Indices and sets define the different objects and dimensions in the model.
@@ -14,24 +9,19 @@ Indices and sets define the different objects and dimensions in the model.
 *  $g∈G$: Generation technologies
 *  $G^r⊆G$: Renewable generation technologies
 *  $n∈N$: Nodes
-*  $l∈L$: Transmission lines, bidimensional vectors $(i,j)$ where $i,j∈N$
-*  $t∈T$: Time steps, depending on the number of clusters per month
+*  $l∈L$: Transmission lines, refers to a pair of nodes $(i,j)$ where $i,j∈N$
+*  $t∈T$: Time periods
 *  $s∈S$: Storage technologies
 
 ## Parameters
-Constant parameters
+General parameters
 
-*  $κ∈[0,1]$: Renewables participation required by the system
+*  $κ∈[0,1]$: Fraction of the demand that must be met by renewable generation
 *  $C$: Shedding cost [€/MWh]
 *  $\bar{C}$: Shedding capacity [MWh]
 *  $r≥0$: Interest rate
-
-Time clustered parameters
-
-*  $τ_{t}$: Duration of time period $t$ [h]
-*  $Q_{g,n}$: Initial capacity [MW]
-*  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
-*  $D_{n,t}$: Clustered demand per node $n$ per time step $t$  [MWh]
+*  $τ_{t}$: Number of hours clustered in time period $t$ [h]
+*  $D_{n,t}$: Demand per node $n$ per time period $t$ [MWh]
 
 Generation technology parameters
 
@@ -40,6 +30,8 @@ Generation technology parameters
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]. Calculated as $c_g/c'_g/1000$ where $c_g$ is fuel cost 1 and $c'_g$ fuel cost 2 of technology $g.$
 *  $r_g^{-}$: Relative ramp-down limit of technology $g$
 *  $r_g^{+}$: Relative ramp-up limit of technology $g$
+*  $Q_{g,n}$: Initial capacity [MW]
+*  $A_{g,n,t}∈[0,1]$: Availability of technology $g$ per node $n$ at time step $t$
 
 Transmission parameters
 
@@ -55,7 +47,15 @@ Storage parameters
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
 *  $ξ_s$: Round-trip efficiency of storage technology $s$
 
-In the code, we store both indices and parameters in the [`Params`](@ref) struct.
+
+Remarks:
+
+*  In the code, we store both indices and parameters in the [`Params`](@ref) struct. 
+*  All annualized costs are calculated using [*equivalent annual cost (EAC)*](https://en.wikipedia.org/wiki/Equivalent_annual_cost) given by
+
+$$EAC(c,r,n) = \frac{c}{a_{n,r}},\quad a_{n,r} = \frac{1-(1+r)^{-n}}{r},\quad a_{n,0}=n,$$
+
+where $c$ is the net present cost of the project, $n$ is the number of periods, and $r$ is the interest rate.
 
 ## Variables
 Generation technology variables
@@ -76,9 +76,9 @@ Transmission variables
 Storage variables
 
 *  $b_{s,n,t}≥0$: Storage level of storage $s$ at node $n$ in each time step $t$ [MWh]
-*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MW]
-*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MW]
-*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MW]
+*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MWh]
+*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MWh]
+*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MWh]
 
 Voltage angle variables
 
@@ -149,16 +149,16 @@ $$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_
 ### Generation
 Generation capacity
 
-$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t \tag{g1}$$
+$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}) τ_{t}, \quad ∀g,n,t \tag{g1}$$
 
 Minimum renewables share
 
-$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t} \tag{g2}$$
+$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} (D_{n,t} - σ_{n,t}) \tag{g2}$$
 
 ### Shedding
 Shedding upper bound
 
-$$σ_{n,t} ≤ \bar{C} D_{n,t},\quad ∀n,t \tag{g3}$$
+$$σ_{n,t} ≤ \bar{C},\quad ∀n,t \tag{g3}$$
 
 ### Transmission
 Transmission capacity
@@ -167,7 +167,7 @@ $$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
 
 $$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t \tag{t2}$$
 
-The absolute value of the transmission
+These auxiliary constraints  are used to capture the absolute value of the transmission for the objective function.
 
 $$|f_{l,t}|≥f_{l,t},\quad ∀l,t \tag{t3}$$
 
@@ -178,17 +178,17 @@ Charge and discharge at $t=1$
 
 $$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s1}$$
 
-$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s2}$$
+$$b_{s,n,t}^{-}≥b_{s,n}^0 - b_{s,n,t},\quad ∀s,n,t=1 \tag{s2}$$
 
 Charge and discharge at $t>1$
 
 $$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s3}$$
 
-$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s4}$$
+$$b_{s,n,t}^{-}≥b_{s,n,t-1} - b_{s,n,t},\quad ∀s,n,t>1 \tag{s4}$$
 
 Storage capacity
 
-$$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t \tag{s5}$$
+$$b_{s,n,t}≤\bar{b}_{s,n}τ_{t},\quad ∀s,n,t \tag{s5}$$
 
 Storage continuity
 
@@ -198,9 +198,9 @@ $$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n \tag{s6}$$
 ### Ramping Limits
 Ramping limit up and down
 
-$$p_{g,n,t} - p_{g,n,t-1} ≥ r_g^{+}, \quad ∀g,n,t>1 \tag{r1}$$
+$$p_{g,n,t} - p_{g,n,t-1} ≥ r_g^{+}\bar{p}_{g,n,t}, \quad ∀g,n,t>1 \tag{r1}$$
 
-$$p_{g,n,t} - p_{g,n,t-1} ≤ -r_g^{-}, \quad ∀g,n,t>1 \tag{r2}$$
+$$p_{g,n,t} - p_{g,n,t-1} ≤ -r_g^{-}\bar{p}_{g,n,t}, \quad ∀g,n,t>1 \tag{r2}$$
 
 ### Voltage Angles
 Faraday law for accounting voltage angles
