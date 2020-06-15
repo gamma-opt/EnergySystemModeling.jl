@@ -1,6 +1,6 @@
 using Plots, LaTeXStrings
 
-function plot_generation_dispatch(p_gnt, p̄_gn, G, n, T)
+function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T)
     p = plot(
         legend=:outertopright,
         size=(780, 400)
@@ -14,12 +14,17 @@ function plot_generation_dispatch(p_gnt, p̄_gn, G, n, T)
         plot!(p, T, [p̄_gn[g, n] for t in T],
               label="")
     end
+    plot!(p, T, [h_nt[n, t] for t in T],
+          alpha=0.3,
+          label="h")
+    plot!(p, T, [H_n[n] + H′_n[n] for t in T],
+          label="")
     return p
 end
 
-function plot_generation_capacities(p̄_gn, G, n)
-    bar(G, [p̄_gn[g, n] for g in G],
-        xticks=G,
+function plot_generation_capacities(p̄_gn, H_n, H′_n, G, n)
+    bar([G;6], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
+        xticks=[G;6],
         xlabel=L"g",
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         legend=false)
@@ -98,13 +103,13 @@ end
 function plot_generation_dispatch(
         parameters::Params, variables::Variables, n::Integer)
     plot_generation_dispatch(
-        variables.p_gnt, variables.p̄_gn, parameters.G, n, parameters.T)
+        variables.p_gnt, variables.p̄_gn, variables.h_nt, parameters.H_n, parameters.H′_n, parameters.G, n, parameters.T)
 end
 
 """Plot generation capacities."""
 function plot_generation_capacities(
         parameters::Params, variables::Variables, n::Integer)
-    plot_generation_capacities(variables.p̄_gn, parameters.G, n)
+    plot_generation_capacities(variables.p̄_gn, parameters.H_n, parameters.H′_n, parameters.G, n)
 end
 
 """Plot transmission flow."""

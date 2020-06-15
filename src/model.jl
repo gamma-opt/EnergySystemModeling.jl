@@ -48,6 +48,13 @@ end
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
     b0_sn::Array{AbstractFloat, 2}
+    W_nmax::Array{AbstractFloat, 1}
+    W_nmin::Array{AbstractFloat, 1}
+    f_int::Array{AbstractFloat, 2}
+    f′_int::Array{AbstractFloat, 2}
+    H_n::Array{AbstractFloat, 1}
+    H′_n::Array{AbstractFloat, 1}
+    F_omin::AbstractFloat
 end
 
 """Variable values."""
@@ -64,6 +71,12 @@ end
     b⁻_snt::Array{AbstractFloat, 3}
     θ_nt::Array{AbstractFloat, 2}
     θ′_nt::Array{AbstractFloat, 2}
+    w_nt::Array{AbstractFloat, 2}
+    f_ont::Array{AbstractFloat, 2}
+    f′_ont::Array{AbstractFloat, 2}
+    f′′_ont::Array{AbstractFloat, 2}
+    h_nt::Array{AbstractFloat, 2}
+    h′_nt::Array{AbstractFloat, 2}
 end
 
 """Objective values."""
@@ -108,7 +121,8 @@ end
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
     @unpack G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn =
+            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
+            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_omin =
             parameters
 
     # Indices of lines L
@@ -130,6 +144,12 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
     @variable(model, θ_nt[n in N, t in T]≥0)
     @variable(model, θ′_nt[n in N, t in T]≥0)
+    @variable(model, w_nt[n in N, t in T]≥0)
+    @variable(model, f_ont[n in N, t in T]≥0)
+    @variable(model, f′_ont[n in N, t in T]≥0)
+    @variable(model, f′′_ont[n in N, t in T]≥0)
+    @variable(model, h_nt[n in N, t in T]≥0)
+    @variable(model, h′_nt[n in N, t in T]≥0)
 
     ## -- Objective --
     @expression(model, f1,
@@ -161,7 +181,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         σ_nt[n,t] +
         sum(f_lt[l,t] for l in L⁻(n)) -
         sum(f_lt[l,t] for l in L⁺(n)) +
-        ξ_s[s] * b_snt[s,n,t] ==
+        ξ_s[s] * b_snt[s,n,t] +
+        h_nt[n,t] ==
         D_nt[n,t])
 
     # Energy balance (t>1)
@@ -171,7 +192,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         σ_nt[n,t] +
         sum(f_lt[l,t] for l in L⁻(n)) -
         sum(f_lt[l,t] for l in L⁺(n)) +
-        ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) ==
+        ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) +
+        h_nt[n,t] ==
         D_nt[n,t])
 
     # Generation capacity
@@ -182,8 +204,10 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g2,
-            sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) ≥
-            κ * sum(p_gnt[g,n,t] for g in G, n in N, t in T))
+            sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) +
+            sum(h_nt[n,t] for n in N, t in T) ≥
+            κ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) +
+                 sum(h_nt[n,t] for n in N, t in T)))
     end
 
     # Shedding upper bound
@@ -252,5 +276,30 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
     end
 
+    # Hydro energy
+    @constraint(model,
+        h1[n in N, t in T],
+        W_nmin[n] ≤ w_nt[n,t] ≤ W_nmax[n])
+    @constraint(model,
+        h2[n in N, t in T[T.>1]],
+        w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])
+    @constraint(model,
+        h3[n in N, t in T],
+        f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
+    @constraint(model,
+        h4[n in N, t in T],
+        f_ont[n,t] ≥ F_omin)
+    @constraint(model,
+        h5[n in N, t in T],
+        0 ≤ f′_ont[n,t] ≤ H_n[n])
+    @constraint(model,
+        h6[n in N, t in T],
+        0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
+    @constraint(model,
+        h7[n in N, t in T],
+        0 ≤ h′_nt[n,t] ≤ H′_n[n])
+    @constraint(model,
+        h8[n in N, t in T],
+        h_nt[n,t] == h′_nt[n,t] + f′_ont[n,t])
     return model
 end

@@ -48,6 +48,7 @@ function Params(instance_path::AbstractString)
     C = constants["C"]
     C̄ = constants["C_bar"]
     interest_rate = constants["r"]
+    F_omin = constants["F_omin"]
 
     # Load time clustered parameters
     τ_t = ones(length(T))
@@ -55,12 +56,25 @@ function Params(instance_path::AbstractString)
     Q_gn = zeros(length(G), length(N))
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
+    W_nmax = zeros(length(N))
+    W_nmin = zeros(length(N))
+    f_int = zeros(length(N), length(T))
+    f′_int = zeros(length(N), length(T))
+    H_n = zeros(length(N))
+    H′_n = zeros(length(N))
     for n in N
         # Load node values from CSV files.
         df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
         D_nt[n, :] = df.Dem_Inc[1] .* df.Load_mod .* df.Max_Load[1]
         A_gnt[1, n, :] = df.Avail_Win
         A_gnt[2, n, :] = df.Avail_Sol
+        W_nmax[n] = df.Max_Hyd_Level[1]
+        W_nmin[n] = df.Min_Hyd_Level[1]
+        f_int[n,:] = df.Hyd_In
+        f′_int[n,:] = df.HydRoR_In
+        H_n[n] = df.Avail_Hyd[1]
+        H′_n[n] = df.Avail_HydRoR[1]
+        
     end
 
     # Load technology parameters
@@ -93,7 +107,8 @@ function Params(instance_path::AbstractString)
     # Return Params struct
     Params(
         G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn)
+        r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
+        W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_omin)
 end
 
 """Save object into JSON file.
