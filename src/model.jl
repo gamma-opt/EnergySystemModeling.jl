@@ -174,25 +174,14 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Transmission lines from node n
     L⁺(n) = (l for (l,(i,j)) in zip(L′,L) if i==n)
 
-    # Energy balance (t=1)
+    # Energy balance
     @constraint(model,
-        b1[s in S, n in N, t in [1]],
+        b1[s in S, n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
         sum(f_lt[l,t] for l in L⁻(n)) -
         sum(f_lt[l,t] for l in L⁺(n)) +
-        ξ_s[s] * b_snt[s,n,t] +
-        h_nt[n,t] ==
-        D_nt[n,t])
-
-    # Energy balance (t>1)
-    @constraint(model,
-        b2[s in S, n in N, t in T[T.>1]],
-        sum(p_gnt[g,n,t] for g in G) +
-        σ_nt[n,t] +
-        sum(f_lt[l,t] for l in L⁻(n)) -
-        sum(f_lt[l,t] for l in L⁺(n)) +
-        ξ_s[s] * (b_snt[s,n,t] - b_snt[s,n,t-1]) +
+        ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] + 
         h_nt[n,t] ==
         D_nt[n,t])
 
@@ -206,8 +195,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model, g2,
             sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) +
             sum(h_nt[n,t] for n in N, t in T) ≥
-            κ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) +
-                 sum(h_nt[n,t] for n in N, t in T)))
+            κ * sum(D_nt[n,t] for n in N, t in T))
     end
 
     # Shedding upper bound
@@ -232,28 +220,32 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         f_lt_abs[l,t]≥-f_lt[l,t])
 
     if specs.storage
-        # Charge and discharge (t=1)
+        # Storage capacity
         @constraint(model,
-            s1[s in S, n in N, t in [1]],
-            b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
-        @constraint(model,
-            s2[s in S, n in N, t in [1]],
-            b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b0_sn[s,n])
-
-        # Charge and discharge (t>1)
-        @constraint(model,
-            s3[s in S, n in N, t in T[T.>1]],
-            b⁺_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
-        @constraint(model,
-            s4[s in S, n in N, t in T[T.>1]],
-            b⁻_snt[s,n,t] ≥ b_snt[s,n,t]-b_snt[s,n,t-1])
-
-        # Storage capcity
-        @constraint(model,
-            s5[s in S, n in N, t in T],
+            s1[s in S, n in N, t in T],
             b_snt[s,n,t]≤b̄_sn[s,n])
 
-        # Storage
+        # Discharge (t=1)
+        @constraint(model,
+            s2[s in S, n in N, t in [1]],
+            b⁻_snt[s,n,t]≤b0_sn[s,n])
+        
+        # Discharge (t>1)
+        @constraint(model,
+            s3[s in S, n in N, t in T[T.>1]],
+            b⁻_snt[s,n,t]≤b_snt[s,n,t-1])
+
+        # Charge
+        @constraint(model,
+            s4[s in S, n in N, t in T],
+            b⁺_snt[s,n,t]≤b̄_sn[s,n] - b_snt[s,n,t])
+
+        # Storage levels
+        @constraint(model,
+            s5[s in S, n in N, t in T[T.>1]],
+            b_snt[s,n,t]==b_snt[s,n,t-1] + ξ_s[s]*b⁺_snt[s,n,t] - b⁻_snt[s,n,t])
+
+        # Storage continuity
         @constraint(model,
             s6[s in S, n in N],
             b_snt[s,n,1]==b_snt[s,n,T[end]])
@@ -284,22 +276,25 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         h2[n in N, t in T[T.>1]],
         w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])
     @constraint(model,
-        h3[n in N, t in T],
-        f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
+        h3[n in N],
+        w_nt[n,1] == w_nt[n,T[end]])
     @constraint(model,
         h4[n in N, t in T],
-        f_ont[n,t] ≥ F_omin)
+        f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
     @constraint(model,
         h5[n in N, t in T],
-        0 ≤ f′_ont[n,t] ≤ H_n[n])
+        f_ont[n,t] ≥ F_omin)
     @constraint(model,
         h6[n in N, t in T],
-        0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
+        0 ≤ f′_ont[n,t] ≤ H_n[n])
     @constraint(model,
         h7[n in N, t in T],
-        0 ≤ h′_nt[n,t] ≤ H′_n[n])
+        0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
     @constraint(model,
         h8[n in N, t in T],
+        0 ≤ h′_nt[n,t] ≤ H′_n[n])
+    @constraint(model,
+        h9[n in N, t in T],
         h_nt[n,t] == h′_nt[n,t] + f′_ont[n,t])
     return model
 end
