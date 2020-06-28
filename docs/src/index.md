@@ -25,6 +25,7 @@ Constant parameters
 *  $C$: Shedding cost [€/MWh]
 *  $\bar{C}$: Shedding capacity [MWh]
 *  $r≥0$: Interest rate
+*  $F_{omin}$: Minimum environmental flow requirement [MWh]
 
 Time clustered parameters
 
@@ -40,6 +41,15 @@ Generation technology parameters
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]. Calculated as $c_g/c'_g/1000$ where $c_g$ is fuel cost 1 and $c'_g$ fuel cost 2 of technology $g.$
 *  $r_g^{-}$: Relative ramp-down limit of technology $g$
 *  $r_g^{+}$: Relative ramp-up limit of technology $g$
+
+Hydro power parameters
+
+*  $W_{nmax}$: Maximum storage level of hydro reservoir in node $n$ [MWh]
+*  $W_{nmin}$: Minimum storage level of hydro reservoir in node $n$ [MWh]
+*  $f_{int}$: Hydro inflow to reservoirs in node $n$ during time step $t$ [MWh]
+*  $f'_{int}$: Hydro inflow to run-of-river plants in node $n$ during time step $t$ [MWh]
+*  $H_n$: Hydro reservoir generation capacity in node $n$ [MW]
+*  $H'_n$: Hydro run-of-river generation capacity in node $n$ [MW]
 
 Transmission parameters
 
@@ -63,6 +73,15 @@ Generation technology variables
 *  $p_{g,n,t}≥0$: Dispatch from technology $g$ at node $n$ in each time step $t$ [MWh]
 *  $\bar{p}_{g,n}≥0$: Generation capacity invested in each technology $g$ at node $n$ [MW]
 
+Hydro power variables
+
+*  $w_{nt}≥0$: Hydro reservoir storage level in node $n$ during time step $t$ [MWh]
+*  $f_{ont}≥0$: Hydro outflow from reservoirs in node $n$ during time step $t$ [MWh]
+*  $f'_{ont}≥0$: Hydro outflow trough the turbine in node $n$ during time step $t$ [MWh]
+*  $f''_{ont}≥0$: Hydro outflow bypassing the turbine in node $n$ during time step $t$ [MWh]
+*  $h_{nt}≥0$: Hydro generation in node $n$ during time step $t$ [MWh]
+*  $h_{nt}≥0$: Hydro run-of-river generation in node $n$ during time step $t$ [MWh]
+
 Shedding variables
 
 *  $σ_{n,t}≥0$: Loss of load at node $n$ in each time step $t$ [MWh]
@@ -76,9 +95,9 @@ Transmission variables
 Storage variables
 
 *  $b_{s,n,t}≥0$: Storage level of storage $s$ at node $n$ in each time step $t$ [MWh]
-*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MW]
-*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MW]
-*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MW]
+*  $\bar{b}_{s,n}≥0$: Storage capacity of storage $s$ at node $n$ [MWh]
+*  $b_{s,n,t}^{+}≥0$: Charging of storage $s$ at node $n$ in each time step $t$ [MWh]
+*  $b_{s,n,t}^{-}≥0$: Discharging of storage $s$ at node $n$ in each time step $t$ [MWh]
 
 Voltage angle variables
 
@@ -138,13 +157,9 @@ Transmission lines from node $n$
 
 $$L_n^+=\{l∈L∣j∈N,(n,j)=l\}$$
 
-Energy balance $t=1$
+Energy balance
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_{l,t} + ξ_s b_{s,n,t} = D_{n,t},\quad ∀s,n,t=1 \tag{b1}$$
-
-Energy balance $t>1$
-
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_{l,t} + ξ_s (b_{s,n,t}-b_{s,n,t-1}) = D_{n,t},\quad ∀s,n,t>1 \tag{b2}$$
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_{l,t} + ξ_s b_{s,n,t}^{-} - b_{s,n,t}^{+} + h_{n,t} = D_{n,t},\quad ∀s,n,t \tag{b1}$$
 
 ### Generation
 Generation capacity
@@ -153,7 +168,43 @@ $$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}),\quad ∀g,n,t \tag{g1}$$
 
 Minimum renewables share
 
-$$\sum_{g∈G^r,n,t} p_{g,n,t} ≥ κ \sum_{g,n,t} p_{g,n,t} \tag{g2}$$
+$$\sum_{g∈G^r,n,t} p_{g,n,t}  + \sum_{n,t} h_{n,t} ≥ κ \sum_{n,t} D_{g,n,t} \tag{g2}$$
+
+### Hydro energy
+Reservoir level bounds
+
+$$W_{nmin} ≤ w_{n,t} ≤ W_{nmax},\quad ∀n,t \tag{h1}$$
+
+Reservoir levels
+
+$$w_{n,t} = w_{n,t-1} + f_{i,n,t-1} - f_{o,n,t-1},\quad ∀n,t>1 \tag{h2}$$
+
+Reservoir level continuity
+
+$$w_{n,t=1} = w_{n,t=t_{end}},\quad ∀n \tag{h3}$$
+
+Outflow balance
+
+$$f_{o,n,t} = f'_{o,n,t} + f''_{o,n,t},\quad ∀n,t \tag{h4}$$
+
+Environmental flow requirement
+
+$$f_{o,n,t} ≥ F_{omin},\quad ∀n,t \tag{h5}$$
+
+Reservoir generation (turbine capacity for outflow)
+
+$$f'_{o,n,t} ≤ H_n,\quad ∀n,t \tag{h6}$$
+
+Run-of-river generation (available inflow and capacity)
+
+$$0 ≤ h'_{n,t} ≤ f'_{i,n,t},\quad ∀n,t \tag{h7}$$
+
+$$0 ≤ h'_{n,t} ≤ H'_n,\quad ∀n,t \tag{h8}$$
+
+Hydro generation balance
+
+$$h_{n,t} = h'_{n,t} + f'_{o,n,t},\quad ∀n,t \tag{h9}$$
+
 
 ### Shedding
 Shedding upper bound
@@ -174,21 +225,25 @@ $$|f_{l,t}|≥f_{l,t},\quad ∀l,t \tag{t3}$$
 $$|f_{l,t}|≥-f_{l,t},\quad ∀l,t \tag{t4}$$
 
 ### Storage
-Charge and discharge at $t=1$
-
-$$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s1}$$
-
-$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n}^0,\quad ∀s,n,t=1 \tag{s2}$$
-
-Charge and discharge at $t>1$
-
-$$b_{s,n,t}^{+}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s3}$$
-
-$$b_{s,n,t}^{-}≥b_{s,n,t} - b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s4}$$
-
 Storage capacity
 
-$$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t \tag{s5}$$
+$$b_{s,n,t}≤\bar{b}_{s,n},\quad ∀s,n,t \tag{s1}$$
+
+Discharge at $t=1$
+
+$$b_{s,n,t}^{-}≤b_{s,n}^0,\quad ∀s,n,t=1 \tag{s2}$$
+
+Discharge at $t>1$
+
+$$b_{s,n,t}^{-}≤b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s3}$$
+
+Charge
+
+$$b_{s,n,t}^{+}≤\bar{b}_{s,n} - b_{s,n,t},\quad ∀s,n,t \tag{s4}$$
+
+Storage levels
+
+$$b_{s,n,t}=b_{s,n,t-1} + ξ_s b_{s,n,t}^{+} - b_{s,n,t}^{-},\quad ∀s,n,t>1 \tag{s5}$$
 
 Storage continuity
 
