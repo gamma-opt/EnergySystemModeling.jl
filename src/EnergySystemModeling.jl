@@ -9,7 +9,10 @@ export EnergySystemModel,
     Objectives,
     equivalent_annual_cost,
     save_json,
-    load_json
+    load_json,
+    create_nodedata,
+    replace_nans,
+    getdispatch
 
 include("plotting.jl")
 export plot_objective_values,

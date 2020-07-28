@@ -21,7 +21,7 @@ model = EnergySystemModel(parameters, specs)
 
 @info "Optimizing the model"
 using Gurobi, JuMP
-optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => 10*60,
+optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => 300*60,
                                       "LogFile" => joinpath(output, "gurobi.log"))
 set_optimizer(model, optimizer)
 optimize!(model)

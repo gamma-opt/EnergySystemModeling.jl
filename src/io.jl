@@ -1,4 +1,4 @@
-using CSV, JSON, DataFrames
+using CSV, JSON, DataFrames, JLD, MAT
 
 """Equivalent annual cost (EAC)
 
@@ -27,7 +27,7 @@ end
 # Arguments
 - `instance_path::AbstractString`: Path to the instance directory.
 """
-function Params(instance_path::AbstractString)
+function Params(instance_path::AbstractString) 
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
 
@@ -48,11 +48,9 @@ function Params(instance_path::AbstractString)
     C = constants["C"]
     C̄ = constants["C_bar"]
     interest_rate = constants["r"]
-    F_omin = constants["F_omin"]
 
     # Load time clustered parameters
     τ_t = ones(length(T))
-    # TODO: load from file
     Q_gn = zeros(length(G), length(N))
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
@@ -62,18 +60,24 @@ function Params(instance_path::AbstractString)
     f′_int = zeros(length(N), length(T))
     H_n = zeros(length(N))
     H′_n = zeros(length(N))
+    F_onmin = zeros(length(N))
     for n in N
         # Load node values from CSV files.
         df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
-        D_nt[n, :] = df.Dem_Inc[1] .* df.Load_mod .* df.Max_Load[1]
-        A_gnt[1, n, :] = df.Avail_Win
+        capacitydf = CSV.read(joinpath(instance_path, "capacity.csv")) |> DataFrame
+        for g in G
+            Q_gn[g, n] = capacitydf[n, g+1]
+        end
+        D_nt[n, :] = df.Demand
+        A_gnt[1, n, :] = df.Avail_Wind
         A_gnt[2, n, :] = df.Avail_Sol
-        W_nmax[n] = df.Max_Hyd_Level[1]
-        W_nmin[n] = df.Min_Hyd_Level[1]
+        W_nmax[n] = capacitydf.Max_Hyd_Level[n]
+        W_nmin[n] = capacitydf.Min_Hyd_Level[n]
         f_int[n,:] = df.Hyd_In
         f′_int[n,:] = df.HydRoR_In
-        H_n[n] = df.Avail_Hyd[1]
-        H′_n[n] = df.Avail_HydRoR[1]
+        H_n[n] = capacitydf.Hydro[n]
+        H′_n[n] = capacitydf.HydroRoR[n]
+        F_onmin[n] = (sum(f_int[n, :]) / 8760) * 0.05
         
     end
 
@@ -108,7 +112,7 @@ function Params(instance_path::AbstractString)
     Params(
         G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
-        W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_omin)
+        W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
 end
 
 """Save object into JSON file.
@@ -162,4 +166,175 @@ function load_json(type, filepath::AbstractString)
               v -> transform(v, t))
     end
     type(fields...)
+end
+
+#Replace NaN's with 0
+function replace_nans(array::Array{Float64, N}) where N
+    for i = eachindex(array)
+        if isnan(array[i])
+            array[i] = zero(1)
+        end
+    end
+end
+
+"""Reads wind, solar and hydro data produced by the GlobalEnergyGIS package into CSV node files.
+
+# Arguments
+- `instance_path::AbstractString`: Path to the instance directory.
+- `era_year::AbstractString`: Year of the ERA5 data used in the GlobalEnergyGIS package.
+- `era_year::AbstractString`: Name of the GIS region used.
+"""
+function create_nodedata(instance_path::AbstractString, era_year::AbstractString, gisregion::AbstractString)
+
+    #Read files
+    solarvars = matread(joinpath(instance_path, "GISdata_solar$(era_year)_$gisregion.mat"))
+    windvars = matread(joinpath(instance_path, "GISdata_wind$(era_year)_$gisregion.mat"))
+    hydrovars = matread(joinpath(instance_path, "GISdata_hydro_$gisregion.mat"))
+    demandvars = load(joinpath(instance_path, "SyntheticDemand_$(gisregion)_$(era_year).jld"), "demand")
+
+    #Solar
+
+    capacity_cspplantA = solarvars["capacity_cspplantA"]
+    capacity_cspplantB = solarvars["capacity_cspplantB"]
+    capacity_pvplantA = solarvars["capacity_pvplantA"]
+    capacity_pvplantB = solarvars["capacity_pvplantB"]
+    capacity_pvrooftop = solarvars["capacity_pvrooftop"]
+
+    #Number of nodes
+    n = size(capacity_cspplantA, 1)
+
+    CFtime_cspplantA = solarvars["CFtime_cspplantA"]
+    CFtime_cspplantB = solarvars["CFtime_cspplantB"]
+    CFtime_pvplantA = solarvars["CFtime_pvplantA"]
+    CFtime_pvplantB = solarvars["CFtime_pvplantB"]
+    CFtime_pvrooftop = solarvars["CFtime_pvrooftop"]
+
+    #Replace NaNs from hourly data with 0's
+    replace_nans(CFtime_cspplantA)
+    replace_nans(CFtime_cspplantB)
+    replace_nans(CFtime_pvplantA)
+    replace_nans(CFtime_pvplantB)
+    replace_nans(CFtime_pvrooftop)
+
+    #Preallocate arrays for results
+    avail_sol_cspA = zeros(Float64, 8760, n)
+    avail_sol_cspB = zeros(Float64, 8760, n)
+    avail_sol_pvA = zeros(Float64, 8760, n)
+    avail_sol_pvB = zeros(Float64, 8760, n)
+    avail_sol_pvrooftop = zeros(Float64, 8760, n)
+
+    #Calculate absolute availability values and sum up the different classes for each solar power type
+    for i in 1:8760
+        avail_sol_cspA[i,:,:] = permutedims(sum(capacity_cspplantA .* CFtime_cspplantA[i,:,:], dims=2))
+        avail_sol_cspB[i,:,:] = permutedims(sum(capacity_cspplantB .* CFtime_cspplantB[i,:,:], dims=2))
+        avail_sol_pvA[i,:,:] = permutedims(sum(capacity_pvplantA .* CFtime_pvplantA[i,:,:], dims=2))
+        avail_sol_pvB[i,:,:] = permutedims(sum(capacity_pvplantB .* CFtime_pvplantB[i,:,:], dims=2))
+        avail_sol_pvrooftop[i,:,:] = permutedims(sum(capacity_pvrooftop .* CFtime_pvrooftop[i,:,:], dims=2))
+    end
+    #Calculate total solar capacity
+    capacity_solar = permutedims(sum(capacity_cspplantA, dims=2)) + permutedims(sum(capacity_cspplantB, dims=2)) + permutedims(sum(capacity_pvplantA, dims=2)) +
+                     permutedims(sum(capacity_pvplantB, dims=2))  + permutedims(sum(capacity_pvrooftop, dims=2))
+    #Sum the different solar types and divide with total capacity to get relative availability values
+    avail_sol = (avail_sol_cspA + avail_sol_cspB + avail_sol_pvA + avail_sol_pvB + avail_sol_pvrooftop) ./ capacity_solar
+
+    #Wind
+
+    capacity_offshore = windvars["capacity_offshore"]
+    capacity_onshoreA = windvars["capacity_onshoreA"]
+    capacity_onshoreB = windvars["capacity_onshoreB"]
+
+    CFtime_windoffshore = windvars["CFtime_windoffshore"]
+    CFtime_windonshoreA = windvars["CFtime_windonshoreA"]
+    CFtime_windonshoreB = windvars["CFtime_windonshoreB"]
+
+    #Replace NaNs from hourly data with 0's
+    replace_nans(CFtime_windoffshore)
+    replace_nans(CFtime_windonshoreA)
+    replace_nans(CFtime_windonshoreB)
+
+    #Preallocate arrays for results
+    avail_wind_offshore = zeros(Float64, 8760, n)
+    avail_wind_onshoreA = zeros(Float64, 8760, n)
+    avail_wind_onshoreB = zeros(Float64, 8760, n)
+
+    #Calculate absolute availability values and sum up the different classes for each wind power type
+    for i in 1:8760
+        avail_wind_offshore[i,:,:] = permutedims(sum(capacity_offshore .* CFtime_windoffshore[i,:,:], dims=2))
+        avail_wind_onshoreA[i,:,:] = permutedims(sum(capacity_onshoreA .* CFtime_windonshoreA[i,:,:], dims=2))
+        avail_wind_onshoreB[i,:,:] = permutedims(sum(capacity_onshoreB .* CFtime_windonshoreB[i,:,:], dims=2))
+    end
+    #Calculate total wind capacity
+    capacity_wind = permutedims(sum(capacity_offshore, dims=2)) + permutedims(sum(capacity_onshoreA, dims=2)) + permutedims(sum(capacity_onshoreB, dims=2))
+    #Sum the different wind types and divide with total capacity to get relative availability values
+    avail_wind = (avail_wind_offshore + avail_wind_onshoreA + avail_wind_onshoreB) ./ capacity_wind
+
+    #Hydro
+    
+    existingcapac = permutedims(hydrovars["existingcapac"]) .* 1000
+    #Monthly inflow
+    existinginflow = permutedims(hydrovars["existinginflowcf"])
+    #Replace NaNs from monthly data with 0's
+    replace_nans(existinginflow)
+    #Preallocate array for intermediate result
+    avail_inflow = zeros(Float64, 8760, n)
+
+    #Turn monthly inflow data into hourly data
+    days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    lasthours = 24 * cumsum(days)
+    firsthours = [1; 1 .+ lasthours[1:end-1]]
+    for m in 1:12
+        for i = firsthours[m]:lasthours[m]
+            avail_inflow[i,:] = existinginflow[m,:]
+        end
+    end
+
+    #Percentage of inflow that is to reservoirs. TODO: Read from file
+    reservoirp = [0 0.953 1 0 0.433 0.261 0 0.456 0.069 0.838 0.563]
+
+    #Hydro capacities
+    capacity_hyd = existingcapac .* reservoirp
+    capacity_hydRoR = existingcapac - capacity_hyd
+    hydrocapacity = [capacity_hyd; capacity_hydRoR]
+    
+    #Reservoir and RoR inflow
+    hyd_in = avail_inflow .* capacity_hyd
+    hydRoR_in = avail_inflow .* capacity_hydRoR
+
+    #Write a CSV file for each node
+    for i in 1:n
+        nodedata = zeros(8760, 5)
+        nodedata[:,1] = demandvars[:,i]
+        nodedata[:,2] = avail_sol[:,i]
+        nodedata[:,3] = avail_wind[:,i]
+        nodedata[:,4] = hyd_in[:,i]
+        nodedata[:,5] = hydRoR_in[:,i]
+        nodedata = convert(DataFrame, nodedata)
+        rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind", "Hyd_In", "HydRoR_In"])
+        CSV.write(joinpath(instance_path, "nodes", "$i.csv"), nodedata)
+    end
+
+    
+end
+
+function getdispatch(output_path::AbstractString)
+
+    variables = JSON.parsefile(joinpath(output_path, "variables.json"))
+
+    pgnt = variables["p_gnt"] |> Array{Array{Array{Float64}}}
+    hyd = variables["h_nt"] |> Array{Array{Float64}}
+    dispatch = zeros(11, 6)
+    for n in 1:11
+        for g in 1:5
+            for t in 1:8760
+                dispatch[n, g] = dispatch[n, g] + pgnt[t][n][g]
+            end  
+        end
+        for t in 1:8760
+            dispatch[n, 6] = dispatch[n, 6] + hyd[t][n]
+        end
+    end
+    dispatch = convert(DataFrame, dispatch)
+    rename!(dispatch, ["WIND", "SOLAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO"])
+    CSV.write(joinpath(output_path, "dispatch.csv"), dispatch)
+
 end

@@ -25,7 +25,6 @@ Constant parameters
 *  $C$: Shedding cost [€/MWh]
 *  $\bar{C}$: Shedding capacity [MWh]
 *  $r≥0$: Interest rate
-*  $F_{omin}$: Minimum environmental flow requirement [MWh]
 
 Time clustered parameters
 
@@ -50,6 +49,7 @@ Hydro power parameters
 *  $f'_{int}$: Hydro inflow to run-of-river plants in node $n$ during time step $t$ [MWh]
 *  $H_n$: Hydro reservoir generation capacity in node $n$ [MW]
 *  $H'_n$: Hydro run-of-river generation capacity in node $n$ [MW]
+*  $F_{onmin}$: Minimum environmental flow requirement [MWh]
 
 Transmission parameters
 

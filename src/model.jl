@@ -54,7 +54,7 @@ end
     f′_int::Array{AbstractFloat, 2}
     H_n::Array{AbstractFloat, 1}
     H′_n::Array{AbstractFloat, 1}
-    F_omin::AbstractFloat
+    F_onmin::Array{AbstractFloat, 1}
 end
 
 """Variable values."""
@@ -122,7 +122,7 @@ end
 function EnergySystemModel(parameters::Params, specs::Specs)
     @unpack G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
-            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_omin =
+            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
     # Indices of lines L
@@ -283,7 +283,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
     @constraint(model,
         h5[n in N, t in T],
-        f_ont[n,t] ≥ F_omin)
+        f_ont[n,t] ≥ F_onmin[n])
     @constraint(model,
         h6[n in N, t in T],
         0 ≤ f′_ont[n,t] ≤ H_n[n])
