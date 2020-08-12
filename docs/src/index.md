@@ -80,7 +80,7 @@ Hydro power variables
 *  $f'_{ont}≥0$: Hydro outflow trough the turbine in node $n$ during time step $t$ [MWh]
 *  $f''_{ont}≥0$: Hydro outflow bypassing the turbine in node $n$ during time step $t$ [MWh]
 *  $h_{nt}≥0$: Hydro generation in node $n$ during time step $t$ [MWh]
-*  $h_{nt}≥0$: Hydro run-of-river generation in node $n$ during time step $t$ [MWh]
+*  $h'_{nt}≥0$: Hydro run-of-river generation in node $n$ during time step $t$ [MWh]
 
 Shedding variables
 

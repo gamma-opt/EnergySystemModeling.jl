@@ -69,8 +69,10 @@ function Params(instance_path::AbstractString)
             Q_gn[g, n] = capacitydf[n, g+1]
         end
         D_nt[n, :] = df.Demand
-        A_gnt[1, n, :] = df.Avail_Wind
-        A_gnt[2, n, :] = df.Avail_Sol
+        A_gnt[1, n, :] = df.Avail_Wind_On
+        A_gnt[2, n, :] = df.Avail_Wind_Off
+        A_gnt[3, n, :] = df.Avail_Sol
+        A_gnt[A_gnt .< 0.01] .= 0
         W_nmax[n] = capacitydf.Max_Hyd_Level[n]
         W_nmin[n] = capacitydf.Min_Hyd_Level[n]
         f_int[n,:] = df.Hyd_In
@@ -84,10 +86,10 @@ function Params(instance_path::AbstractString)
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
         CSV.read |> DataFrame
-    I_g = equivalent_annual_cost.(technology.cost, technology.lifetime,
+    I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
                                   interest_rate)
-    M_g = technology.M
-    C_g = technology.fuel_cost_1 ./ technology.fuel_cost_2 ./ 1000
+    M_g = technology.fixedOM .* 1000
+    C_g = technology.fuel_cost ./ technology.efficiency .+ technology.varOM
     r⁻_g = technology.r_minus
     r⁺_g = technology.r_plus
 
@@ -264,9 +266,11 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
         avail_wind_onshoreB[i,:,:] = permutedims(sum(capacity_onshoreB .* CFtime_windonshoreB[i,:,:], dims=2))
     end
     #Calculate total wind capacity
-    capacity_wind = permutedims(sum(capacity_offshore, dims=2)) + permutedims(sum(capacity_onshoreA, dims=2)) + permutedims(sum(capacity_onshoreB, dims=2))
+    capacity_wind_on = permutedims(sum(capacity_onshoreA, dims=2)) + permutedims(sum(capacity_onshoreB, dims=2))
+    capacity_wind_off = permutedims(sum(capacity_offshore, dims=2))
     #Sum the different wind types and divide with total capacity to get relative availability values
-    avail_wind = (avail_wind_offshore + avail_wind_onshoreA + avail_wind_onshoreB) ./ capacity_wind
+    avail_wind_on = (avail_wind_onshoreA + avail_wind_onshoreB) ./ capacity_wind_on
+    avail_wind_off = avail_wind_offshore ./ capacity_wind_off
 
     #Hydro
     
@@ -302,14 +306,15 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
 
     #Write a CSV file for each node
     for i in 1:n
-        nodedata = zeros(8760, 5)
+        nodedata = zeros(8760, 6)
         nodedata[:,1] = demandvars[:,i]
         nodedata[:,2] = avail_sol[:,i]
-        nodedata[:,3] = avail_wind[:,i]
-        nodedata[:,4] = hyd_in[:,i]
-        nodedata[:,5] = hydRoR_in[:,i]
+        nodedata[:,3] = avail_wind_on[:,i]
+        nodedata[:,4] = avail_wind_off[:,i]
+        nodedata[:,5] = hyd_in[:,i]
+        nodedata[:,6] = hydRoR_in[:,i]
         nodedata = convert(DataFrame, nodedata)
-        rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind", "Hyd_In", "HydRoR_In"])
+        rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind_On", "Avail_Wind_Off", "Hyd_In", "HydRoR_In"])
         CSV.write(joinpath(instance_path, "nodes", "$i.csv"), nodedata)
     end
 
@@ -319,22 +324,49 @@ end
 function getdispatch(output_path::AbstractString)
 
     variables = JSON.parsefile(joinpath(output_path, "variables.json"))
+    parameters = JSON.parsefile(joinpath(output_path, "parameters.json"))
 
     pgnt = variables["p_gnt"] |> Array{Array{Array{Float64}}}
     hyd = variables["h_nt"] |> Array{Array{Float64}}
-    dispatch = zeros(11, 6)
+    dem = parameters["D_nt"] |> Array{Array{Float64}}
+    dispatch = zeros(13, 11)
     for n in 1:11
-        for g in 1:5
+        for g in 1:8
             for t in 1:8760
                 dispatch[n, g] = dispatch[n, g] + pgnt[t][n][g]
             end  
         end
         for t in 1:8760
-            dispatch[n, 6] = dispatch[n, 6] + hyd[t][n]
+            dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
+            dispatch[n, 11] = dispatch[n, 11] + dem[t][n]
         end
+        dispatch[n, 10] = sum(dispatch[n, 1:9])
     end
+    for i in 1:11
+        dispatch[12, i] = sum(dispatch[:, i])
+    end
+    dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
+    #
+    #capacity = variables["p̄_gn"] |> Array{Array{Float64}}
+    #hydcap = variables["H_n"] |> Array{Float64}
+    #hydRoRcap = variables["H′_n"] |> Array{Float64}
+    #capacities = zeros(13, 10)
+    #for n in 1:11
+    #    for g in 1:8
+    #        capacities[n, g] = capacity[n, g]
+    #   end
+    #    for t in 1:8760
+    #        dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
+    #    end
+    #    dispatch[n, 10] = sum(dispatch[n, :])
+    #end
+    #for i in 1:10
+    #    dispatch[12, i] = sum(dispatch[:, i])
+    #end
+    #dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
+
     dispatch = convert(DataFrame, dispatch)
-    rename!(dispatch, ["WIND", "SOLAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO"])
+    rename!(dispatch, ["WIND_ON", "WIND_OFF", "SOLAR", "BIOMASS", "NUCLEAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO", "TOTAL", "DEMAND"])
     CSV.write(joinpath(output_path, "dispatch.csv"), dispatch)
 
 end

@@ -193,9 +193,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g2,
-            sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) +
-            sum(h_nt[n,t] for n in N, t in T) ≥
-            κ * sum(D_nt[n,t] for n in N, t in T))
+            (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) +
+            sum(h_nt[n,t] for n in N, t in T)) / 1000 ≥
+            κ * sum(D_nt[n,t] for n in N, t in T) / 1000)
     end
 
     # Shedding upper bound

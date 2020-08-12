@@ -23,8 +23,8 @@ function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T)
 end
 
 function plot_generation_capacities(p̄_gn, H_n, H′_n, G, n)
-    bar([G;6], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
-        xticks=[G;6],
+    bar([G;9], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
+        xticks=[G;9],
         xlabel=L"g",
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         legend=false)
