@@ -1,4 +1,4 @@
-using Plots, LaTeXStrings
+using Plots, StatsPlots, LaTeXStrings
 
 function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T)
     p = plot(
@@ -85,6 +85,27 @@ function plot_loss_of_load(σ_nt, N, T)
     return p
 end
 
+function plot_box(p_gnt, h_nt, G, n, T)
+    p = plot(
+        legend=:outertopright,
+        size=(780, 400)
+    )
+    for g in G
+        boxplot!([g], [p_gnt[g,n,:]],
+              alpha=0.3,
+              xlabel=L"t",
+              ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+              label="g$g")
+
+    end
+    boxplot!([9], [h_nt[n,:]],
+        alpha=0.3,
+        xlabel=L"g",
+        ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+        label="g9")
+    return p
+end
+
 # Overload functions for signature: parameters::Params, model::Model, ...
 
 """Plot objective value and individual objective values."""
@@ -140,4 +161,11 @@ end
 """Plot loss of load."""
 function plot_loss_of_load(parameters::Params, variables::Variables)
     plot_loss_of_load(variables.σ_nt, parameters.N, parameters.T)
+end
+
+"""Plot generation box."""
+function plot_box(
+        parameters::Params, variables::Variables, n::Integer)
+    plot_box(
+        variables.p_gnt, variables.h_nt, parameters.G, n, parameters.T)
 end

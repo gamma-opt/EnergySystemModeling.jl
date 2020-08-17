@@ -22,6 +22,7 @@ export plot_objective_values,
     plot_transmission_capacities,
     plot_storage_level,
     plot_storage_capacities,
-    plot_loss_of_load
+    plot_loss_of_load,
+    plot_box
 
 end # module

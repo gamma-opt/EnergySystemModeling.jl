@@ -12,7 +12,7 @@ parameters = Params("instance")
 specs = Specs(
     renewable_target=true,
     storage=true,
-    ramping=false,
+    ramping=true,
     voltage_angles=false
 )
 
@@ -24,7 +24,9 @@ using Gurobi, JuMP
 optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => 48*60*60,
                                       "LogFile" => joinpath(output, "gurobi.log"))
 set_optimizer(model, optimizer)
-set_optimizer_attributes(model, "NumericFocus" => 3)
+set_optimizer_attributes(model, "Method" => 2)
+set_optimizer_attributes(model, "Crossover" => 0)
+set_optimizer_attributes(model, "NumericFocus" => 1)
 optimize!(model)
 
 @info "Extract results"
@@ -39,6 +41,7 @@ save_json(objectives, joinpath(output, "objectives.json"))
 
 @info "Plotting"
 using Plots
+pyplot()
 
 savefig(plot_objective_values(objectives),
         joinpath(output, "objectives.svg"))
@@ -52,6 +55,8 @@ for n in parameters.N
             joinpath(output, "storage_n$n.svg"))
     savefig(plot_storage_capacities(parameters, variables, n),
            joinpath(output, "storage_capacities_n$n.svg"))
+    savefig(plot_box(parameters, variables, n),
+           joinpath(output, "boxplot$n.svg"))
 end
 
 for l in 1:length(parameters.L)

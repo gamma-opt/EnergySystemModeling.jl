@@ -45,6 +45,7 @@ function Params(instance_path::AbstractString)
     # Load constant parameters
     constants = JSON.parsefile(joinpath(instance_path, "constants.json"))
     κ = constants["kappa"]
+    μ = constants["mu"]
     C = constants["C"]
     C̄ = constants["C_bar"]
     interest_rate = constants["r"]
@@ -52,6 +53,7 @@ function Params(instance_path::AbstractString)
     # Load time clustered parameters
     τ_t = ones(length(T))
     Q_gn = zeros(length(G), length(N))
+    Q̄_gn = zeros(length(G), length(N))
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
     W_nmax = zeros(length(N))
@@ -67,6 +69,7 @@ function Params(instance_path::AbstractString)
         capacitydf = CSV.read(joinpath(instance_path, "capacity.csv")) |> DataFrame
         for g in G
             Q_gn[g, n] = capacitydf[n, g+1]
+            Q̄_gn[g, n] = capacitydf[n, g+13]
         end
         D_nt[n, :] = df.Demand
         A_gnt[1, n, :] = df.Avail_Wind_On
@@ -112,7 +115,7 @@ function Params(instance_path::AbstractString)
 
     # Return Params struct
     Params(
-        G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        G, G_r, N, L, T, S, κ, μ, C, C̄, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
         r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
         W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
 end

@@ -28,11 +28,13 @@ end
     T::Array{Integer, 1}
     S::Array{Integer, 1}
     κ::AbstractFloat
+    μ::AbstractFloat 
     C::AbstractFloat
     C̄::AbstractFloat
     τ::Integer
     τ_t::Array{Integer, 1}
     Q_gn::Array{AbstractFloat, 2}
+    Q̄_gn::Array{AbstractFloat, 2}
     A_gnt::Array{AbstractFloat, 3}
     D_nt::Array{AbstractFloat, 2}
     I_g::Array{AbstractFloat, 1}
@@ -120,7 +122,7 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack G, G_r, N, L, T, S, κ, C, C̄, τ, τ_t, Q_gn, A_gnt, D_nt, I_g, M_g,
+    @unpack G, G_r, N, L, T, S, κ, μ, C, C̄, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
             C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
             W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
@@ -189,18 +191,25 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @constraint(model,
         g1[g in G, n in N, t in T],
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
+    @constraint(model,
+        g2[g in G, n in N],
+        p̄_gn[g,n] / 1000 ≤ Q̄_gn[g,n] / 1000)
 
     # Minimum renewables share
     if specs.renewable_target
-        @constraint(model, g2,
+        @constraint(model, g3,
             (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) +
             sum(h_nt[n,t] for n in N, t in T)) / 1000 ≥
             κ * sum(D_nt[n,t] for n in N, t in T) / 1000)
     end
-
+    # Maximum nuclear share
+    @constraint(model, g4,
+        (sum(p_gnt[5,n,t] for n in N, t in T) / 1000 ≤
+        μ * sum(D_nt[n,t] for n in N, t in T) / 1000))
+    
     # Shedding upper bound
     @constraint(model,
-        g3[n in N, t in T],
+        g5[n in N, t in T],
         σ_nt[n,t] ≤ C̄ * D_nt[n,t])
 
     # Transmission capacity
@@ -255,10 +264,10 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Ramping limits
         @constraint(model,
             r1[g in G, n in N, t in T[T.>1]],
-            p_gnt[g,n,t]-p_gnt[g,n,t-1]≥r⁺_g[g])
+            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≤ r⁺_g[g] * (Q_gn[g,n] + p̄_gn[g,n]))
         @constraint(model,
             r2[g in G, n in N, t in T[T.>1]],
-            p_gnt[g,n,t]-p_gnt[g,n,t-1]≤r⁻_g[g])
+            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≥ -r⁻_g[g] * (Q_gn[g,n] + p̄_gn[g,n]))
     end
 
     if specs.voltage_angles
