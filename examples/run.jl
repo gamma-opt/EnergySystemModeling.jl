@@ -41,6 +41,7 @@ save_json(objectives, joinpath(output, "objectives.json"))
 
 @info "Plotting"
 using Plots
+using StatsPlots
 pyplot()
 
 savefig(plot_objective_values(objectives),
@@ -57,7 +58,10 @@ for n in parameters.N
            joinpath(output, "storage_capacities_n$n.svg"))
     savefig(plot_box(parameters, variables, n),
            joinpath(output, "boxplot$n.svg"))
+    
 end
+savefig(plot_box2(parameters, variables),
+        joinpath(output, "boxplotall.svg"))
 
 for l in 1:length(parameters.L)
     savefig(plot_transmission_flow(parameters, variables, l),

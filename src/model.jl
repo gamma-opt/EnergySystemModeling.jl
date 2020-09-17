@@ -31,6 +31,7 @@ end
     μ::AbstractFloat 
     C::AbstractFloat
     C̄::AbstractFloat
+    C_E::AbstractFloat
     τ::Integer
     τ_t::Array{Integer, 1}
     Q_gn::Array{AbstractFloat, 2}
@@ -40,6 +41,8 @@ end
     I_g::Array{AbstractFloat, 1}
     M_g::Array{AbstractFloat, 1}
     C_g::Array{AbstractFloat, 1}
+    e_g::Array{AbstractFloat, 1}
+    E_g::Array{AbstractFloat, 1}
     r⁻_g::Array{AbstractFloat, 1}
     r⁺_g::Array{AbstractFloat, 1}
     I_l::Array{AbstractFloat, 1}
@@ -122,8 +125,8 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack G, G_r, N, L, T, S, κ, μ, C, C̄, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
+    @unpack G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
             W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
@@ -178,12 +181,12 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     # Energy balance
     @constraint(model,
-        b1[s in S, n in N, t in T],
+        b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
         sum(f_lt[l,t] for l in L⁻(n)) -
         sum(f_lt[l,t] for l in L⁺(n)) +
-        ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] + 
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
         h_nt[n,t] ==
         D_nt[n,t])
 
@@ -193,7 +196,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
     @constraint(model,
         g2[g in G, n in N],
-        p̄_gn[g,n] / 1000 ≤ Q̄_gn[g,n] / 1000)
+        (Q_gn[g,n] + p̄_gn[g,n]) / 1000 ≤ Q̄_gn[g,n] / 1000)
 
     # Minimum renewables share
     if specs.renewable_target
@@ -202,14 +205,31 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             sum(h_nt[n,t] for n in N, t in T)) / 1000 ≥
             κ * sum(D_nt[n,t] for n in N, t in T) / 1000)
     end
-    # Maximum nuclear share
-    @constraint(model, g4,
-        (sum(p_gnt[5,n,t] for n in N, t in T) / 1000 ≤
-        μ * sum(D_nt[n,t] for n in N, t in T) / 1000))
+    ## Maximum nuclear share
+    #@constraint(model, g4,
+    #    (sum(p_gnt[5,n,t] for n in N, t in T) / 1000 ≤
+    #    μ * sum(D_nt[n,t] for n in N, t in T) / 1000))
+
+    #@constraint(model, g5,
+    #    (0.202 * sum(p_gnt[4,n,t] for n in N, t in T) / 0.48 +
+    #    0.33 * sum(p_gnt[6,n,t] for n in N, t in T) / 0.47 +
+    #    0.202 * sum(p_gnt[7,n,t] for n in N, t in T) / 0.61 +
+    #    0.202 * sum(p_gnt[8,n,t] for n in N, t in T) / 0.39) / 1000 ≤
+    #    0.01 * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
+
+    #Carbon cap
+
+    #@constraint(model, g5,
+    #    (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤
+    #    C_E * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
+
+    @constraint(model, g5,
+        (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤
+        C_E * 1868672938 / 1000)
     
     # Shedding upper bound
     @constraint(model,
-        g5[n in N, t in T],
+        g6[n in N, t in T],
         σ_nt[n,t] ≤ C̄ * D_nt[n,t])
 
     # Transmission capacity
@@ -234,25 +254,20 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             s1[s in S, n in N, t in T],
             b_snt[s,n,t]≤b̄_sn[s,n])
 
-        # Discharge (t=1)
+        # Discharge
         @constraint(model,
-            s2[s in S, n in N, t in [1]],
-            b⁻_snt[s,n,t]≤b0_sn[s,n])
-        
-        # Discharge (t>1)
-        @constraint(model,
-            s3[s in S, n in N, t in T[T.>1]],
-            b⁻_snt[s,n,t]≤b_snt[s,n,t-1])
+            s3[s in S, n in N, t in T],
+            b⁻_snt[s,n,t]≤b_snt[s,n,t])
 
         # Charge
         @constraint(model,
             s4[s in S, n in N, t in T],
-            b⁺_snt[s,n,t]≤b̄_sn[s,n] - b_snt[s,n,t])
+            ξ_s[s]*b⁺_snt[s,n,t]≤b̄_sn[s,n] - b_snt[s,n,t])
 
         # Storage levels
         @constraint(model,
             s5[s in S, n in N, t in T[T.>1]],
-            b_snt[s,n,t]==b_snt[s,n,t-1] + ξ_s[s]*b⁺_snt[s,n,t] - b⁻_snt[s,n,t])
+            b_snt[s,n,t]==b_snt[s,n,t-1] + ξ_s[s]*b⁺_snt[s,n,t-1] - b⁻_snt[s,n,t-1])
 
         # Storage continuity
         @constraint(model,

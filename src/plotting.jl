@@ -91,14 +91,48 @@ function plot_box(p_gnt, h_nt, G, n, T)
         size=(780, 400)
     )
     for g in G
-        boxplot!([g], [p_gnt[g,n,:]],
+        StatsPlots.boxplot!([g], [p_gnt[g,n,:]],
               alpha=0.3,
               xlabel=L"t",
               ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
-              label="g$g")
+              label="g$g"
+        )
 
     end
-    boxplot!([9], [h_nt[n,:]],
+    StatsPlots.boxplot!([9], [h_nt[n,:]],
+        alpha=0.3,
+        xlabel=L"g",
+        ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+        label="g9"
+    )
+    return p
+end
+
+function plot_box2(p_gnt, h_nt, G, T)
+    p = plot(
+        legend=:outertopright,
+        size=(780, 400)
+    )
+    for g in G
+        #p_gt = p_gnt[g, 1, :] .+ p_gnt[g, 2, :] .+ p_gnt[g, 3, :] .+ p_gnt[g, 4, :] .+ p_gnt[g, 5, :] .+ p_gnt[g, 6, :] .+ p_gnt[g, 7, :] .+ p_gnt[g, 8, :] .+ p_gnt[g, 9, :] .+ p_gnt[g, 10, :] .+ p_gnt[g, 11, :]#sum(p_gnt[g,:,:], dims=1)
+        p_gt = permutedims(sum(p_gnt[g, :, :], dims=1))
+        StatsPlots.boxplot!([g], [p_gt],
+              alpha=0.3,
+              xlabel=L"g",
+              ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+              label="g$g"
+        )
+
+    end
+    #h_t = h_nt[1, :] .+ h_nt[2, :] .+ h_nt[3, :] .+ h_nt[4, :] .+ h_nt[5, :] .+ h_nt[6, :] .+ h_nt[7, :] .+ h_nt[8, :] .+ h_nt[9, :] .+ h_nt[10, :] .+ h_nt[11, :]
+    #StatsPlots.boxplot!([9],  [h_t],
+    #          alpha=0.3,
+    #          xlabel=L"g",
+    #          ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+    #          label="g9"
+    #)
+    h_t = permutedims(sum(h_nt[:,:], dims=1))
+    StatsPlots.boxplot!([9], [h_t],
         alpha=0.3,
         xlabel=L"g",
         ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
@@ -168,4 +202,10 @@ function plot_box(
         parameters::Params, variables::Variables, n::Integer)
     plot_box(
         variables.p_gnt, variables.h_nt, parameters.G, n, parameters.T)
+end
+
+function plot_box2(
+    parameters::Params, variables::Variables)
+plot_box2(
+    variables.p_gnt, variables.h_nt, parameters.G, parameters.T)
 end

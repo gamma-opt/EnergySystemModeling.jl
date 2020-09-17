@@ -48,6 +48,7 @@ function Params(instance_path::AbstractString)
     μ = constants["mu"]
     C = constants["C"]
     C̄ = constants["C_bar"]
+    C_E = constants["C_E"]
     interest_rate = constants["r"]
 
     # Load time clustered parameters
@@ -93,6 +94,8 @@ function Params(instance_path::AbstractString)
                                   interest_rate)
     M_g = technology.fixedOM .* 1000
     C_g = technology.fuel_cost ./ technology.efficiency .+ technology.varOM
+    e_g = technology.efficiency
+    E_g = technology.emissions
     r⁻_g = technology.r_minus
     r⁺_g = technology.r_plus
 
@@ -109,14 +112,14 @@ function Params(instance_path::AbstractString)
     storage = joinpath(instance_path, "storage.csv") |>
         CSV.read |> DataFrame
     ξ_s = storage.xi
-    I_s = equivalent_annual_cost.(storage.cost, storage.lifetime, interest_rate)
+    I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
     # Return Params struct
     Params(
-        G, G_r, N, L, T, S, κ, μ, C, C̄, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
+        G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
         W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
 end
 
