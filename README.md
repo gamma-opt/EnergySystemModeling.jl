@@ -1,5 +1,5 @@
 # EnergySystemModeling.jl
-Julia library for solving the *transmission capacity expansion problem*, implemented as *linear program* using JuMP. The [documentation](https://jaantollander.github.com/EnergySystemModeling.jl) contains more details about the model.
+Julia library for solving the *transmission capacity expansion problem*, implemented as *linear program* using JuMP. The [documentation](https://gamma-opt.github.io/EnergySystemModeling.jl/) contains more details about the model.
 
 The library is authored by *Lucas Condeixa*, *Fabricio Oliveira*, and *Jaan Tollander de Balsch* in Systems Analysis Laboratory in Aalto university.
 
