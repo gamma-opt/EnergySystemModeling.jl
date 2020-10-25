@@ -64,6 +64,7 @@ function Params(instance_path::AbstractString)
     H_n = zeros(length(N))
     H′_n = zeros(length(N))
     F_onmin = zeros(length(N))
+    region_n = Array{AbstractString, 1}(undef, length(N))    
     for n in N
         # Load node values from CSV files.
         df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
@@ -72,18 +73,19 @@ function Params(instance_path::AbstractString)
             Q_gn[g, n] = capacitydf[n, g+1]
             Q̄_gn[g, n] = capacitydf[n, g+13]
         end
-        D_nt[n, :] = df.Demand
-        A_gnt[1, n, :] = df.Avail_Wind_On
-        A_gnt[2, n, :] = df.Avail_Wind_Off
-        A_gnt[3, n, :] = df.Avail_Sol
+        D_nt[n, :] = df.Demand[T]
+        A_gnt[1, n, :] = df.Avail_Wind_On[T]
+        A_gnt[2, n, :] = df.Avail_Wind_Off[T]
+        A_gnt[3, n, :] = df.Avail_Sol[T]
         A_gnt[A_gnt .< 0.01] .= 0
         W_nmax[n] = capacitydf.Max_Hyd_Level[n]
         W_nmin[n] = capacitydf.Min_Hyd_Level[n]
-        f_int[n,:] = df.Hyd_In
-        f′_int[n,:] = df.HydRoR_In
+        f_int[n,:] = df.Hyd_In[T]
+        f′_int[n,:] = df.HydRoR_In[T]
         H_n[n] = capacitydf.Hydro[n]
         H′_n[n] = capacitydf.HydroRoR[n]
-        F_onmin[n] = (sum(f_int[n, :]) / 8760) * 0.05
+        F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
+        region_n[n] =  df.Name[1]
         
     end
 
@@ -98,15 +100,18 @@ function Params(instance_path::AbstractString)
     E_g = technology.emissions
     r⁻_g = technology.r_minus
     r⁺_g = technology.r_plus
+    technology_g = technology.name
 
     # Load transmission parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
         CSV.read |> DataFrame
-    M_l = transmission.M
-    I_l = equivalent_annual_cost.(transmission.cost .* transmission.dist .+ M_l,
-                                  transmission.lifetime, interest_rate)
-    C_l = transmission.C
-    B_l = transmission.B
+    
+    I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
+                                  transmission.lifetime[1], interest_rate)
+    M_l = transmission.M[1] .* I_l
+    C_l = transmission.C[1]
+    B_l = transmission.B[1]
+    e_l = transmission.efficiency[1]
 
     # Load storage parameters
     storage = joinpath(instance_path, "storage.csv") |>
@@ -118,8 +123,8 @@ function Params(instance_path::AbstractString)
 
     # Return Params struct
     Params(
-        G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
+        region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
         W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
 end
 
@@ -147,6 +152,7 @@ mdim(x::Array{<:Number, 1}) = x
 transform(x::Array, t::Type{Array{T, N}}) where T <: Number where N = mdim(x)
 transform(x::Array, t::Type{Array{T, 1}}) where T <: Array = x
 transform(x::Number, t::Type{T}) where T <: Number = x
+transform(x::Array, t::Type{Array{AbstractString, 1}}) = x
 
 function convert_type(::Type{Array{T, N}}) where T <: Number where N
     t = T
@@ -157,6 +163,7 @@ function convert_type(::Type{Array{T, N}}) where T <: Number where N
 end
 convert_type(::Type{Array{T, 1}}) where T <: Array = Array{T, 1}
 convert_type(t::Type{T}) where T <: Number = t
+convert_type(::Type{Array{AbstractString, 1}}) = Array{AbstractString, 1}
 
 """Load values to type from JSON file.
 
@@ -352,24 +359,26 @@ function getdispatch(output_path::AbstractString)
         dispatch[12, i] = sum(dispatch[:, i])
     end
     dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
-    #
-    #capacity = variables["p̄_gn"] |> Array{Array{Float64}}
-    #hydcap = variables["H_n"] |> Array{Float64}
-    #hydRoRcap = variables["H′_n"] |> Array{Float64}
-    #capacities = zeros(13, 10)
-    #for n in 1:11
-    #    for g in 1:8
-    #        capacities[n, g] = capacity[n, g]
-    #   end
-    #    for t in 1:8760
-    #        dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
-    #    end
-    #    dispatch[n, 10] = sum(dispatch[n, :])
-    #end
-    #for i in 1:10
-    #    dispatch[12, i] = sum(dispatch[:, i])
-    #end
-    #dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
+    
+    #=
+    capacity = variables["p̄_gn"] |> Array{Array{Float64}}
+    hydcap = variables["H_n"] |> Array{Float64}
+    hydRoRcap = variables["H′_n"] |> Array{Float64}
+    capacities = zeros(13, 10)
+    for n in 1:11
+        for g in 1:8
+            capacities[n, g] = capacity[n, g]
+       end
+        for t in 1:8760
+            dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
+        end
+        dispatch[n, 10] = sum(dispatch[n, :])
+    end
+    for i in 1:10
+        dispatch[12, i] = sum(dispatch[:, i])
+    end
+    dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
+    =#
 
     dispatch = convert(DataFrame, dispatch)
     rename!(dispatch, ["WIND_ON", "WIND_OFF", "SOLAR", "BIOMASS", "NUCLEAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO", "TOTAL", "DEMAND"])

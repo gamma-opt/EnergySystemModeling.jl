@@ -14,6 +14,8 @@ are not specified are included by default.
 """
 @with_kw struct Specs
     renewable_target::Bool
+    carbon_cap::Bool
+    nuclear_limit::Bool
     storage::Bool
     ramping::Bool
     voltage_angles::Bool
@@ -21,6 +23,8 @@ end
 
 """Input indices and parameters for the model."""
 @with_kw struct Params
+    region_n::Array{AbstractString, 1}
+    technology_g::Array{AbstractString, 1}
     G::Array{Integer, 1}
     G_r::Array{Integer, 1}
     N::Array{Integer, 1}
@@ -47,8 +51,9 @@ end
     r⁺_g::Array{AbstractFloat, 1}
     I_l::Array{AbstractFloat, 1}
     M_l::Array{AbstractFloat, 1}
-    C_l::Array{AbstractFloat, 1}
-    B_l::Array{AbstractFloat, 1}
+    C_l::AbstractFloat
+    B_l::AbstractFloat
+    e_l::AbstractFloat
     ξ_s::Array{AbstractFloat, 1}
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
@@ -60,6 +65,7 @@ end
     H_n::Array{AbstractFloat, 1}
     H′_n::Array{AbstractFloat, 1}
     F_onmin::Array{AbstractFloat, 1}
+    
 end
 
 """Variable values."""
@@ -67,8 +73,8 @@ end
     p_gnt::Array{AbstractFloat, 3}
     p̄_gn::Array{AbstractFloat, 2}
     σ_nt::Array{AbstractFloat, 2}
-    f_lt::Array{AbstractFloat, 2}
-    f_lt_abs::Array{AbstractFloat, 2}
+    f⁺_lt::Array{AbstractFloat, 2}
+    f⁻_lt::Array{AbstractFloat, 2}
     f̄_l::Array{AbstractFloat, 1}
     b_snt::Array{AbstractFloat, 3}
     b̄_sn::Array{AbstractFloat, 2}
@@ -95,6 +101,13 @@ end
     f7::AbstractFloat
 end
 
+"""Expression values."""
+@with_kw struct Expressions
+    κ′::AbstractFloat
+    μ′::AbstractFloat
+    C′_E::AbstractFloat
+end
+
 data(a::Number) = a
 data(a::JuMP.Containers.DenseAxisArray) = a.data
 
@@ -118,6 +131,33 @@ function Objectives(model::EnergySystemModel)
     Objectives(tup...)
 end
 
+"""Compute expression values from the results.
+
+# Arguments
+- `parameters::Params`
+- `variables::Variables`
+"""
+function Expressions(parameters::Params, variables::Variables)
+    G = parameters.G
+    G_r = parameters.G_r
+    T = parameters.T
+    N = parameters.N
+    L = parameters.L
+
+    p_gnt = variables.p_gnt
+    h_nt = variables.h_nt
+    E_g = parameters.E_g
+    e_g = parameters.e_g
+
+    κ′ = (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) /
+         (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))
+    μ′ = sum(p_gnt[5,n,t] for n in N, t in T) /
+        (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))
+    C′_E = 1 - ((sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1868672938)
+
+    Expressions(κ′, μ′, C′_E)
+end
+
 """Creates the energy system model.
 
 # Arguments
@@ -125,8 +165,8 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, ξ_s, I_s, C_s, b0_sn,
+    @unpack region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
             W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
@@ -140,8 +180,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
     @variable(model, p̄_gn[g in G, n in N]≥0)
     @variable(model, σ_nt[n in N, t in T]≥0)
-    @variable(model, f_lt[l in L′, t in T])
-    @variable(model, f_lt_abs[l in L′, t in T])
+    @variable(model, f⁺_lt[l in L′, t in T]≥0)
+    @variable(model, f⁻_lt[l in L′, t in T]≥0)
     @variable(model, f̄_l[l in L′])
     @variable(model, b_snt[s in S, n in N, t in T]≥0)
     @variable(model, b̄_sn[s in S, n in N]≥0)
@@ -166,7 +206,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @expression(model, f4,
         sum((I_l[l]+M_l[l])*f̄_l[l] for l in L′))
     @expression(model, f5,
-        sum(C_l[l]*f_lt_abs[l,t]*τ_t[t] for l in L′, t in T))
+        sum(C_l*(f⁺_lt[l,t] + f⁻_lt[l,t])*τ_t[t] for l in L′, t in T))
     @expression(model, f6,
         sum(I_s[s]*b̄_sn[s,n] for s in S, n in N))
     @expression(model, f7,
@@ -184,8 +224,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(f_lt[l,t] for l in L⁻(n)) -
-        sum(f_lt[l,t] for l in L⁺(n)) +
+        sum(e_l*f⁺_lt[l,t] - f⁻_lt[l,t] for l in L⁻(n)) -
+        sum(f⁺_lt[l,t] - e_l*f⁻_lt[l,t] for l in L⁺(n)) +
         sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
         h_nt[n,t] ==
         D_nt[n,t])
@@ -201,32 +241,22 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g3,
-            (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) +
-            sum(h_nt[n,t] for n in N, t in T)) / 1000 ≥
-            κ * sum(D_nt[n,t] for n in N, t in T) / 1000)
+            ((sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000) ≥
+            κ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
     end
-    ## Maximum nuclear share
-    #@constraint(model, g4,
-    #    (sum(p_gnt[5,n,t] for n in N, t in T) / 1000 ≤
-    #    μ * sum(D_nt[n,t] for n in N, t in T) / 1000))
 
-    #@constraint(model, g5,
-    #    (0.202 * sum(p_gnt[4,n,t] for n in N, t in T) / 0.48 +
-    #    0.33 * sum(p_gnt[6,n,t] for n in N, t in T) / 0.47 +
-    #    0.202 * sum(p_gnt[7,n,t] for n in N, t in T) / 0.61 +
-    #    0.202 * sum(p_gnt[8,n,t] for n in N, t in T) / 0.39) / 1000 ≤
-    #    0.01 * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
+    # Maximum nuclear share
+    if specs.nuclear_limit
+        @constraint(model, g4,
+            (sum(p_gnt[5,n,t] for n in N, t in T) / 1000) ≤ (μ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000))
+    end
 
     #Carbon cap
-
-    #@constraint(model, g5,
-    #    (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤
-    #    C_E * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
-
-    @constraint(model, g5,
-        (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤
-        C_E * 1868672938 / 1000)
-    
+    if specs.carbon_cap
+        @constraint(model, g5,
+            (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * 1868672938 / 1000)
+    end
+  
     # Shedding upper bound
     @constraint(model,
         g6[n in N, t in T],
@@ -235,18 +265,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Transmission capacity
     @constraint(model,
         t1[l in L′, t in T],
-        f_lt[l,t]≤f̄_l[l])
-    @constraint(model,
-        t2[l in L′, t in T],
-        f_lt[l,t]≥-f̄_l[l])
-
-    # Absolute value of transmission
-    @constraint(model,
-        t3[l in L′, t in T],
-        f_lt_abs[l,t]≥f_lt[l,t])
-    @constraint(model,
-        t4[l in L′, t in T],
-        f_lt_abs[l,t]≥-f_lt[l,t])
+        f⁺_lt[l,t] + f⁻_lt[l,t] ≤ f̄_l[l])
 
     if specs.storage
         # Storage capacity
