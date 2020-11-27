@@ -1,5 +1,8 @@
 # EnergySystemModeling.jl
-Julia library for solving the *transmission capacity expansion problem*, implemented as *linear program* using JuMP. The [documentation](https://gamma-opt.github.io/EnergySystemModeling.jl/) contains more details about the model.
+[![Docs Image](https://img.shields.io/badge/docs-latest-blue.svg)](https://gamma-opt.github.io/EnergySystemModeling.jl/dev/)
+![Runtests](https://github.com/gamma-opt/EnergySystemModeling.jl/workflows/Runtests/badge.svg)
+
+Julia library for solving the *transmission capacity expansion problem*, implemented as *linear program* using JuMP. The documentation contains more details about the model.
 
 The library is authored by *Lucas Condeixa*, *Fabricio Oliveira*, and *Jaan Tollander de Balsch* in Systems Analysis Laboratory in Aalto university.
 
@@ -26,7 +29,10 @@ specs = Specs(
 model = EnergySystemModel(parameters, specs)
 
 # Optimizer the model using Gurobi optimizer.
-optimizer = with_optimizer(Gurobi.Optimizer, TimeLimit=5*60)
+optimizer = optimizer_with_attributes(
+    () -> Gurobi.Optimizer(Gurobi.Env()),
+    "TimeLimit" => 5*60
+)
 optimize!(model, optimizer)
 
 # Extract values from the model.
@@ -50,13 +56,13 @@ variables = load_json(Variables, joinpath("output", "variables.json"))
 objectives = load_json(Objectives, joinpath("output", "objectives.json"))
 ```
 
-We recommend to check out the [documentation for plotting](https://jaantollander.github.com/EnergySystemModeling.jl/plotting/).
+We recommend to check out the documentation for plotting.
 
 
 ## Installation
 This library can be installed directly from GitHub
 ```
-pkg> add https://github.com/jaantollander/EnergySystemModeling.jl
+pkg> add https://github.com/gamma-opt/EnergySystemModeling.jl
 ```
 
 
@@ -65,13 +71,12 @@ Install [Julia](https://julialang.org/) programming language.
 
 Clone the repository
 ```bash
-git clone https://github.com/jaantollander/EnergySystemModeling.jl
+git clone https://github.com/gamma-opt/EnergySystemModeling.jl.git
 ```
 
 In the project root directory, install packages locally using Julia's package manager.
 ```
-pkg> activate .
-pkg> instantiate
+pkg> dev .
 ```
 
 Install a solver such as Gurobi.
