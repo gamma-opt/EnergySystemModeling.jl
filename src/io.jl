@@ -359,26 +359,6 @@ function getdispatch(output_path::AbstractString)
         dispatch[12, i] = sum(dispatch[:, i])
     end
     dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
-    
-    #=
-    capacity = variables["p̄_gn"] |> Array{Array{Float64}}
-    hydcap = variables["H_n"] |> Array{Float64}
-    hydRoRcap = variables["H′_n"] |> Array{Float64}
-    capacities = zeros(13, 10)
-    for n in 1:11
-        for g in 1:8
-            capacities[n, g] = capacity[n, g]
-       end
-        for t in 1:8760
-            dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
-        end
-        dispatch[n, 10] = sum(dispatch[n, :])
-    end
-    for i in 1:10
-        dispatch[12, i] = sum(dispatch[:, i])
-    end
-    dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
-    =#
 
     dispatch = convert(DataFrame, dispatch)
     rename!(dispatch, ["WIND_ON", "WIND_OFF", "SOLAR", "BIOMASS", "NUCLEAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO", "TOTAL", "DEMAND"])
