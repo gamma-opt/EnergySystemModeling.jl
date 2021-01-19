@@ -1,5 +1,5 @@
 # Energy System Modeling
-Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units of parameters and variables using square brackets. In the code, we implement the model as [`EnergySystemModel(::Params, ::Specs)`](@ref) method, which constructs an [`EnergySystemModel`](@ref) instance.
+Mathematical reference for the energy system model. The model presented here is based on the model in [^1]. We express units of parameters and variables using square brackets. In our code, we implement the model as [`EnergySystemModel(::Params, ::Specs)`](@ref) method, which constructs an [`EnergySystemModel`](@ref) instance.
 
 The model considers that each time period might encompass varaible number of hours, as a result of using input data that has been clustered. Otherwise, each time period refers to one hour.
 
