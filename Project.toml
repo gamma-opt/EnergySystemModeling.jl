@@ -1,6 +1,6 @@
 name = "EnergySystemModeling"
 uuid = "2f1a2cda-0a35-11ea-0485-13adf048beb5"
-authors = ["Jaan Tollander de Balsch <jaan.tollander@gmail.com>"]
+authors = ["Jaan Tollander de Balsch <jaan@hey.com>"]
 version = "0.1.0"
 
 [deps]
@@ -17,3 +17,9 @@ MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 
 [compat]
 julia = ">=1.1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
