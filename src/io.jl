@@ -57,7 +57,7 @@ function Params(instance_path::AbstractString)
     A_gnt = ones(length(G), length(N), length(T))
     for n in N
         # Load node values from CSV files.
-        df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
+        df = CSV.File(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
         D_nt[n, :] = df.Dem_Inc[1] .* df.Load_mod .* df.Max_Load[1]
         A_gnt[1, n, :] = df.Avail_Win
         A_gnt[2, n, :] = df.Avail_Sol
@@ -65,7 +65,7 @@ function Params(instance_path::AbstractString)
 
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
-        CSV.read |> DataFrame
+        CSV.File |> DataFrame
     I_g = equivalent_annual_cost.(technology.cost, technology.lifetime,
                                   interest_rate)
     M_g = technology.M
@@ -75,7 +75,7 @@ function Params(instance_path::AbstractString)
 
     # Load transmission parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
-        CSV.read |> DataFrame
+        CSV.File |> DataFrame
     M_l = transmission.M
     I_l = equivalent_annual_cost.(transmission.cost .* transmission.dist .+ M_l,
                                   transmission.lifetime, interest_rate)
@@ -84,7 +84,7 @@ function Params(instance_path::AbstractString)
 
     # Load storage parameters
     storage = joinpath(instance_path, "storage.csv") |>
-        CSV.read |> DataFrame
+        CSV.File |> DataFrame
     ξ_s = storage.xi
     I_s = equivalent_annual_cost.(storage.cost, storage.lifetime, interest_rate)
     C_s = storage.C
