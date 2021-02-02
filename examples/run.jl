@@ -8,7 +8,7 @@ output = "output"
 mkpath(output)
 
 @info "Loading parameters"
-parameters = Params("instance")
+parameters = Params(joinpath("examples","instance"))
 specs = Specs(
     renewable_target=true,
     carbon_cap=true,

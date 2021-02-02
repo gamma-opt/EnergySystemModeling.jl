@@ -67,8 +67,8 @@ function Params(instance_path::AbstractString)
     region_n = Array{AbstractString, 1}(undef, length(N))    
     for n in N
         # Load node values from CSV files.
-        df = CSV.read(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
-        capacitydf = CSV.read(joinpath(instance_path, "capacity.csv")) |> DataFrame
+        df = CSV.File(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
+        capacitydf = CSV.File(joinpath(instance_path, "capacity.csv")) |> DataFrame
         for g in G
             Q_gn[g, n] = capacitydf[n, g+1]
             Q̄_gn[g, n] = capacitydf[n, g+13]
@@ -91,7 +91,7 @@ function Params(instance_path::AbstractString)
 
     # Load technology parameters
     technology = joinpath(instance_path, "technology.csv") |>
-        CSV.read |> DataFrame
+        CSV.File |> DataFrame
     I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
                                   interest_rate)
     M_g = technology.fixedOM .* 1000
@@ -104,7 +104,7 @@ function Params(instance_path::AbstractString)
 
     # Load transmission parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
-        CSV.read |> DataFrame
+        CSV.File |> DataFrame
     
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
                                   transmission.lifetime[1], interest_rate)
@@ -115,7 +115,7 @@ function Params(instance_path::AbstractString)
 
     # Load storage parameters
     storage = joinpath(instance_path, "storage.csv") |>
-        CSV.read |> DataFrame
+        CSV.File |> DataFrame
     ξ_s = storage.xi
     I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
     C_s = storage.C
