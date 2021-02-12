@@ -86,7 +86,7 @@ function Params(instance_path::AbstractString)
         H′_n[n] = capacitydf.HydroRoR[n]
         F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
         region_n[n] =  df.Name[1]
-        
+
     end
 
     # Load technology parameters
@@ -105,13 +105,14 @@ function Params(instance_path::AbstractString)
     # Load transmission parameters
     transmission = joinpath(instance_path, "transmission.csv") |>
         CSV.File |> DataFrame
-    
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
                                   transmission.lifetime[1], interest_rate)
     M_l = transmission.M[1] .* I_l
     C_l = transmission.C[1]
     B_l = transmission.B[1]
     e_l = transmission.efficiency[1]
+
+
 
     # Load storage parameters
     storage = joinpath(instance_path, "storage.csv") |>
