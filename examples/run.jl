@@ -35,4 +35,6 @@ model = energy_system_model(
     GFC, SUC, SDC, TFC, rtech, demand, RES, Tbar, Gbar
 )
 
-optimize!(model, with_optimizer(Gurobi.Optimizer))
+#OLD: optimize!(model, with_optimizer(Gurobi.Optimizer))
+set_optimizer(model,Gurobi.Optimizer)
+optimize!(model)
