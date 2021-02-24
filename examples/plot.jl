@@ -1,48 +1,13 @@
-using Logging
-
 push!(LOAD_PATH, dirname(@__DIR__))
-using EnergySystemModeling
+using EnergySystemModeling, Parameters, JSON
 
-@info "Create output directory"
 output = "output"
-mkpath(output)
 
-@info "Loading parameters"
-parameters = Params(joinpath("examples","instance"))
-specs = Specs(
-    renewable_target=true,
-    carbon_cap=true,
-    nuclear_limit=false,
-    storage=true,
-    ramping=true,
-    voltage_angles=false
-)
-
-@info "Creating the energy system model"
-model = EnergySystemModel(parameters, specs)
-
-@info "Optimizing the model"
-using Gurobi, JuMP
-optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => 48*60*60,
-                                      "LogFile" => joinpath(output, "gurobi.log"))
-set_optimizer(model, optimizer)
-set_optimizer_attributes(model, "Method" => 2)
-set_optimizer_attributes(model, "Crossover" => 0)
-set_optimizer_attributes(model, "NumericFocus" => 1)
-optimize!(model)
-
-@info "Extract results"
-variables = Variables(model)
-objectives = Objectives(model)
+parameters = load_json(EnergySystemModeling.Params, joinpath(output, "parameters.json"))
+variables = load_json(EnergySystemModeling.Variables, joinpath(output, "variables.json"))
+objectives = load_json(EnergySystemModeling.Objectives, joinpath(output, "objectives.json"))
 expressions = Expressions(parameters, variables)
 
-@info "Save results"
-save_json(specs, joinpath(output, "specs.json"))
-save_json(parameters, joinpath(output, "parameters.json"))
-save_json(variables, joinpath(output, "variables.json"))
-save_json(objectives, joinpath(output, "objectives.json"))
-
-@info "Plotting"
 using Plots
 using StatsPlots
 pyplot()
@@ -83,5 +48,3 @@ savefig(plot_transmission_bars(parameters, variables, expressions),
 
 savefig(plot_loss_of_load(parameters, variables, expressions),
         joinpath(output, "loss_of_load.svg"))
-
-getdispatch(joinpath(output))
