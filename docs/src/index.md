@@ -17,17 +17,21 @@ Indices and sets define the different objects and dimensions in the model.
 General parameters
 
 *  $κ∈[0,1]$: Fraction of the demand that must be met by renewable generation
+*  $μ$: Maximum allowed share of nuclear power
 *  $C$: Shedding cost [€/MWh]
 *  $\bar{C}$: Shedding capacity [MWh]
-*  $r≥0$: Interest rate
+*  $C_E$: Minimum percentage of emission reduction needed compared to base year 1990
 *  $τ_{t}$: Number of hours clustered in time period $t$ [h]
 *  $D_{n,t}$: Demand per node $n$ per time period $t$ [MWh]
+*  $r≥0$: Interest rate
 
 Generation technology parameters
 
 *  $I_g^G$: Annualised investment cost for generation per MW of technology $g$ [€/MW]. Calculated as $I_g^G=EAC(c_g, t_g, r)$ where $c_g$ is the cost and $t_g$ is lifetime of technology $g$.
 *  $M_g^G$: Annualised maintenance cost for generation per MW of technology $g$ [€/MW]
 *  $C_g^G$: Operational cost per MWh of technology $g$ [€/MWh]. Calculated as $c_g/c'_g/1000$ where $c_g$ is fuel cost 1 and $c'_g$ fuel cost 2 of technology $g.$
+*  $e_g$: Technology efficiency
+*  $E_g$: Technology emissions
 *  $r_g^{-}$: Relative ramp-down limit of technology $g$
 *  $r_g^{+}$: Relative ramp-up limit of technology $g$
 *  $Q_{g,n}$: Initial capacity [MW]
@@ -49,13 +53,15 @@ Transmission parameters
 *  $M_l^F$: Annualised maintenance cost for transmission per line $l$ [€/MW]
 *  $C_l^F$: Transmission cost per line $l$ [€/MWh]
 *  $B_l$: Susceptance per line $l$
+*  $e_l$: Transmission efficiency per line $l$
 
 Storage parameters
 
 *  $I_s^S$: Annualised investment cost of storage technology $s$ per MW [€/MW]. Calculated as $I_s^S=EAC(c_s, t_s, r)$ where $c_s$ is the (upfront) investment cost and $t_s$ the lifetime of storage $s.$
+*  $ξ_s$: Round-trip efficiency of storage technology $s$
 *  $C_s^S$: Storage operational cost of storage technology $s$ [€/MWh]
 *  $b_{s,n}^0$: Initial capacity of storage $s$ at node $n$ [MWh]
-*  $ξ_s$: Round-trip efficiency of storage technology $s$
+
 
 
 Remarks:
@@ -88,8 +94,8 @@ Shedding variables
 
 Transmission variables
 
-*  $f_{l,t}$: Transmission flow per line $l$ in each time step $t$ [MWh]
-*  $|f_{l,t}|$: Absolute value of transmission flow per line $l$ in each time step $t$ [MWh]
+*  $f^{+}_{l,t}$: Transmission flow per line $l$ in each time step $t$ [MWh]
+*  $f^{-}_{l,t}$: Absolute value of transmission flow per line $l$ in each time step $t$ [MWh]
 *  $\bar{f}_l$: Transmission capacity per line $l$ [MW]
 
 Storage variables
@@ -131,7 +137,7 @@ $$f_4=\sum_{l} (I_l^F+M_l^F) \bar{f}_l \tag{f4}$$
 
 The operational cost of transmission flow
 
-$$f_5=\sum_{l,t} C_l^F ⋅ |f_{l,t}| τ_{t} \tag{f5}$$
+$$f_5=\sum_{l,t} C_l^F (f^{+}_{l,t} + f^{-}_{l,t})  τ_{t} \tag{f5}$$
 
 Investment cost of storage capacity
 
@@ -159,62 +165,38 @@ $$L_n^+=\{l∈L∣j∈N,(n,j)=l\}$$
 
 Energy balance
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} f_{l,t} - \sum_{l∈L_n^+} f_{l,t} + ξ_s b_{s,n,t}^{-} - b_{s,n,t}^{+} + h_{n,t} = D_{n,t},\quad ∀s,n,t \tag{b1}$$
+
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} (e_lf^+_{l,t} - f^-_{l,t}) - \sum_{l∈L_n^+} (f^+_{l,t} - e_lf^-_{l,t}) + \sum_{l∈L_n^-}(ξ_s b^-_{s,n,t} - b^+_{s,n,t} )+ h_{n,t} = \\ D_{n,t},\quad ∀s,n,t \tag{b1}$$
+
 
 ### Generation
 Generation capacity
 
-$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}) τ_{t}, \quad ∀g,n,t \tag{g1}$$
+$$p_{g,n,t} ≤ A_{g,n,t} (Q_{g,n} + \bar{p}_{g,n}) , \quad ∀g,n,t \tag{g1}$$
+
+$$Q_{g,n} + \bar{p}_{g,n}  ≤ \bar{Q}_{g,n} , \quad ∀g,n \tag{g2}$$
 
 Minimum renewables share
 
-$$\sum_{g∈G^r,n,t} p_{g,n,t}  + \sum_{n,t} h_{n,t} ≥ κ \sum_{n,t} D_{g,n,t} \tag{g2}$$
+$$\sum_{g∈G^r,n,t} p_{g,n,t}  + \sum_{n,t} h_{n,t} ≥ κ \sum_{g∈G^r,n,t} p_{g,n,t}  + \sum_{n,t} h_{n,t} \tag{g3}$$
 
-### Hydro energy
-Reservoir level bounds
+Maximum nuclear share
 
-$$W_{nmin} ≤ w_{n,t} ≤ W_{nmax},\quad ∀n,t \tag{h1}$$
+$$ \sum_{n∈N,t}p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t}p_{g,n,t} + \sum_{n∈N,t}h_{n,t} \tag{g4} $$
 
-Reservoir levels
+Carbon cap
 
-$$w_{n,t} = w_{n,t-1} + f_{i,n,t-1} - f_{o,n,t-1},\quad ∀n,t>1 \tag{h2}$$
-
-Reservoir level continuity
-
-$$w_{n,t=1} = w_{n,t=t_{end}},\quad ∀n \tag{h3}$$
-
-Outflow balance
-
-$$f_{o,n,t} = f'_{o,n,t} + f''_{o,n,t},\quad ∀n,t \tag{h4}$$
-
-Environmental flow requirement
-
-$$f_{o,n,t} ≥ F_{omin},\quad ∀n,t \tag{h5}$$
-
-Reservoir generation (turbine capacity for outflow)
-
-$$f'_{o,n,t} ≤ H_n,\quad ∀n,t \tag{h6}$$
-
-Run-of-river generation (available inflow and capacity)
-
-$$0 ≤ h'_{n,t} ≤ f'_{i,n,t},\quad ∀n,t \tag{h7}$$
-
-$$0 ≤ h'_{n,t} ≤ H'_n,\quad ∀n,t \tag{h8}$$
-
-Hydro generation balance
-
-$$h_{n,t} = h'_{n,t} + f'_{o,n,t},\quad ∀n,t \tag{h9}$$
-
+$$ \sum_{g}E_g \sum_{n∈N,t}\frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5} $$
 
 ### Shedding
 Shedding upper bound
 
-$$σ_{n,t} ≤ \bar{C},\quad ∀n,t \tag{g3}$$
+$$σ_{n,t} ≤ \bar{C} D_{n,t} ,\quad ∀n,t \tag{g6}$$
 
 ### Transmission
 Transmission capacity
 
-$$f_{l,t} ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
+$$f^+_{l,t} + f^-_{l,t} ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
 
 $$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t \tag{t2}$$
 
@@ -239,7 +221,7 @@ $$b_{s,n,t}^{-}≤b_{s,n,t-1},\quad ∀s,n,t>1 \tag{s3}$$
 
 Charge
 
-$$b_{s,n,t}^{+}≤\bar{b}_{s,n} - b_{s,n,t},\quad ∀s,n,t \tag{s4}$$
+$$ξ_sb_{s,n,t}^{+}≤\bar{b}_{s,n} - b_{s,n,t},\quad ∀s,n,t \tag{s4}$$
 
 Storage levels
 
@@ -252,15 +234,54 @@ $$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n \tag{s6}$$
 
 ### Ramping Limits
 Ramping limit up and down
+$$p_{g,n,t} - p_{g,n,t-1} ≤ r_g^{+}(Q_{g,n} + \bar{p}_{g,n}), \quad ∀g,n,t>1 \tag{r1}$$
 
-$$p_{g,n,t} - p_{g,n,t-1} ≥ r_g^{+}\bar{p}_{g,n,t}, \quad ∀g,n,t>1 \tag{r1}$$
+$$p_{g,n,t} - p_{g,n,t-1} ≥ -r_g^{-}(Q_{g,n} + \bar{p}_{g,n}), \quad ∀g,n,t>1 \tag{r2}$$
 
-$$p_{g,n,t} - p_{g,n,t-1} ≤ -r_g^{-}\bar{p}_{g,n,t}, \quad ∀g,n,t>1 \tag{r2}$$
+
 
 ### Voltage Angles
 Faraday law for accounting voltage angles
 
 $$(θ_{n,t} - θ_{n',t}') B_l = p_{g,n,t} - p_{g,n',t}, \quad ∀g,l,n,n',t>1 \tag{v1}$$
+
+### Hydro energy
+Reservoir level bounds
+
+$$W_{nmin} ≤ w_{n,t} ≤ W_{nmax},\quad ∀n,t \tag{h1}$$
+
+Reservoir levels
+
+$$w_{n,t} = w_{n,t-1} + f_{i,n,t-1} - f_{o,n,t-1},\quad ∀n,t>1 \tag{h2}$$
+
+Reservoir level continuity
+
+$$w_{n,t=1} = w_{n,t=t_{end}},\quad ∀n \tag{h3}$$
+
+Outflow balance
+
+$$f_{o,n,t} = f'_{o,n,t} + f''_{o,n,t},\quad ∀n,t \tag{h4}$$
+
+Environmental flow requirement
+
+$$f_{o,n,t} ≥ F_{omin},\quad ∀n,t \tag{h5}$$
+
+Reservoir generation (turbine capacity for outflow)
+
+$$0 ≤ f'_{o,n,t} ≤ H_n,\quad ∀n,t \tag{h6}$$
+
+Run-of-river generation (available inflow and capacity)
+
+$$0 ≤ h'_{n,t} ≤ f'_{i,n,t},\quad ∀n,t \tag{h7}$$
+
+$$0 ≤ h'_{n,t} ≤ H'_n,\quad ∀n,t \tag{h8}$$
+
+Hydro generation balance
+
+$$h_{n,t} = h'_{n,t} + f'_{o,n,t},\quad ∀n,t \tag{h9}$$
+
+
+
 
 
 ## Instances
