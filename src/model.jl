@@ -5,7 +5,6 @@ const EnergySystemModel = Model
 
 """Specifation for which constraints to include to the model. Constraints that
 are not specified are included by default.
-
 # Arguments
 - `renewable_target::Bool`: Whether to include renewables target constraint.
 - `storage::Bool`: Whether to include storage constraints.
@@ -36,6 +35,7 @@ end
     C::AbstractFloat
     C̄::AbstractFloat
     C_E::AbstractFloat
+    R_E::AbstractFloat
     τ::Integer
     τ_t::Array{Integer, 1}
     Q_gn::Array{AbstractFloat, 2}
@@ -112,7 +112,6 @@ data(a::Number) = a
 data(a::JuMP.Containers.DenseAxisArray) = a.data
 
 """Extract variable values from model.
-
 # Arguments
 - `model::EnergySystemModel`
 """
@@ -122,7 +121,6 @@ function Variables(model::EnergySystemModel)
 end
 
 """Extract objective values from model.
-
 # Arguments
 - `model::EnergySystemModel`
 """
@@ -132,7 +130,6 @@ function Objectives(model::EnergySystemModel)
 end
 
 """Compute expression values from the results.
-
 # Arguments
 - `parameters::Params`
 - `variables::Variables`
@@ -143,6 +140,7 @@ function Expressions(parameters::Params, variables::Variables)
     T = parameters.T
     N = parameters.N
     L = parameters.L
+    R_E = parameters.R_E
 
     p_gnt = variables.p_gnt
     h_nt = variables.h_nt
@@ -153,19 +151,18 @@ function Expressions(parameters::Params, variables::Variables)
          (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))
     μ′ = sum(p_gnt[5,n,t] for n in N, t in T) /
         (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))
-    C′_E = 1 - ((sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1868672938)
+    C′_E = 1 - ((sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / R_E)
 
     Expressions(κ′, μ′, C′_E)
 end
 
 """Creates the energy system model.
-
 # Arguments
 - `parameters::Params`
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+    @unpack region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
             W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
@@ -254,7 +251,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     #Carbon cap
     if specs.carbon_cap
         @constraint(model, g5,
-            (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * 1868672938 / 1000)
+            (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * R_E / 1000)
     end
   
     # Shedding upper bound
