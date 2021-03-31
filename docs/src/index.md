@@ -181,11 +181,11 @@ $$\sum_{g∈G^r,n,t} p_{g,n,t}  + \sum_{n,t} h_{n,t} ≥ κ \sum_{g∈G^r,n,t} p
 
 Maximum nuclear share
 
-$$\sum_{n∈N,t}p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t}p_{g,n,t} + \sum_{n∈N,t}h_{n,t} \tag{g4}$$
+$$\sum_{n∈N,t} p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t} p_{g,n,t} + \sum_{n∈N,t} h_{n,t} \tag{g4}$$
 
 Carbon cap
 
-$$\sum_{g}E_g \sum_{n∈N,t}\frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5}$$
+$$\sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5}$$
 
 ### Shedding
 Shedding upper bound
@@ -237,7 +237,6 @@ Ramping limit up and down
 $$p_{g,n,t} - p_{g,n,t-1} ≤ r_g^{+}(Q_{g,n} + \bar{p}_{g,n}), \quad ∀g,n,t>1 \tag{r1}$$
 
 $$p_{g,n,t} - p_{g,n,t-1} ≥ -r_g^{-}(Q_{g,n} + \bar{p}_{g,n}), \quad ∀g,n,t>1 \tag{r2}$$
-
 
 
 ### Voltage Angles
