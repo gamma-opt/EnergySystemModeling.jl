@@ -165,7 +165,6 @@ $$L_n^+=\{l∈L∣j∈N,(n,j)=l\}$$
 
 Energy balance
 
-
 $$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} (e_lf^+_{l,t} - f^-_{l,t}) - \sum_{l∈L_n^+} (f^+_{l,t} - e_lf^-_{l,t}) + \sum_{l∈L_n^-}(ξ_s b^-_{s,n,t} - b^+_{s,n,t} )+ h_{n,t} = \\ D_{n,t},\quad ∀s,n,t \tag{b1}$$
 
 
@@ -182,11 +181,11 @@ $$\sum_{g∈G^r,n,t} p_{g,n,t}  + \sum_{n,t} h_{n,t} ≥ κ \sum_{g∈G^r,n,t} p
 
 Maximum nuclear share
 
-$$ \sum_{n∈N,t}p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t}p_{g,n,t} + \sum_{n∈N,t}h_{n,t} \tag{g4} $$
+$$\sum_{n∈N,t}p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t}p_{g,n,t} + \sum_{n∈N,t}h_{n,t} \tag{g4}$$
 
 Carbon cap
 
-$$ \sum_{g}E_g \sum_{n∈N,t}\frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5} $$
+$$\sum_{g}E_g \sum_{n∈N,t}\frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5}$$
 
 ### Shedding
 Shedding upper bound
@@ -234,6 +233,7 @@ $$b_{s,n,t=1} = b_{s,n,t=t_{end}},\quad ∀s,n \tag{s6}$$
 
 ### Ramping Limits
 Ramping limit up and down
+
 $$p_{g,n,t} - p_{g,n,t-1} ≤ r_g^{+}(Q_{g,n} + \bar{p}_{g,n}), \quad ∀g,n,t>1 \tag{r1}$$
 
 $$p_{g,n,t} - p_{g,n,t-1} ≥ -r_g^{-}(Q_{g,n} + \bar{p}_{g,n}), \quad ∀g,n,t>1 \tag{r2}$$
