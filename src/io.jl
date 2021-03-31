@@ -1,7 +1,6 @@
 using CSV, JSON, DataFrames, JLD, MAT
 
 """Equivalent annual cost (EAC)
-
 # Arguments
 * `cost::Real`: Net present value of a project.
 * `n::Integer`: Number of payments.
@@ -13,7 +12,6 @@ function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
 end
 
 """Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instance_path`.
-
 - `indices.json` with fields `G`, `G_r`, `N`, `L`, `T`, `S`
 - `constants.json` with fields `kappa`, `C`, `C_bar`, `r`
 - `nodes/` -- Time clustered data from the nodes with fields `Dem_Inc`, `Load_mod`, `Max_Load`, `Avail_Win`, `Avail_Sol`
@@ -23,13 +21,14 @@ end
 - `technology.csv` with fields `cost`, `lifetime`, `M`, `fuel_cost_1`, `fuel_cost_2`, `r_minus`, `r_plus`
 - `transmission.csv` with fields `M`, `cost`, `dist`, `lifetime`, `C`, `B`
 - `storage.csv` with fields `xi`, `cost`, `lifetime`, `C`, `b0_1, ..., b0_n`
-
 # Arguments
-- `instance_path::AbstractString`: Path to the instance directory.
+- `Smallinstance_path::AbstractString`: Path to the instance directory.
 """
-function Params(instance_path::AbstractString) 
+
+
+function Params(Smallinstance_path::AbstractString) 
     # Load indexes and constant parameters
-    indices = JSON.parsefile(joinpath(instance_path, "indices.json"))
+    indices = JSON.parsefile(joinpath(Smallinstance_path, "indices.json"))
 
     # TODO: implement time period clustering: τ, T, τ_t
 
@@ -43,13 +42,15 @@ function Params(instance_path::AbstractString)
     S = indices["S"] |> Array{Int}
 
     # Load constant parameters
-    constants = JSON.parsefile(joinpath(instance_path, "constants.json"))
+    constants = JSON.parsefile(joinpath(Smallinstance_path, "constants.json"))
     κ = constants["kappa"]
     μ = constants["mu"]
     C = constants["C"]
     C̄ = constants["C_bar"]
     C_E = constants["C_E"]
     interest_rate = constants["r"]
+    R_E = constants["R_E"]
+    #Hours = constants["Hours"]
 
     # Load time clustered parameters
     τ_t = ones(length(T))
@@ -67,8 +68,8 @@ function Params(instance_path::AbstractString)
     region_n = Array{AbstractString, 1}(undef, length(N))    
     for n in N
         # Load node values from CSV files.
-        df = CSV.File(joinpath(instance_path, "nodes", "$n.csv")) |> DataFrame
-        capacitydf = CSV.File(joinpath(instance_path, "capacity.csv")) |> DataFrame
+        df = CSV.File(joinpath(Smallinstance_path, "nodes", "$n.csv")) |> DataFrame
+        capacitydf = CSV.File(joinpath(Smallinstance_path, "capacity.csv")) |> DataFrame
         for g in G
             Q_gn[g, n] = capacitydf[n, g+1]
             Q̄_gn[g, n] = capacitydf[n, g+13]
@@ -90,7 +91,7 @@ function Params(instance_path::AbstractString)
     end
 
     # Load technology parameters
-    technology = joinpath(instance_path, "technology.csv") |>
+    technology = joinpath(Smallinstance_path, "technology.csv") |>
         CSV.File |> DataFrame
     I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
                                   interest_rate)
@@ -103,7 +104,7 @@ function Params(instance_path::AbstractString)
     technology_g = technology.name
 
     # Load transmission parameters
-    transmission = joinpath(instance_path, "transmission.csv") |>
+    transmission = joinpath(Smallinstance_path, "transmission.csv") |>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
                                   transmission.lifetime[1], interest_rate)
@@ -115,7 +116,7 @@ function Params(instance_path::AbstractString)
 
 
     # Load storage parameters
-    storage = joinpath(instance_path, "storage.csv") |>
+    storage = joinpath(Smallinstance_path, "storage.csv") |>
         CSV.File |> DataFrame
     ξ_s = storage.xi
     I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
@@ -124,13 +125,12 @@ function Params(instance_path::AbstractString)
 
     # Return Params struct
     Params(
-        region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
         W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
 end
 
 """Save object into JSON file.
-
 # Arguments
 - `object`
 - `output_path::AbstractString`: Full filepath, e.g., `path.json`.
@@ -167,7 +167,6 @@ convert_type(t::Type{T}) where T <: Number = t
 convert_type(::Type{Array{AbstractString, 1}}) = Array{AbstractString, 1}
 
 """Load values to type from JSON file.
-
 # Arguments
 - `type`
 - `filepath::AbstractString`
@@ -194,18 +193,17 @@ function replace_nans(array::Array{Float64, N}) where N
 end
 
 """Reads wind, solar and hydro data produced by the GlobalEnergyGIS package into CSV node files.
-
 # Arguments
-- `instance_path::AbstractString`: Path to the instance directory.
+- `Smallinstance_path::AbstractString`: Path to the instance directory.
 - `era_year::AbstractString`: Year of the ERA5 data used in the GlobalEnergyGIS package.
 - `era_year::AbstractString`: Name of the GIS region used.
 """
-function create_nodedata(instance_path::AbstractString, era_year::AbstractString, gisregion::AbstractString)
+function create_nodedata(Smallinstance_path::AbstractString, era_year::AbstractString, gisregion::AbstractString)
 
     #Read files
-    solarvars = matread(joinpath(instance_path, "GISdata_solar$(era_year)_$gisregion.mat"))
-    windvars = matread(joinpath(instance_path, "GISdata_wind$(era_year)_$gisregion.mat"))
-    hydrovars = matread(joinpath(instance_path, "GISdata_hydro_$gisregion.mat"))
+    solarvars = matread(joinpath(Smallinstance_path, "GISdata_solar$(era_year)_$gisregion.mat"))
+    windvars = matread(joinpath(Smallinstance_path, "GISdata_wind$(era_year)_$gisregion.mat"))
+    hydrovars = matread(joinpath(Smallinstance_path, "GISdata_hydro_$gisregion.mat"))
     demandvars = load(joinpath(instance_path, "SyntheticDemand_$(gisregion)_$(era_year).jld"), "demand")
 
     #Solar
@@ -233,14 +231,14 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
     replace_nans(CFtime_pvrooftop)
 
     #Preallocate arrays for results
-    avail_sol_cspA = zeros(Float64, 8760, n)
-    avail_sol_cspB = zeros(Float64, 8760, n)
-    avail_sol_pvA = zeros(Float64, 8760, n)
-    avail_sol_pvB = zeros(Float64, 8760, n)
-    avail_sol_pvrooftop = zeros(Float64, 8760, n)
+    avail_sol_cspA = zeros(Float64, T, n)
+    avail_sol_cspB = zeros(Float64, T, n)
+    avail_sol_pvA = zeros(Float64, T, n)
+    avail_sol_pvB = zeros(Float64, T, n)
+    avail_sol_pvrooftop = zeros(Float64, T, n)
 
     #Calculate absolute availability values and sum up the different classes for each solar power type
-    for i in 1:8760
+    for i in 1:T
         avail_sol_cspA[i,:,:] = permutedims(sum(capacity_cspplantA .* CFtime_cspplantA[i,:,:], dims=2))
         avail_sol_cspB[i,:,:] = permutedims(sum(capacity_cspplantB .* CFtime_cspplantB[i,:,:], dims=2))
         avail_sol_pvA[i,:,:] = permutedims(sum(capacity_pvplantA .* CFtime_pvplantA[i,:,:], dims=2))
@@ -269,12 +267,12 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
     replace_nans(CFtime_windonshoreB)
 
     #Preallocate arrays for results
-    avail_wind_offshore = zeros(Float64, 8760, n)
-    avail_wind_onshoreA = zeros(Float64, 8760, n)
-    avail_wind_onshoreB = zeros(Float64, 8760, n)
+    avail_wind_offshore = zeros(Float64, T, n)
+    avail_wind_onshoreA = zeros(Float64, T, n)
+    avail_wind_onshoreB = zeros(Float64, T, n)
 
     #Calculate absolute availability values and sum up the different classes for each wind power type
-    for i in 1:8760
+    for i in 1:T
         avail_wind_offshore[i,:,:] = permutedims(sum(capacity_offshore .* CFtime_windoffshore[i,:,:], dims=2))
         avail_wind_onshoreA[i,:,:] = permutedims(sum(capacity_onshoreA .* CFtime_windonshoreA[i,:,:], dims=2))
         avail_wind_onshoreB[i,:,:] = permutedims(sum(capacity_onshoreB .* CFtime_windonshoreB[i,:,:], dims=2))
@@ -294,7 +292,7 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
     #Replace NaNs from monthly data with 0's
     replace_nans(existinginflow)
     #Preallocate array for intermediate result
-    avail_inflow = zeros(Float64, 8760, n)
+    avail_inflow = zeros(Float64, T, n)
 
     #Turn monthly inflow data into hourly data
     days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -320,7 +318,7 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
 
     #Write a CSV file for each node
     for i in 1:n
-        nodedata = zeros(8760, 6)
+        nodedata = zeros(T, 6)
         nodedata[:,1] = demandvars[:,i]
         nodedata[:,2] = avail_sol[:,i]
         nodedata[:,3] = avail_wind_on[:,i]
@@ -329,14 +327,14 @@ function create_nodedata(instance_path::AbstractString, era_year::AbstractString
         nodedata[:,6] = hydRoR_in[:,i]
         nodedata = convert(DataFrame, nodedata)
         rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind_On", "Avail_Wind_Off", "Hyd_In", "HydRoR_In"])
-        CSV.write(joinpath(instance_path, "nodes", "$i.csv"), nodedata)
+        CSV.write(joinpath(Smallinstance_path, "nodes", "$i.csv"), nodedata)
     end
 
     
 end
 
 function getdispatch(output_path::AbstractString)
-
+    println("ABC")
     variables = JSON.parsefile(joinpath(output_path, "variables.json"))
     parameters = JSON.parsefile(joinpath(output_path, "parameters.json"))
 
@@ -344,19 +342,19 @@ function getdispatch(output_path::AbstractString)
     hyd = variables["h_nt"] |> Array{Array{Float64}}
     dem = parameters["D_nt"] |> Array{Array{Float64}}
     dispatch = zeros(13, 11)
-    for n in 1:11
+    for n in 1:2
         for g in 1:8
-            for t in 1:8760
+            for t in 1:T
                 dispatch[n, g] = dispatch[n, g] + pgnt[t][n][g]
             end  
         end
-        for t in 1:8760
+        for t in 1:T
             dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
             dispatch[n, 11] = dispatch[n, 11] + dem[t][n]
         end
         dispatch[n, 10] = sum(dispatch[n, 1:9])
     end
-    for i in 1:11
+    for i in 1:2
         dispatch[12, i] = sum(dispatch[:, i])
     end
     dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
