@@ -32,7 +32,7 @@ function Params(Smallinstance_path::AbstractString)
 
     # TODO: implement time period clustering: τ, T, τ_t
 
-    # Load indices. Convert JSON values to right types.
+    # Load indices. Convert JSON values to the right types.
     G = indices["G"] |> Array{Int}
     G_r = indices["G_r"] |> Array{Int}
     N = indices["N"] |> Array{Int}
@@ -329,38 +329,4 @@ function create_nodedata(Smallinstance_path::AbstractString, era_year::AbstractS
         rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind_On", "Avail_Wind_Off", "Hyd_In", "HydRoR_In"])
         CSV.write(joinpath(Smallinstance_path, "nodes", "$i.csv"), nodedata)
     end
-
-    
-end
-
-function getdispatch(output_path::AbstractString)
-    println("ABC")
-    variables = JSON.parsefile(joinpath(output_path, "variables.json"))
-    parameters = JSON.parsefile(joinpath(output_path, "parameters.json"))
-
-    pgnt = variables["p_gnt"] |> Array{Array{Array{Float64}}}
-    hyd = variables["h_nt"] |> Array{Array{Float64}}
-    dem = parameters["D_nt"] |> Array{Array{Float64}}
-    dispatch = zeros(13, 11)
-    for n in 1:2
-        for g in 1:8
-            for t in 1:T
-                dispatch[n, g] = dispatch[n, g] + pgnt[t][n][g]
-            end  
-        end
-        for t in 1:T
-            dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
-            dispatch[n, 11] = dispatch[n, 11] + dem[t][n]
-        end
-        dispatch[n, 10] = sum(dispatch[n, 1:9])
-    end
-    for i in 1:2
-        dispatch[12, i] = sum(dispatch[:, i])
-    end
-    dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
-
-    dispatch = convert(DataFrame, dispatch)
-    rename!(dispatch, ["WIND_ON", "WIND_OFF", "SOLAR", "BIOMASS", "NUCLEAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO", "TOTAL", "DEMAND"])
-    CSV.write(joinpath(output_path, "dispatch.csv"), dispatch)
-
 end

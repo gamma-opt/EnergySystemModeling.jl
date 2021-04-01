@@ -65,7 +65,6 @@ end
     H_n::Array{AbstractFloat, 1}
     H′_n::Array{AbstractFloat, 1}
     F_onmin::Array{AbstractFloat, 1}
-    
 end
 
 """Variable values."""
@@ -135,12 +134,10 @@ end
 - `variables::Variables`
 """
 function Expressions(parameters::Params, variables::Variables)
-    G = parameters.G
-    G_r = parameters.G_r
-    T = parameters.T
-    N = parameters.N
-    L = parameters.L
-    R_E = parameters.R_E
+    @unpack region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
+            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
+            parameters
 
     p_gnt = variables.p_gnt
     h_nt = variables.h_nt
@@ -233,7 +230,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
     @constraint(model,
         g2[g in G, n in N],
-        (Q_gn[g,n] + p̄_gn[g,n]) / 1000 ≤ Q̄_gn[g,n] / 1000)
+        (Q_gn[g,n] + p̄_gn[g,n]) ≤ Q̄_gn[g,n])
 
     # Minimum renewables share
     if specs.renewable_target

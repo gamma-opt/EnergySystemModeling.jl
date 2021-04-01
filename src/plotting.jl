@@ -17,6 +17,35 @@ function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, reg
               xlabel=L"t",
               ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
               label=technology_g[g])
+        # plot!(p, T, [p̄_gn[g, n] for t in T],
+        #       color = colors[g],
+        #       label="")
+    end
+    plot!(p, T, [h_nt[n, t] for t in T],
+          color = colors[9],
+          alpha=0.3,
+          label="hydro")
+    # plot!(p, T, [H_n[n] + H′_n[n] for t in T],
+    #       color = colors[9],
+    #       label="")
+    return p
+end
+
+function plot_balance_stacked(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
+    colors = techcolors
+    p = plot(
+        legend=:outertopright,
+        size=(780, 400),
+        title = "Hourly generation dispatch by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
+        titlefontsize = 10
+    )
+    for g in G
+        plot!(p, T, [p_gnt[g, n, t] for t in T],
+              color = colors[g],
+              alpha=0.3,
+              xlabel=L"t",
+              ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
+              label=technology_g[g])
         plot!(p, T, [p̄_gn[g, n] for t in T],
               color = colors[g],
               label="")
@@ -218,7 +247,7 @@ end
 function plot_objective_values(objectives::Objectives)
     fs = fieldnames(Objectives)
     vs = [getfield(objectives, field) for field in fs]
-    title = string("Objective value: ", round(sum(vs)))
+    title = string("Objective value: ", round(sum(vs), digits = 4))
     bar(vs,
         xlabel="Objective function",
         ylabel="EUR",
