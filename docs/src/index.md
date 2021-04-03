@@ -294,3 +294,4 @@ We can write [`Specs`](@ref), [`Params`](@ref), [`Variables`](@ref), and [`Objec
 
 ## References
 [^1]: Pineda, S., & Morales, J. M. (2018). Chronological time-period clustering for optimal capacity expansion planning with storage. IEEE Transactions on Power Systems, 33(6), 7162–7170. https://doi.org/10.1109/TPWRS.2018.2842093
+
