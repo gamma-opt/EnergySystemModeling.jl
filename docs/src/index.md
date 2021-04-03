@@ -187,11 +187,8 @@ $$\sum_{n∈N,t} p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t} p_{g,n,t} + \sum_{n∈N,t} h
 
 Carbon cap
 
-<<<<<<< Updated upstream
-$$\sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5}$$
-=======
 $$ \sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ R_E (1 - C_E) \tag{g5} $$
->>>>>>> Stashed changes
+
 
 ### Shedding
 Shedding upper bound
@@ -297,3 +294,4 @@ We can write [`Specs`](@ref), [`Params`](@ref), [`Variables`](@ref), and [`Objec
 
 ## References
 [^1]: Pineda, S., & Morales, J. M. (2018). Chronological time-period clustering for optimal capacity expansion planning with storage. IEEE Transactions on Power Systems, 33(6), 7162–7170. https://doi.org/10.1109/TPWRS.2018.2842093
+
