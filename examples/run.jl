@@ -8,7 +8,7 @@ output = "output"
 mkpath(output)
 
 @info "Loading parameters"
-parameters = Params(joinpath("examples","Smallinstance"))
+parameters = Params(joinpath("examples","DataInput"),joinpath("examples", "Instances"))
 specs = Specs(
     renewable_target=true,
     carbon_cap=true,
@@ -45,7 +45,7 @@ save_json(objectives, joinpath(output, "objectives.json"))
 @info "Plotting"
 using Plots
 using StatsPlots
-pyplot()
+gr()
 
 savefig(plot_objective_values(objectives),
         joinpath(output, "objectives.pdf"))
@@ -60,7 +60,12 @@ for n in parameters.N
     savefig(plot_box(parameters, variables, expressions, n),
            joinpath(output, "boxplot$n.pdf"))
     
+    
 end
+
+savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
+            joinpath(output, "generation_capacities_stacked.pdf"))
+
 savefig(plot_storage_capacities(parameters, variables, expressions),
         joinpath(output, "storage_capacities.pdf"))
 
@@ -84,4 +89,4 @@ savefig(plot_transmission_bars(parameters, variables, expressions),
 savefig(plot_loss_of_load(parameters, variables, expressions),
         joinpath(output, "loss_of_load.pdf"))
 
-getdispatch(joinpath(output))
+#getdispatch(joinpath(output)) 
