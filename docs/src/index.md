@@ -187,7 +187,7 @@ $$\sum_{n∈N,t} p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t} p_{g,n,t} + \sum_{n∈N,t} h
 
 Carbon cap
 
-$$ \sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ R_E (1 - C_E) \tag{g5} $$
+$$\sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ R_E(1 - C_E) \tag{g5}$$
 
 
 ### Shedding
