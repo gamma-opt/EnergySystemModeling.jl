@@ -65,7 +65,6 @@ end
     H_n::Array{AbstractFloat, 1}
     H′_n::Array{AbstractFloat, 1}
     F_onmin::Array{AbstractFloat, 1}
-    
 end
 
 """Variable values."""
@@ -73,8 +72,7 @@ end
     p_gnt::Array{AbstractFloat, 3}
     p̄_gn::Array{AbstractFloat, 2}
     σ_nt::Array{AbstractFloat, 2}
-    f⁺_lt::Array{AbstractFloat, 2}
-    f⁻_lt::Array{AbstractFloat, 2}
+    f_lt::Array{AbstractFloat, 2}
     f̄_l::Array{AbstractFloat, 1}
     b_snt::Array{AbstractFloat, 3}
     b̄_sn::Array{AbstractFloat, 2}
@@ -135,12 +133,10 @@ end
 - `variables::Variables`
 """
 function Expressions(parameters::Params, variables::Variables)
-    G = parameters.G
-    G_r = parameters.G_r
-    T = parameters.T
-    N = parameters.N
-    L = parameters.L
-    R_E = parameters.R_E
+    @unpack region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
+            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
+            parameters
 
     p_gnt = variables.p_gnt
     h_nt = variables.h_nt
@@ -177,8 +173,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
     @variable(model, p̄_gn[g in G, n in N]≥0)
     @variable(model, σ_nt[n in N, t in T]≥0)
-    @variable(model, f⁺_lt[l in L′, t in T]≥0)
-    @variable(model, f⁻_lt[l in L′, t in T]≥0)
+    @variable(model, f_lt[l in L′, t in T]≥0)
+    @variable(model, f_abs_lt[l in L′, t in T]≥0)
     @variable(model, f̄_l[l in L′])
     @variable(model, b_snt[s in S, n in N, t in T]≥0)
     @variable(model, b̄_sn[s in S, n in N]≥0)
@@ -194,20 +190,35 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, h′_nt[n in N, t in T]≥0)
 
     ## -- Objective --
+    ## Investment and maintenance of generation capacity
     @expression(model, f1,
         sum((I_g[g]+M_g[g])*p̄_gn[g,n] for g in G, n in N))
+    
+    ## Operational cost of generation dispatch
     @expression(model, f2,
         sum(C_g[g]*p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T))
+    
+    ## Shedding cost
     @expression(model, f3,
         sum(C*σ_nt[n,t]*τ_t[t] for n in N, t in T))
+
+    ##Investment and maintenance cost of transmission cpacity
     @expression(model, f4,
         sum((I_l[l]+M_l[l])*f̄_l[l] for l in L′))
+    
+    ## Operational cost of transmission flow
     @expression(model, f5,
-        sum(C_l*(f⁺_lt[l,t] + f⁻_lt[l,t])*τ_t[t] for l in L′, t in T))
+        sum(C_l*f_abs_lt[l,t]*τ_t[t] for l in L′, t in T))
+    
+    ## Investment costof storage capacity
     @expression(model, f6,
         sum(I_s[s]*b̄_sn[s,n] for s in S, n in N))
+   
+    ## Operational cost of storage
     @expression(model, f7,
         sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ_t[t] for s in S, n in N, t in T))
+    
+    
     @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7)
 
     ## -- Constraints --
@@ -221,8 +232,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(e_l*f⁺_lt[l,t] - f⁻_lt[l,t] for l in L⁻(n)) -
-        sum(f⁺_lt[l,t] - e_l*f⁻_lt[l,t] for l in L⁺(n)) +
+        sum(e_l*f_lt[l,t] for l in L⁻(n)) -
+        sum(e_l*f_lt[l,t] for l in L⁺(n)) +
         sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
         h_nt[n,t] ==
         D_nt[n,t])
@@ -233,7 +244,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
     @constraint(model,
         g2[g in G, n in N],
-        (Q_gn[g,n] + p̄_gn[g,n]) / 1000 ≤ Q̄_gn[g,n] / 1000)
+        (Q_gn[g,n] + p̄_gn[g,n]) ≤ Q̄_gn[g,n])
 
     # Minimum renewables share
     if specs.renewable_target
@@ -262,7 +273,20 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Transmission capacity
     @constraint(model,
         t1[l in L′, t in T],
-        f⁺_lt[l,t] + f⁻_lt[l,t] ≤ f̄_l[l])
+        f_lt[l,t] ≤ f̄_l[l])
+
+    @constraint(model,
+        t2[l in L′, t in T],
+        f_lt[l,t] ≥ -f̄_l[l])
+
+    # Absolute value of f_lt
+    @constraint(model,
+        t3[l in L′, t in T],
+        f_abs_lt[l,t] ≥ f_lt[l,t])
+
+    @constraint(model,
+        t4[l in L′, t in T],
+        f_abs_lt[l,t] ≥ -f_lt[l,t])
 
     if specs.storage
         # Storage capacity
