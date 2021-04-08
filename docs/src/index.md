@@ -24,6 +24,7 @@ General parameters
 *  $τ_{t}$: Number of hours clustered in time period $t$ [h]
 *  $D_{n,t}$: Demand per node $n$ per time period $t$ [MWh]
 *  $r≥0$: Interest rate
+*  $R_E$: Carbon emissions in the Reference year 1990
 
 Generation technology parameters
 
@@ -94,8 +95,8 @@ Shedding variables
 
 Transmission variables
 
-*  $f^{+}_{l,t}$: Transmission flow per line $l$ in each time step $t$ [MWh]
-*  $f^{-}_{l,t}$: Absolute value of transmission flow per line $l$ in each time step $t$ [MWh]
+*  $f_{l,t}$: Transmission flow per line $l$ in each time step $t$ [MWh]
+*  $f^{abs}_{l,t}$: Absolute value of transmission flow per line $l$ in each time step $t$ [MWh]
 *  $\bar{f}_l$: Transmission capacity per line $l$ [MW]
 
 Storage variables
@@ -137,7 +138,7 @@ $$f_4=\sum_{l} (I_l^F+M_l^F) \bar{f}_l \tag{f4}$$
 
 The operational cost of transmission flow
 
-$$f_5=\sum_{l,t} C_l^F (f^{+}_{l,t} + f^{-}_{l,t})  τ_{t} \tag{f5}$$
+$$f_5=\sum_{l,t} C_l^F f^{abs}_{l,t} τ_{t} \tag{f5}$$
 
 Investment cost of storage capacity
 
@@ -165,8 +166,7 @@ $$L_n^+=\{l∈L∣j∈N,(n,j)=l\}$$
 
 Energy balance
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} (e_lf^+_{l,t} - f^-_{l,t}) - \sum_{l∈L_n^+} (f^+_{l,t} - e_lf^-_{l,t}) + \sum_{l∈L_n^-}(ξ_s b^-_{s,n,t} - b^+_{s,n,t} )+ h_{n,t} = \\ D_{n,t},\quad ∀s,n,t \tag{b1}$$
-
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} e_l f_{l^-,t} - \sum_{l∈L_n^+} e_l f_{l^+,t} + \sum_{l∈L_n^-}(ξ_s b^-_{s,n,t} - b^+_{s,n,t} )+ h_{n,t} = \\ D_{n,t},\quad ∀s,n,t \tag{b1}$$
 
 ### Generation
 Generation capacity
@@ -185,7 +185,8 @@ $$\sum_{n∈N,t} p_{g,n,t} ≤ μ\sum_{g∈G^r,n,t} p_{g,n,t} + \sum_{n∈N,t} h
 
 Carbon cap
 
-$$\sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ 1868672938(1 - C_E) \tag{g5}$$
+$$\sum_{g} E_g \sum_{n∈N,t} \frac{p_{g,n,t}}{e_g} ≤ R_E(1 - C_E) \tag{g5}$$
+
 
 ### Shedding
 Shedding upper bound
@@ -195,15 +196,15 @@ $$σ_{n,t} ≤ \bar{C} D_{n,t} ,\quad ∀n,t \tag{g6}$$
 ### Transmission
 Transmission capacity
 
-$$f^+_{l,t} + f^-_{l,t} ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
+$$f_{l,t}  ≤ \bar{f}_l,\quad ∀l,t \tag{t1}$$
 
 $$f_{l,t} ≥ -\bar{f}_l,\quad ∀l,t \tag{t2}$$
 
 These auxiliary constraints  are used to capture the absolute value of the transmission for the objective function.
 
-$$|f_{l,t}|≥f_{l,t},\quad ∀l,t \tag{t3}$$
+$$f^{abs}_{l,t} ≥ f_{l,t},\quad ∀l,t \tag{t3}$$
 
-$$|f_{l,t}|≥-f_{l,t},\quad ∀l,t \tag{t4}$$
+$$f^{abs}_{l,t} ≥ -f_{l,t},\quad ∀l,t \tag{t4}$$
 
 ### Storage
 Storage capacity
@@ -291,3 +292,4 @@ We can write [`Specs`](@ref), [`Params`](@ref), [`Variables`](@ref), and [`Objec
 
 ## References
 [^1]: Pineda, S., & Morales, J. M. (2018). Chronological time-period clustering for optimal capacity expansion planning with storage. IEEE Transactions on Power Systems, 33(6), 7162–7170. https://doi.org/10.1109/TPWRS.2018.2842093
+

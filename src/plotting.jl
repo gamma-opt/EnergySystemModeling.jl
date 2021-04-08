@@ -41,9 +41,28 @@ function plot_generation_capacities(p̄_gn, H_n, H′_n, G, n, region_n, technol
         alpha=0.7,
         legend=false)
 end
+   
 
-function plot_transmission_flow(f⁺_lt, f⁻_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, C′_E)
-    p = plot(T, [f⁺_lt[l, t] for t in T],
+function plot_generation_capacities_stacked(p̄_gn, H_n, H′_n, N, region_n, technology_g, κ, C_E, κ′, C′_E)
+    p̄_gn
+    H_tot = H_n + H′_n
+    dispatches = permutedims([p̄_gn; permutedims(H_tot)])
+    groupedbar(dispatches,
+        bar_position = :stack,
+        bar_width=0.7,
+        xticks=(N, region_n),
+        ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
+        title = "Generation capacity by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
+        titlefontsize = 10,
+        color=techcolors,
+        labels=permutedims([technology_g;"hydro"]),
+        lw = 0,
+        alpha=0.7)
+end
+
+
+function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, C′_E)
+    p = plot(T, [f_lt[l, t] for t in T],
              xlabel=L"t",
              ylabel=L"f_{l,t}\,\mathrm{[MWh]}",
              title = "Hourly transmission flow between $(region_n[L[l][1]]) and $(region_n[L[l][2]])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -51,20 +70,18 @@ function plot_transmission_flow(f⁺_lt, f⁻_lt, f̄_l, l, L, T, region_n, κ, 
              alpha=0.7,
              legend=false,
              size=(780, 400))
-    plot!(T, [-f⁻_lt[l, t] for t in T])
     plot!(p, T, [f̄_l[l] for t in T], color=:green)
     plot!(p, T, [-f̄_l[l] for t in T], color=:green)
     return p
 end
 
-function plot_transmission_bars(f⁺_lt, f⁻_lt, L, T, region_n, κ, C_E, κ′, C′_E)
+function plot_transmission_bars(f_lt, L, T, region_n, κ, C_E, κ′, C′_E)
     L′ = 1:length(L)
     lines = Array{AbstractString, 1}(undef, length(L))
     for i in L′
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
     end
-    f⁺_l = sum(f⁺_lt[:,t] for t in T)
-    f⁻_l = sum(f⁻_lt[:,t] for t in T)
+    f_l = sum(f_lt[:,t] for t in T)
     p = plot(size=(780, 400),
              ylabel=L"\sum_t f_{l,t}\,\mathrm{[MWh]}",
              title = "Transmission by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -73,8 +90,7 @@ function plot_transmission_bars(f⁺_lt, f⁻_lt, L, T, region_n, κ, C_E, κ′
              xrotation = 90,
              legend=false,
              )
-    bar!(L′, [f⁺_l[l] for l in L′], alpha = 0.7, lw = 0)
-    bar!(L′, [-f⁻_l[l] for l in L′], alpha = 0.7, lw = 0)
+    bar!(L′, [f_l[l] for l in L′], alpha = 0.7, lw = 0)
     return p
 end
 
@@ -113,6 +129,7 @@ function plot_storage_level(b_snt, b̄_sn, S, n, T, κ, C_E, κ′, C′_E)
 end
 
 function plot_storage_capacities(b̄_sn, N, region_n, κ, C_E, κ′, C′_E)
+    @show b̄_sn, N, region_n
     capacities = permutedims(b̄_sn)
     groupedbar(capacities,
         bar_position = :stack,
@@ -238,14 +255,24 @@ function plot_generation_capacities(parameters::Params, variables::Variables, ex
                                parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
+
+
+
+"""Plot stacked generation capacities as a stacked graph."""
+function plot_generation_capacities_stacked(parameters::Params, variables::Variables, expressions::Expressions)
+    plot_generation_capacities_stacked(variables.p̄_gn, parameters.H_n, parameters.H′_n, parameters.N,
+                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+end
+
+
 """Plot transmission flow."""
 function plot_transmission_flow(parameters::Params, variables::Variables, expressions::Expressions, l::Integer)
-    plot_transmission_flow(variables.f⁺_lt, variables.f⁻_lt, variables.f̄_l, l, parameters.L, parameters.T, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+    plot_transmission_flow(variables.f_lt, variables.f̄_l, l, parameters.L, parameters.T, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
 """Plot transmission bars."""
 function plot_transmission_bars(parameters::Params, variables::Variables, expressions::Expressions)
-    plot_transmission_bars(variables.f⁺_lt, variables.f⁻_lt, parameters.L, parameters.T,
+    plot_transmission_bars(variables.f_lt, parameters.L, parameters.T,
                            parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
