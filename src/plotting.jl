@@ -4,7 +4,7 @@ techcolors = [:lightblue :cyan :yellow :darkgreen :lime :gray :orange :brown :bl
 
 function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
-    p = plot(
+    p = Plots.plot(
         legend=:outertopright,
         size=(780, 400),
         title = "Hourly generation dispatch by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -33,7 +33,7 @@ end
 
 function plot_balance_stacked(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
-    p = plot(
+    p = Plots.plot(
         legend=:outertopright,
         size=(780, 400),
         title = "Hourly generation dispatch by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -61,7 +61,7 @@ function plot_balance_stacked(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, region_
 end
 
 function plot_generation_capacities(p̄_gn, H_n, H′_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
-    bar([G;9], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
+    StatsPlots..bar([G;9], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         title = "Generation capacity by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -76,7 +76,7 @@ function plot_generation_capacities_stacked(p̄_gn, H_n, H′_n, N, region_n, te
     p̄_gn
     H_tot = H_n + H′_n
     dispatches = permutedims([p̄_gn; permutedims(H_tot)])
-    groupedbar(dispatches,
+    StatsPlots.groupedbar(dispatches,
         bar_position = :stack,
         bar_width=0.7,
         xticks=(N, region_n),
@@ -91,7 +91,7 @@ end
 
 
 function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, C′_E)
-    p = plot(T, [f_lt[l, t] for t in T],
+    p = Plots.plot(T, [f_lt[l, t] for t in T],
              xlabel=L"t",
              ylabel=L"f_{l,t}\,\mathrm{[MWh]}",
              title = "Hourly transmission flow between $(region_n[L[l][1]]) and $(region_n[L[l][2]])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -111,7 +111,7 @@ function plot_transmission_bars(f_lt, L, T, region_n, κ, C_E, κ′, C′_E)
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
     end
     f_l = sum(f_lt[:,t] for t in T)
-    p = plot(size=(780, 400),
+    p = StatsPlots.plot(size=(780, 400),
              ylabel=L"\sum_t f_{l,t}\,\mathrm{[MWh]}",
              title = "Transmission by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
              titlefontsize = 10,
@@ -129,7 +129,7 @@ function plot_transmission_capacities(f̄_l, L, region_n, κ, C_E, κ′, C′_E
     for i in L′
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
     end
-    bar(L′, [f̄_l[l] for l in L′],
+    StatsPlots.bar(L′, [f̄_l[l] for l in L′],
         title = "Transmission capacity by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10,
         xticks=(L′, lines),
@@ -141,7 +141,7 @@ function plot_transmission_capacities(f̄_l, L, region_n, κ, C_E, κ′, C′_E
 end
 
 function plot_storage_level(b_snt, b̄_sn, S, n, T, κ, C_E, κ′, C′_E)
-    p = plot(legend=:outertopright,
+    p = Plots.plot(legend=:outertopright,
              title = "Hourly storage levels by storage technology\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
              titlefontsize = 10,
         )
@@ -158,9 +158,9 @@ function plot_storage_level(b_snt, b̄_sn, S, n, T, κ, C_E, κ′, C′_E)
 end
 
 function plot_storage_capacities(b̄_sn, N, region_n, κ, C_E, κ′, C′_E)
-    @show b̄_sn, N, region_n
+    # @show b̄_sn, N, region_n
     capacities = permutedims(b̄_sn)
-    groupedbar(capacities,
+    StatsPlots.groupedbar(capacities,
         bar_position = :stack,
         bar_width=0.7,
         ylabel=L"\bar{p}_{s,n}\,\mathrm{[MWh]}",
@@ -173,7 +173,7 @@ function plot_storage_capacities(b̄_sn, N, region_n, κ, C_E, κ′, C′_E)
 end
 
 function plot_loss_of_load(σ_nt, N, T, region_n, κ, C_E, κ′, C′_E)
-    p = plot(
+    p = Plots.plot(
         legend=:outertopright,
         size=(780, 400),
         title = "Loss of load by region\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -191,7 +191,7 @@ end
 
 function plot_box(p_gnt, h_nt, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
-    p = plot(
+    p = StatsPlots.plot(
         size=(780, 400),
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
@@ -215,7 +215,7 @@ end
 
 function plot_box_all(p_gnt, h_nt, G, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
-    p = plot(
+    p = StatsPlots.plot(
         size=(780, 400),
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\sum_n p_{g,n,t}\,\mathrm{[MWh]}",

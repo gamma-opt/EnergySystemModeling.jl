@@ -46,7 +46,7 @@ save_json(objectives, joinpath(output, "objectives.json"))
 @info "Plotting"
 using Plots
 using StatsPlots
-gr()
+# gr()
 
 savefig(plot_objective_values(objectives),
         joinpath(output, "objectives.pdf"))
@@ -60,8 +60,6 @@ for n in parameters.N
             joinpath(output, "storage_n$n.pdf"))
     savefig(plot_box(parameters, variables, expressions, n),
            joinpath(output, "boxplot$n.pdf"))
-    
-    
 end
 
 savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
