@@ -166,8 +166,7 @@ $$L_n^+=\{l∈L∣j∈N,(n,j)=l\}$$
 
 Energy balance
 
-$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} (e_lf^+_{l,t} - f^-_{l,t}) - \sum_{l∈L_n^+} (f^+_{l,t} - e_lf^-_{l,t}) + \sum_{l∈L_n^-}(ξ_s b^-_{s,n,t} - b^+_{s,n,t} )+ h_{n,t} = \\ D_{n,t},\quad ∀s,n,t \tag{b1}$$
-
+$$\sum_{g} p_{g,n,t} + σ_{n,t} + \sum_{l∈L_n^-} e_l f_{l^-,t} - \sum_{l∈L_n^+} e_l f_{l^+,t} + \sum_{l∈L_n^-}(ξ_s b^-_{s,n,t} - b^+_{s,n,t} )+ h_{n,t} = \\ D_{n,t},\quad ∀s,n,t \tag{b1}$$
 
 ### Generation
 Generation capacity
