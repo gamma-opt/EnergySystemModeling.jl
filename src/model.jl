@@ -88,7 +88,16 @@ end
     h′_nt::Array{AbstractFloat, 2}
 end
 
-"""Objective values."""
+"""Objective values:
+# Attributes
+- `f1: Generation investment and maintenance
+- `f2: Generation operational cost
+- `f3: Shedding cost
+- `f4: Transmission investment and maintenance
+- `f5: Transmission operational cost
+- `f6: Storage investment cost
+- `f7: Storage operational cost
+"""
 @with_kw struct Objectives
     f1::AbstractFloat
     f2::AbstractFloat
@@ -99,22 +108,28 @@ end
     f7::AbstractFloat
 end
 
-"""Expression values."""
+"""Expression values:
+# Attributes
+- `κ′: Renewable generation share
+- `μ′: Hydro share
+- `C′_E: CO2 emission reduction
+"""
 @with_kw struct Expressions
     κ′::AbstractFloat
     μ′::AbstractFloat
     C′_E::AbstractFloat
 end
 
-data(a::Number) = a
-data(a::JuMP.Containers.DenseAxisArray) = a.data
+"""Retrieving data from objects typed JuMP.Containers.DenseAxisArray"""
+retrieve_data(a::Number) = a
+retrieve_data(a::JuMP.Containers.DenseAxisArray) = a.data
 
 """Extract variable values from model.
 # Arguments
 - `model::EnergySystemModel`
 """
 function Variables(model::EnergySystemModel)
-    tup = Tuple(value.(model[i]) |> data for i in fieldnames(Variables))
+    tup = Tuple(value.(model[i]) |> retrieve_data for i in fieldnames(Variables))
     Variables(tup...)
 end
 
@@ -123,7 +138,7 @@ end
 - `model::EnergySystemModel`
 """
 function Objectives(model::EnergySystemModel)
-    tup = Tuple(value.(model[i]) |> data for i in fieldnames(Objectives))
+    tup = Tuple(value.(model[i]) |> retrieve_data for i in fieldnames(Objectives))
     Objectives(tup...)
 end
 
