@@ -61,7 +61,7 @@ function plot_balance_stacked(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, region_
 end
 
 function plot_generation_capacities(p̄_gn, H_n, H′_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
-    StatsPlots..bar([G;9], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
+    StatsPlots.bar([G;9], [[p̄_gn[g, n] for g in G]; [H_n[n] + H′_n[n]]],
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         title = "Generation capacity by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -104,8 +104,8 @@ function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, 
     return p
 end
 
-function plot_transmission_bars(f_lt, L, T, region_n, κ, C_E, κ′, C′_E)
-    L′ = 1:length(L)
+function plot_transmission_bars(f_lt, L, L_ind, T, region_n, κ, C_E, κ′, C′_E)
+    # L′ = 1:length(L)
     lines = Array{AbstractString, 1}(undef, length(L))
     for i in L′
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
@@ -123,8 +123,8 @@ function plot_transmission_bars(f_lt, L, T, region_n, κ, C_E, κ′, C′_E)
     return p
 end
 
-function plot_transmission_capacities(f̄_l, L, region_n, κ, C_E, κ′, C′_E)
-    L′ = 1:length(L)
+function plot_transmission_capacities(f̄_l, L, L_ind, region_n, κ, C_E, κ′, C′_E)
+    # L′ = 1:length(L)
     lines = Array{AbstractString, 1}(undef, length(L))
     for i in L′
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
@@ -301,13 +301,13 @@ end
 
 """Plot transmission bars."""
 function plot_transmission_bars(parameters::Params, variables::Variables, expressions::Expressions)
-    plot_transmission_bars(variables.f_lt, parameters.L, parameters.T,
+    plot_transmission_bars(variables.f_lt, parameters.L, parameters.L_ind, parameters.T,
                            parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
 """Plot transmission capacities."""
 function plot_transmission_capacities(parameters::Params, variables::Variables, expressions::Expressions)
-    plot_transmission_capacities(variables.f̄_l, parameters.L, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+    plot_transmission_capacities(variables.f̄_l, parameters.L, parameters.L_ind, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
 """Plot storage level."""

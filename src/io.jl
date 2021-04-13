@@ -37,6 +37,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     G_r = indices["G_r"] |> Array{Int}
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
+    L_ind = indices["L_ind"] |> Array{Int}
     τ = 1
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
@@ -77,7 +78,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         A_gnt[1, n, :] = df.Avail_Wind_On[T]
         A_gnt[2, n, :] = df.Avail_Wind_Off[T]
         A_gnt[3, n, :] = df.Avail_Sol[T]
-        A_gnt[A_gnt .< 0.01] .= 0
+        A_gnt[A_gnt .< 0.001] .= 0
         W_nmax[n] = capacitydf.Max_Hyd_Level[n]
         W_nmin[n] = capacitydf.Min_Hyd_Level[n]
         f_int[n,:] = df.Hyd_In[T]
@@ -112,8 +113,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     B_l = transmission.B[1]
     e_l = transmission.efficiency[1]
 
-
-
     # Load storage parameters
     storage = joinpath(DataInput_path, "storage.csv") |>
         CSV.File |> DataFrame
@@ -143,6 +142,7 @@ function Params(DataInput_path::AbstractString)
     G_r = indices["G_r"] |> Array{Int}
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
+    L_ind = indices["L_ind"] |> Array{Int}
     τ = 1
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}

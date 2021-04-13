@@ -179,7 +179,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             parameters
 
     # Indices of lines L
-    L′ = 1:length(L)
+    # L′ = 1:length(L)
 
     # Create an instance of JuMP model.
     model = EnergySystemModel()
@@ -188,9 +188,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
     @variable(model, p̄_gn[g in G, n in N]≥0)
     @variable(model, σ_nt[n in N, t in T]≥0)
-    @variable(model, f_lt[l in L′, t in T]≥0)
-    @variable(model, f_abs_lt[l in L′, t in T]≥0)
-    @variable(model, f̄_l[l in L′])
+    @variable(model, f_lt[l in L_ind, t in T]≥0)
+    @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
+    @variable(model, f̄_l[l in L_ind])
     @variable(model, b_snt[s in S, n in N, t in T]≥0)
     @variable(model, b̄_sn[s in S, n in N]≥0)
     @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
@@ -219,11 +219,11 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     ##Investment and maintenance cost of transmission cpacity
     @expression(model, f4,
-        sum((I_l[l]+M_l[l])*f̄_l[l] for l in L′))
+        sum((I_l[l]+M_l[l])*f̄_l[l] for l in L_ind))
     
     ## Operational cost of transmission flow
     @expression(model, f5,
-        sum(C_l*f_abs_lt[l,t]*τ_t[t] for l in L′, t in T))
+        sum(C_l*f_abs_lt[l,t]*τ_t[t] for l in L_ind, t in T))
     
     ## Investment costof storage capacity
     @expression(model, f6,
@@ -238,9 +238,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     ## -- Constraints --
     # Transmission lines to node n
-    L⁻(n) = (l for (l,(i,j)) in zip(L′,L) if j==n)
+    L⁻(n) = (l for (l,(i,j)) in zip(L_ind,L) if j==n)
     # Transmission lines from node n
-    L⁺(n) = (l for (l,(i,j)) in zip(L′,L) if i==n)
+    L⁺(n) = (l for (l,(i,j)) in zip(L_ind,L) if i==n)
 
     # Energy balance
     @constraint(model,
@@ -264,8 +264,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g3,
-            ((sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000) ≥
-            κ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
+            ((sum(p_gnt[g,n,t]*τ_t for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000) ≥
+            κ * (sum(p_gnt[g,n,t]*τ_t for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
     end
 
     # Maximum nuclear share
@@ -287,23 +287,25 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     # Transmission capacity
     @constraint(model,
-        t1[l in L′, t in T],
+        t1[l in L_ind, t in T],
         f_lt[l,t] ≤ f̄_l[l])
 
     @constraint(model,
-        t2[l in L′, t in T],
+        t2[l in L_ind, t in T],
         f_lt[l,t] ≥ -f̄_l[l])
 
     # Absolute value of f_lt
     @constraint(model,
-        t3[l in L′, t in T],
+        t3[l in L_ind, t in T],
         f_abs_lt[l,t] ≥ f_lt[l,t])
 
     @constraint(model,
-        t4[l in L′, t in T],
+        t4[l in L_ind, t in T],
         f_abs_lt[l,t] ≥ -f_lt[l,t])
 
     if specs.storage
+    ## TODO: revise storage
+
         # Storage capacity
         @constraint(model,
             s1[s in S, n in N, t in T],
@@ -343,7 +345,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     if specs.voltage_angles
         # Voltage angles
         @constraint(model,
-            v1[g in G, l in L′, n in N, n′ in N, t in T[T.>1]],
+            v1[g in G, l in L_ind, n in N, n′ in N, t in T[T.>1]],
             (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
     end
 
