@@ -43,49 +43,50 @@ save_json(parameters, joinpath(output, "parameters.json"))
 save_json(variables, joinpath(output, "variables.json"))
 save_json(objectives, joinpath(output, "objectives.json"))
 
-# @info "Plotting"
-# using Plots
-# using StatsPlots
-# # gr()
+@info "Plotting"
+using Plots
+ENV["GKSwstype"]="nul"
+using StatsPlots
+gr()
 
-# savefig(plot_objective_values(objectives),
-#         joinpath(output, "objectives.pdf"))
+savefig(plot_objective_values(objectives),
+        joinpath(output, "objectives.pdf"))
 
-# for n in parameters.N
-#     savefig(plot_generation_dispatch(parameters, variables, expressions, n),
-#             joinpath(output, "generation_dispatch_n$n.pdf"))
-#     savefig(plot_generation_capacities(parameters, variables, expressions, n),
-#             joinpath(output, "generation_capacities_n$n.pdf"))
-#     savefig(plot_storage_level(parameters, variables, expressions, n),
-#             joinpath(output, "storage_n$n.pdf"))
-#     savefig(plot_box(parameters, variables, expressions, n),
-#            joinpath(output, "boxplot$n.pdf"))
-# end
+for n in parameters.N
+    savefig(plot_generation_dispatch(parameters, variables, expressions, n),
+            joinpath(output, "generation_dispatch_n$n.pdf"))
+    savefig(plot_generation_capacities(parameters, variables, expressions, n),
+            joinpath(output, "generation_capacities_n$n.pdf"))
+    savefig(plot_storage_level(parameters, variables, expressions, n),
+            joinpath(output, "storage_n$n.pdf"))
+    savefig(plot_box(parameters, variables, expressions, n),
+           joinpath(output, "boxplot$n.pdf"))
+end
 
-# savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
-#             joinpath(output, "generation_capacities_stacked.pdf"))
+savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
+            joinpath(output, "generation_capacities_stacked.pdf"))
 
-# savefig(plot_storage_capacities(parameters, variables, expressions),
-#         joinpath(output, "storage_capacities.pdf"))
+savefig(plot_storage_capacities(parameters, variables, expressions),
+        joinpath(output, "storage_capacities.pdf"))
 
-# savefig(plot_box_all(parameters, variables, expressions),
-#         joinpath(output, "boxplotall.pdf"))
+savefig(plot_box_all(parameters, variables, expressions),
+        joinpath(output, "boxplotall.pdf"))
 
-# savefig(plot_dispatch_bars(parameters, variables, expressions),
-#         joinpath(output, "dispatchbars.pdf"))
+savefig(plot_dispatch_bars(parameters, variables, expressions),
+        joinpath(output, "dispatchbars.pdf"))
 
-# for l in 1:length(parameters.L)
-#     savefig(plot_transmission_flow(parameters, variables, expressions, l),
-#             joinpath(output, "transmission_flow_l$l.pdf"))
-# end
+for l in 1:length(parameters.L)
+    savefig(plot_transmission_flow(parameters, variables, expressions, l),
+            joinpath(output, "transmission_flow_l$l.pdf"))
+end
 
-# savefig(plot_transmission_capacities(parameters, variables, expressions),
-#         joinpath(output, "transmission_capacities.pdf"))
+savefig(plot_transmission_capacities(parameters, variables, expressions),
+        joinpath(output, "transmission_capacities.pdf"))
 
-# savefig(plot_transmission_bars(parameters, variables, expressions),
-#         joinpath(output, "transmission_bars.pdf"))
+savefig(plot_transmission_bars(parameters, variables, expressions),
+        joinpath(output, "transmission_bars.pdf"))
 
-# savefig(plot_loss_of_load(parameters, variables, expressions),
-#         joinpath(output, "loss_of_load.pdf"))
+savefig(plot_loss_of_load(parameters, variables, expressions),
+        joinpath(output, "loss_of_load.pdf"))
 
-# #getdispatch(joinpath(output)) 
+#getdispatch(joinpath(output)) 
