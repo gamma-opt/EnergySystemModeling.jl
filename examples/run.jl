@@ -49,8 +49,14 @@ ENV["GKSwstype"]="nul"
 using StatsPlots
 gr()
 
+## Plotting part 1
+@info "Plotting OF"
 savefig(plot_objective_values(objectives),
-        joinpath(output, "objectives.pdf"))
+        joinpath(output, "objectives.pdf")
+        )
+
+## Plotting part 2
+@info "Plotting dispatch and storage levels"
 
 for n in parameters.N
     savefig(plot_generation_dispatch(parameters, variables, expressions, n),
@@ -63,30 +69,56 @@ for n in parameters.N
            joinpath(output, "boxplot$n.pdf"))
 end
 
-savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
-            joinpath(output, "generation_capacities_stacked.pdf"))
+## Plotting part 3
+@info "Plotting storage capacities"
 
 savefig(plot_storage_capacities(parameters, variables, expressions),
-        joinpath(output, "storage_capacities.pdf"))
+        joinpath(output, "storage_capacities.pdf")
+        )
+
+## Plotting part 4
+@info "Plotting dispatch all"
 
 savefig(plot_box_all(parameters, variables, expressions),
         joinpath(output, "boxplotall.pdf"))
 
+## Plotting part 5
+@info "Plotting capacities stacked"
+
+savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
+            joinpath(output, "generation_capacities_stacked.pdf"))
+
+## Plotting part 6
+@info "Plotting dispatch all (boxplot)"
+
 savefig(plot_dispatch_bars(parameters, variables, expressions),
         joinpath(output, "dispatchbars.pdf"))
+
+## Plotting part 7
+@info "Plotting transmission flow"
 
 for l in 1:length(parameters.L)
     savefig(plot_transmission_flow(parameters, variables, expressions, l),
             joinpath(output, "transmission_flow_l$l.pdf"))
 end
 
+## Plotting part 8
+@info "Plotting transmission capacities"
+
 savefig(plot_transmission_capacities(parameters, variables, expressions),
         joinpath(output, "transmission_capacities.pdf"))
+
+## Plotting part 9
+@info "Plotting transmission flow"
 
 savefig(plot_transmission_bars(parameters, variables, expressions),
         joinpath(output, "transmission_bars.pdf"))
 
+## Plotting part 9
+@info "Plotting LoL"
+
 savefig(plot_loss_of_load(parameters, variables, expressions),
         joinpath(output, "loss_of_load.pdf"))
 
-#getdispatch(joinpath(output)) 
+## Plotting in development
+@info "Plotting stacked dispatch (not ready)"
