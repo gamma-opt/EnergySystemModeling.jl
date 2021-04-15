@@ -122,8 +122,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
-    println("test 15/04")
-
     # Return Params struct
     Params(
         region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
