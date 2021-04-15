@@ -28,6 +28,7 @@ end
     G_r::Array{Integer, 1}
     N::Array{Integer, 1}
     L::Array{Array{Integer, 1}, 1}
+    L_ind::Array{Integer, 1}
     T::Array{Integer, 1}
     S::Array{Integer, 1}
     κ::AbstractFloat
