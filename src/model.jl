@@ -265,8 +265,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g3,
-            ((sum(p_gnt[g,n,t]*τ_t for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000) ≥
-            κ * (sum(p_gnt[g,n,t]*τ_t for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
+            ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000) ≥
+            κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
     end
 
     # Maximum nuclear share
