@@ -52,15 +52,15 @@ end
     r⁺_g::Array{AbstractFloat, 1}
     I_l::Array{AbstractFloat, 1}
     M_l::Array{AbstractFloat, 1}
-    C_l::AbstractFloat
-    B_l::AbstractFloat
-    e_l::AbstractFloat
+    C_l::Array{AbstractFloat, 1}
+    B_l::Array{AbstractFloat, 1}
+    e_l::Array{AbstractFloat, 1}
     ξ_s::Array{AbstractFloat, 1}
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
     b0_sn::Array{AbstractFloat, 2}
-    W_nmax::Array{AbstractFloat, 1}
-    W_nmin::Array{AbstractFloat, 1}
+    Wmax_n::Array{AbstractFloat, 1}
+    Wmix_n::Array{AbstractFloat, 1}
     f_int::Array{AbstractFloat, 2}
     f′_int::Array{AbstractFloat, 2}
     H_n::Array{AbstractFloat, 1}
@@ -151,7 +151,7 @@ end
 function Expressions(parameters::Params, variables::Variables)
     @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
+            Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
     p_gnt = variables.p_gnt
@@ -176,11 +176,10 @@ end
 function EnergySystemModel(parameters::Params, specs::Specs)
     @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
+            Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
-    # Indices of lines L
-    # L′ = 1:length(L)
+    # Indices of lines L: L_ind
 
     # Create an instance of JuMP model.
     model = EnergySystemModel()
@@ -224,7 +223,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     
     ## Operational cost of transmission flow
     @expression(model, f5,
-        sum(C_l*f_abs_lt[l,t]*τ_t[t] for l in L_ind, t in T))
+        sum(C_l[l]*f_abs_lt[l,t]*τ_t[t] for l in L_ind, t in T))
     
     ## Investment costof storage capacity
     @expression(model, f6,
@@ -248,8 +247,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) +
         σ_nt[n,t] +
-        sum(e_l*f_lt[l,t] for l in L⁻(n)) -
-        sum(e_l*f_lt[l,t] for l in L⁺(n)) +
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) -
+        sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
         sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
         h_nt[n,t] ==
         D_nt[n,t])
@@ -353,7 +352,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Hydro energy
     @constraint(model,
         h1[n in N, t in T],
-        W_nmin[n] ≤ w_nt[n,t] ≤ W_nmax[n])
+        Wmix_n[n] ≤ w_nt[n,t] ≤ Wmax_n[n])
     @constraint(model,
         h2[n in N, t in T[T.>1]],
         w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])

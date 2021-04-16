@@ -105,9 +105,8 @@ function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, 
 end
 
 function plot_transmission_bars(f_lt, L, L_ind, T, region_n, κ, C_E, κ′, C′_E)
-    # L′ = 1:length(L)
     lines = Array{AbstractString, 1}(undef, length(L))
-    for i in L′
+    for i in L_ind
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
     end
     f_l = sum(f_lt[:,t] for t in T)
@@ -115,24 +114,23 @@ function plot_transmission_bars(f_lt, L, L_ind, T, region_n, κ, C_E, κ′, C�
              ylabel=L"\sum_t f_{l,t}\,\mathrm{[MWh]}",
              title = "Transmission by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
              titlefontsize = 10,
-             xticks=(L′, lines),
+             xticks=(L_ind, lines),
              xrotation = 90,
              legend=false,
              )
-    bar!(L′, [f_l[l] for l in L′], alpha = 0.7, lw = 0)
+    bar!(L_ind, [f_l[l] for l in L_ind], alpha = 0.7, lw = 0)
     return p
 end
 
 function plot_transmission_capacities(f̄_l, L, L_ind, region_n, κ, C_E, κ′, C′_E)
-    # L′ = 1:length(L)
     lines = Array{AbstractString, 1}(undef, length(L))
-    for i in L′
+    for i in L_ind
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
     end
-    StatsPlots.bar(L′, [f̄_l[l] for l in L′],
+    StatsPlots.bar(L_ind, [f̄_l[l] for l in L_ind],
         title = "Transmission capacity by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10,
-        xticks=(L′, lines),
+        xticks=(L_ind, lines),
         xrotation = 90,
         ylabel=L"\bar{f}_l\,\mathrm{[MW]}",
         legend=false,
