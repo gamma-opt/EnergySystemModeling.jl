@@ -69,21 +69,21 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
 
     for n in N
         # Load node values from CSV files.
-        df = CSV.File(joinpath(DataInput_path, "nodes", "$n.csv")) |> DataFrame
+        nodes = CSV.File(joinpath(DataInput_path, "nodes", "$n.csv")) |> DataFrame
         for g in G
             line_search = findall((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))[1]
             Q_gn[g,n] = gen_capacity.gcap_min[line_search]
             Q̄_gn[g,n] = gen_capacity.gcap_max[line_search]
         end
-        D_nt[n, :] = df.Demand[T]
-        A_gnt[1, n, :] = df.Avail_Wind_On[T]
-        A_gnt[2, n, :] = df.Avail_Wind_Off[T]
-        A_gnt[3, n, :] = df.Avail_Sol[T]
+        D_nt[n, :] = nodes.Demand[T]
+        A_gnt[1, n, :] = nodes.Avail_Wind_On[T]
+        A_gnt[2, n, :] = nodes.Avail_Wind_Off[T]
+        A_gnt[3, n, :] = nodes.Avail_Sol[T]
         A_gnt[A_gnt .< 0.001] .= 0
-        f_int[n,:] = df.Hyd_In[T]
-        f′_int[n,:] = df.HydRoR_In[T]
+        f_int[n,:] = nodes.Hyd_In[T]
+        f′_int[n,:] = nodes.HydRoR_In[T]
         F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
-        region_n[n] =  df.Name[1]
+        region_n[n] =  nodes.Name[1]
     end
 
     # Load hydro capacity parameters
