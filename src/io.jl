@@ -65,11 +65,11 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Q_gn = zeros(length(G), length(N))
     Q̄_gn = zeros(length(G), length(N))
     F_onmin = zeros(length(N))
-    gen_capacity = CSV.File(joinpath(DataInput_path, "gen_capacity.csv")) |> DataFrame
+    gen_capacity = CSV.File(joinpath(Instances_path, "gen_capacity.csv")) |> DataFrame
 
     for n in N
         # Load node values from CSV files.
-        nodes = CSV.File(joinpath(DataInput_path, "nodes", "$n.csv")) |> DataFrame
+        nodes = CSV.File(joinpath(Instances_path, "nodes", "$n.csv")) |> DataFrame
         for g in G
             line_search = findall((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))[1]
             Q_gn[g,n] = gen_capacity.gcap_min[line_search]
@@ -93,7 +93,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Hmin_n = zeros(length(N))
     Hmax_n = zeros(length(N))
     H′_n = zeros(length(N))
-    hydro = joinpath(DataInput_path, "hydro.csv") |> CSV.File |> DataFrame;   
+    hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
     Wmax_n[1:length(N)] = hydro.Max_Hyd_Level[1:length(N)] |> Array{AbstractFloat, 1}
     Wmix_n[1:length(N)] = hydro.Min_Hyd_Level[1:length(N)] |> Array{AbstractFloat, 1}
     Hmin_n[1:length(N)] = hydro.Hydro_cap_min[1:length(N)] |> Array{AbstractFloat, 1}
@@ -102,7 +102,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     H′_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
 
     # Load technology parameters
-    gen_technology = joinpath(DataInput_path, "gen_technology.csv") |>
+    gen_technology = joinpath(Instances_path, "gen_technology.csv") |>
         CSV.File |> DataFrame
     I_g = equivalent_annual_cost.(gen_technology.investment_cost .* 1000, gen_technology.lifetime,
                                   interest_rate) |> Array{AbstractFloat, 1}
@@ -122,7 +122,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     e_l = zeros(length(L_ind))
     t0_l = zeros(length(L_ind))
     tmax_l = zeros(length(L_ind))
-    transmission = joinpath(DataInput_path, "transmission.csv") |>
+    transmission = joinpath(Instances_path, "transmission.csv") |>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
                                   transmission.lifetime[1], interest_rate) |> Array{AbstractFloat, 1}
@@ -139,9 +139,9 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     C_s = zeros(length(S))
     b0_sn = zeros(length(S),length(N))
     bmax_sn = zeros(length(S),length(N))
-    storage = joinpath(DataInput_path, "storage.csv") |>
+    storage = joinpath(Instances_path, "storage.csv") |>
         CSV.File |> DataFrame
-    sto_capacity = joinpath(DataInput_path, "sto_capacity.csv") |>
+    sto_capacity = joinpath(Instances_path, "sto_capacity.csv") |>
         CSV.File |> DataFrame
     for s in S
         ξ_s = storage.xi |> Array{AbstractFloat, 1}

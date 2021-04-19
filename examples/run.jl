@@ -16,12 +16,12 @@ mkpath(joinpath(output_dir,csv_dir))
 
 @info "Loading parameters"
 constants_path = "constants"
-structue = "8nodes"
+structure = "8nodes"
 structures_path = joinpath("structures",structure)
 instance = "small"
 instances_path = joinpath(structures_path,"instances",instance)
 
-parameters = Params(constants_path, Instances_path)
+parameters = Params(constants_path, instances_path)
 specs = Specs(
     renewable_target=true,
     carbon_cap=true,
