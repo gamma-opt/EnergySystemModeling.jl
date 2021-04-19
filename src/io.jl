@@ -29,7 +29,7 @@ end
 function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
    
     # Load indexes and constant parameters
-    indices = JSON.parsefile(joinpath(Instances_path, "IndicesSmall.json"))
+    indices = JSON.parsefile(joinpath(Instances_path, "indices.json"))
 
     # TODO: implement time period clustering: τ, T, τ_t
 
@@ -102,17 +102,17 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     H′_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
 
     # Load technology parameters
-    technology = joinpath(DataInput_path, "technology.csv") |>
+    gen_technology = joinpath(DataInput_path, "gen_technology.csv") |>
         CSV.File |> DataFrame
-    I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
+    I_g = equivalent_annual_cost.(gen_technology.investment_cost .* 1000, gen_technology.lifetime,
                                   interest_rate) |> Array{AbstractFloat, 1}
-    M_g = technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
-    C_g = technology.fuel_cost ./ technology.efficiency .+ technology.varOM |> Array{AbstractFloat, 1}
-    e_g = technology.efficiency |> Array{AbstractFloat, 1}
-    E_g = technology.emissions |> Array{AbstractFloat, 1}
-    r⁻_g = technology.r_minus |> Array{AbstractFloat, 1}
-    r⁺_g = technology.r_plus |> Array{AbstractFloat, 1}
-    technology_g = technology.name
+    M_g = gen_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
+    C_g = gen_technology.fuel_cost ./ gen_technology.efficiency .+ gen_technology.varOM |> Array{AbstractFloat, 1}
+    e_g = gen_technology.efficiency |> Array{AbstractFloat, 1}
+    E_g = gen_technology.emissions |> Array{AbstractFloat, 1}
+    r⁻_g = gen_technology.r_minus |> Array{AbstractFloat, 1}
+    r⁺_g = gen_technology.r_plus |> Array{AbstractFloat, 1}
+    technology_g = gen_technology.name
 
     # Load transmission parameters
     I_l = zeros(length(L_ind))
@@ -163,112 +163,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin)
 end
 
-
-## Params for large Instance
-
-function Params(DataInput_path::AbstractString) 
-    # Load indexes and constant parameters
-    indices = JSON.parsefile(joinpath(DataInput_path, "IndicesComplete.json"))
-
-    # TODO: implement time period clustering: τ, T, τ_t
-
-    # Load indices. Convert JSON values to the right types.
-    G = indices["G"] |> Array{Int}
-    G_r = indices["G_r"] |> Array{Int}
-    N = indices["N"] |> Array{Int}
-    L = indices["L"] |> Array{Array{Int}}
-    L_ind = indices["L_ind"] |> Array{Int}
-    τ = 1
-    T = 1:indices["T"]
-    S = indices["S"] |> Array{Int}
-
-    # Load constant parameters
-    constants = JSON.parsefile(joinpath(DataInput_path, "constants.json"))
-    κ = constants["kappa"]
-    μ = constants["mu"]
-    C = constants["C"]
-    C̄ = constants["C_bar"]
-    C_E = constants["C_E"]
-    interest_rate = constants["r"]
-    R_E = constants["R_E"]
-
-    # Load time clustered parameters
-    τ_t = ones(length(T))
-    Q_gn = zeros(length(G), length(N))
-    Q̄_gn = zeros(length(G), length(N))
-    D_nt = zeros(length(N), length(T))
-    A_gnt = ones(length(G), length(N), length(T))
-    Wmax_n = zeros(length(N))
-    Wmix_n = zeros(length(N))
-    f_int = zeros(length(N), length(T))
-    f′_int = zeros(length(N), length(T))
-    H_n = zeros(length(N))
-    H′_n = zeros(length(N))
-    F_onmin = zeros(length(N))
-    region_n = Array{AbstractString, 1}(undef, length(N))    
-    for n in N
-        # Load node values from CSV files.
-        df = CSV.File(joinpath(DataInput_path, "nodes", "$n.csv")) |> DataFrame
-        capacitydf = CSV.File(joinpath(DataInput_path, "capacity.csv")) |> DataFrame
-        for g in G
-            Q_gn[g, n] = capacitydf[n, g+1]
-            Q̄_gn[g, n] = capacitydf[n, g+13]
-        end
-        D_nt[n, :] = df.Demand[T]
-        A_gnt[1, n, :] = df.Avail_Wind_On[T]
-        A_gnt[2, n, :] = df.Avail_Wind_Off[T]
-        A_gnt[3, n, :] = df.Avail_Sol[T]
-        A_gnt[A_gnt .< 0.01] .= 0
-        Wmax_n[n] = capacitydf.Max_Hyd_Level[n]
-        Wmix_n[n] = capacitydf.Min_Hyd_Level[n]
-        f_int[n,:] = df.Hyd_In[T]
-        f′_int[n,:] = df.HydRoR_In[T]
-        H_n[n] = capacitydf.Hydro[n]
-        H′_n[n] = capacitydf.HydroRoR[n]
-        F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
-        region_n[n] =  df.Name[1]
-
-    end
-
-    # Load technology parameters
-    technology = joinpath(DataInput_path, "technology.csv") |>
-        CSV.File |> DataFrame
-    I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
-                                  interest_rate)
-    M_g = technology.fixedOM .* 1000
-    C_g = technology.fuel_cost ./ technology.efficiency .+ technology.varOM
-    e_g = technology.efficiency
-    E_g = technology.emissions
-    r⁻_g = technology.r_minus
-    r⁺_g = technology.r_plus
-    technology_g = technology.name
-
-    # Load transmission parameters
-    transmission = joinpath(DataInput_path, "transmission.csv") |>
-        CSV.File |> DataFrame
-    I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
-                                  transmission.lifetime[1], interest_rate)
-    M_l = transmission.M[1] .* I_l
-    C_l = transmission.C[1]
-    B_l = transmission.B[1]
-    e_l = transmission.efficiency[1]
-
-
-
-    # Load storage parameters
-    storage = joinpath(DataInput_path, "storage.csv") |>
-        CSV.File |> DataFrame
-    ξ_s = storage.xi
-    I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
-    C_s = storage.C
-    b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
-
-    # Return Params struct
-    Params(
-        region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-        Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin)
-end
 
 """Save object into JSON file.
 # Arguments
