@@ -18,7 +18,7 @@ mkpath(joinpath(output_dir,csv_dir))
 constants_path = "constants"
 structure = "8nodes"
 structures_path = joinpath("structures",structure)
-instance = "small"
+instance = "big"
 instances_path = joinpath(structures_path,"instances",instance)
 
 parameters = Params(constants_path, instances_path)
