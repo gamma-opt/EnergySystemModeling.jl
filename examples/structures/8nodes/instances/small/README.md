@@ -10,7 +10,7 @@ Nodes
 - 5: France (FRA)
 - 6: Germany (GER)
 - 7: United Kingdom (UK)
-- 10: Spain (SPA)
+- 8: Spain (SPA)
 
 Generation technologies
 
