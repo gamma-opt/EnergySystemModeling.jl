@@ -57,13 +57,13 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     τ_t = ones(length(T))
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
-    f_int = zeros(length(N), length(T))
-    f′_int = zeros(length(N), length(T))
+    AH_nt = zeros(length(N), length(T))
+    AR_nt = zeros(length(N), length(T))
     region_n = Array{AbstractString, 1}(undef, length(N))    
 
     # Load generation parameters (per node / per generation technology)
-    Q_gn = zeros(length(G), length(N))
-    Q̄_gn = zeros(length(G), length(N))
+    Gmin_gn = zeros(length(G), length(N))
+    Gmax_gn = zeros(length(G), length(N))
     F_onmin = zeros(length(N))
     gen_capacity = CSV.File(joinpath(Instances_path, "gen_capacity.csv")) |> DataFrame
 
@@ -72,34 +72,43 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         nodes = CSV.File(joinpath(Instances_path, "nodes", "$n.csv")) |> DataFrame
         for g in G
             line_search = findall((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))[1]
-            Q_gn[g,n] = gen_capacity.gcap_min[line_search]
-            Q̄_gn[g,n] = gen_capacity.gcap_max[line_search]
+            Gmin_gn[g,n] = gen_capacity.gcap_min[line_search]
+            Gmax_gn[g,n] = gen_capacity.gcap_max[line_search]
         end
         D_nt[n, :] = nodes.Demand[T]
         A_gnt[1, n, :] = nodes.Avail_Wind_On[T]
         A_gnt[2, n, :] = nodes.Avail_Wind_Off[T]
         A_gnt[3, n, :] = nodes.Avail_Sol[T]
         A_gnt[A_gnt .< 0.001] .= 0
-        f_int[n,:] = nodes.Hyd_In[T]
-        f′_int[n,:] = nodes.HydRoR_In[T]
-        F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
+        AH_nt[n,:] = nodes.Hyd_In[T]
+        AR_nt[n,:] = nodes.HydRoR_In[T]
+        F_onmin[n] = (sum(AH_nt[n, :]) / length(T)) * 0.05
         region_n[n] =  nodes.Name[1]
     end
 
-    # Load hydro capacity parameters
+    # Load hydro capacity and technology parameters
     Wmax_n = zeros(length(N))
-    Wmix_n = zeros(length(N))
-    H_n = zeros(length(N))
+    Wmin_n = zeros(length(N))
     Hmin_n = zeros(length(N))
     Hmax_n = zeros(length(N))
-    H′_n = zeros(length(N))
+    Fmin_n = zeros(length(N))
     hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
-    Wmax_n[1:length(N)] = hydro.Max_Hyd_Level[1:length(N)] |> Array{AbstractFloat, 1}
-    Wmix_n[1:length(N)] = hydro.Min_Hyd_Level[1:length(N)] |> Array{AbstractFloat, 1}
-    Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
     Hmax_n[1:length(N)] = hydro.hcap_max[1:length(N)] |> Array{AbstractFloat, 1}
-    H_n = copy(Hmin_n)
-    H′_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
+    Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
+    HRcap_n[1:length(N)] = hydro.HydRoR[1:length(N)] |> Array{AbstractFloat, 1}
+    Wmax_n[1:length(N)] = hydro.wcap_max[1:length(N)] |> Array{AbstractFloat, 1}
+    Wmin_n[1:length(N)] = hydro.wcap_min[1:length(N)] |> Array{AbstractFloat, 1}
+    Fmin_n[1:length(N)] = hydro.Fmin[1:length(N)] |> Array{AbstractFloat, 1}
+    hydro_technology = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
+    I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
+                                  interest_rate) |> Array{AbstractFloat, 1}
+    M_h = hydro_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
+    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM |> Array{AbstractFloat, 1}
+    e_h = hydro_technology.efficiency |> Array{AbstractFloat, 1}
+    E_h = hydro_technology.emissions |> Array{AbstractFloat, 1}
+    r⁻_h = hydro_technology.r_minus |> Array{AbstractFloat, 1}
+    r⁺_h = hydro_technology.r_plus |> Array{AbstractFloat, 1}
+
 
     # Load technology parameters
     gen_technology = joinpath(Instances_path, "gen_technology.csv") |>
@@ -158,9 +167,10 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
 
     # Return Params struct
     Params(
-        region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
-        Wmax_n, Wmix_n, Hmax_n, Hmin_n, f_int, f′_int, H_n, H′_n, F_onmin)
+        region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn,
+        Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt, F_onmin,
+        I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
 end
 
 

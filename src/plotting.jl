@@ -266,20 +266,20 @@ end
 
 """Plot generation dispatch."""
 function plot_generation_dispatch(parameters::Params, variables::Variables, expressions::Expressions, n::Integer)
-    plot_generation_dispatch(variables.p_gnt, variables.p̄_gn, variables.h_nt, parameters.H_n, parameters.H′_n, parameters.G,
+    plot_generation_dispatch(variables.p_gnt, variables.p̄_gn, variables.h_nt, variables.̄h_n, variables.̄hr_n, parameters.G,
                              n, parameters.T, parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
 """Plot generation capacities."""
 function plot_generation_capacities(parameters::Params, variables::Variables, expressions::Expressions, n::Integer)
-    plot_generation_capacities(variables.p̄_gn, parameters.H_n, parameters.H′_n, parameters.G, n, parameters.region_n,
+    plot_generation_capacities(variables.p̄_gn, variables.̄h_n, variables.̄hr_n, parameters.G, n, parameters.region_n,
                                parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
 
 """Plot stacked generation capacities as a stacked graph."""
 function plot_generation_capacities_stacked(parameters::Params, variables::Variables, expressions::Expressions)
-    plot_generation_capacities_stacked(variables.p̄_gn, parameters.H_n, parameters.H′_n, parameters.N,
+    plot_generation_capacities_stacked(variables.p̄_gn, variables.̄h_n, variables.̄hr_n, parameters.N,
                        parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 

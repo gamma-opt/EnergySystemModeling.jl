@@ -40,8 +40,8 @@ end
     R_E::AbstractFloat
     τ::Integer
     τ_t::Array{Integer, 1}
-    Q_gn::Array{AbstractFloat, 2}
-    Q̄_gn::Array{AbstractFloat, 2}
+    Gmin_gn::Array{AbstractFloat, 2}
+    Gmax_gn::Array{AbstractFloat, 2}
     A_gnt::Array{AbstractFloat, 3}
     D_nt::Array{AbstractFloat, 2}
     I_g::Array{AbstractFloat, 1}
@@ -56,6 +56,8 @@ end
     C_l::Array{AbstractFloat, 1}
     B_l::Array{AbstractFloat, 1}
     e_l::Array{AbstractFloat, 1}
+    Tmin_l::Array{AbstractFloat, 1}
+    Tmax_l::Array{AbstractFloat, 1}
     ξ_s::Array{AbstractFloat, 1}
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
@@ -64,11 +66,17 @@ end
     Wmin_n::Array{AbstractFloat, 1}
     Hmax_n::Array{AbstractFloat, 1}
     Hmin_n::Array{AbstractFloat, 1}
-    f_int::Array{AbstractFloat, 2}
-    f′_int::Array{AbstractFloat, 2}
-    H_n::Array{AbstractFloat, 1}
-    H′_n::Array{AbstractFloat, 1}
+    Fmin_n::Array{AbstractFloat, 1}
+    AH_nt::Array{AbstractFloat, 2}
+    AR_nt::Array{AbstractFloat, 2}
     F_onmin::Array{AbstractFloat, 1}
+    I_h::Array{AbstractFloat, 1}
+    M_h::Array{AbstractFloat, 1}
+    C_h::Array{AbstractFloat, 1}
+    e_h::Array{AbstractFloat, 1}
+    E_h::Array{AbstractFloat, 1}
+    r⁻_h::Array{AbstractFloat, 1}
+    r⁺_h::Array{AbstractFloat, 1}
 end
 
 """Variable values."""
@@ -85,11 +93,10 @@ end
     θ_nt::Array{AbstractFloat, 2}
     θ′_nt::Array{AbstractFloat, 2}
     w_nt::Array{AbstractFloat, 2}
-    f_ont::Array{AbstractFloat, 2}
-    f′_ont::Array{AbstractFloat, 2}
-    f′′_ont::Array{AbstractFloat, 2}
     h_nt::Array{AbstractFloat, 2}
-    h′_nt::Array{AbstractFloat, 2}
+    hr_nt::Array{AbstractFloat, 2}
+    ̄h_n::Array{AbstractFloat, 1}
+    ̄hr_n::Array{AbstractFloat, 1}
 end
 
 """Objective values:
@@ -110,6 +117,7 @@ end
     f5::AbstractFloat
     f6::AbstractFloat
     f7::AbstractFloat
+    f8::AbstractFloat
 end
 
 """Expression values:
@@ -152,9 +160,9 @@ end
 - `variables::Variables`
 """
 function Expressions(parameters::Params, variables::Variables)
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
-            Wmax_n, Wmin_n, Hmax_n, Hmin_n, f_int, f′_int, H_n, H′_n, F_onmin =
+            Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt, F_onmin =
             parameters
 
     p_gnt = variables.p_gnt
@@ -177,9 +185,10 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
+    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
-            Wmax_n, Wmin_n, Hmax_n, Hmin_n, f_int, f′_int, H_n, H′_n, F_onmin =
+            Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt, F_onmin,
+            I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =
             parameters
 
     # Indices of lines L: L_ind
@@ -189,7 +198,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     ## -- Variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
-    @variable(model, p̄_gn[g in G, n in N]≥0)
+    @variable(model, p̄_gn[g in G, n in N]≥Gmin_gn[g,n])
     @variable(model, σ_nt[n in N, t in T]≥0)
     @variable(model, f_lt[l in L_ind, t in T]≥0)
     @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
@@ -201,16 +210,15 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, θ_nt[n in N, t in T]≥0)
     @variable(model, θ′_nt[n in N, t in T]≥0)
     @variable(model, w_nt[n in N, t in T]≥0)
-    @variable(model, f_ont[n in N, t in T]≥0)
-    @variable(model, f′_ont[n in N, t in T]≥0)
-    @variable(model, f′′_ont[n in N, t in T]≥0)
     @variable(model, h_nt[n in N, t in T]≥0)
-    @variable(model, h′_nt[n in N, t in T]≥0)
+    @variable(model, hr_nt[n in N, t in T]≥0)
+    @variable(model, ̄h_n[n in N, t in T]≥0)
+    @variable(model, ̄hr_n[n in N, t in T]≥0)
 
     ## -- Objective --
     ## Investment and maintenance of generation capacity
     @expression(model, f1,
-        sum((I_g[g]+M_g[g])*p̄_gn[g,n] for g in G, n in N))
+        sum((I_g[g]+M_g[g])*(p̄_gn[g,n]-Gmin_gn[g,n]) for g in G, n in N))
     
     ## Operational cost of generation dispatch
     @expression(model, f2,
@@ -222,22 +230,25 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     ##Investment and maintenance cost of transmission cpacity
     @expression(model, f4,
-        sum((I_l[l]+M_l[l])*f̄_l[l] for l in L_ind))
+        sum((I_l[l]+M_l[l])*(f̄_l[l] - Tmin_l) for l in L_ind))
     
     ## Operational cost of transmission flow
     @expression(model, f5,
         sum(C_l[l]*f_abs_lt[l,t]*τ_t[t] for l in L_ind, t in T))
     
-    ## Investment costof storage capacity
+    ## Investment cost of storage capacity
     @expression(model, f6,
         sum(I_s[s]*b̄_sn[s,n] for s in S, n in N))
    
     ## Operational cost of storage
     @expression(model, f7,
         sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ_t[t] for s in S, n in N, t in T))
+
+    ## Investment cost of hydro capacity
+    @expression(model, f8,
+        sum((I_h + M_h)*(̄h_n - Hmin_n) for n in N))
     
-    
-    @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7)
+    @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8)
 
     ## -- Constraints --
     # Transmission lines to node n
@@ -259,10 +270,10 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Generation capacity
     @constraint(model,
         g1[g in G, n in N, t in T],
-        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
+        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Gmin_gn[g,n] + p̄_gn[g,n]))
     @constraint(model,
         g2[g in G, n in N],
-        (Q_gn[g,n] + p̄_gn[g,n]) ≤ Q̄_gn[g,n])
+        p̄_gn[g,n] ≤ Gmax_gn[g,n])
 
     # Minimum renewables share
     if specs.renewable_target
@@ -339,10 +350,10 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Ramping limits
         @constraint(model,
             r1[g in G, n in N, t in T[T.>1]],
-            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≤ r⁺_g[g] * (Q_gn[g,n] + p̄_gn[g,n]))
+            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≤ r⁺_g[g] * p̄_gn[g,n])
         @constraint(model,
             r2[g in G, n in N, t in T[T.>1]],
-            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≥ -r⁻_g[g] * (Q_gn[g,n] + p̄_gn[g,n]))
+            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≥ -r⁻_g[g] * p̄_gn[g,n])
     end
 
     if specs.voltage_angles
@@ -359,28 +370,25 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             Wmin_n[n] ≤ w_nt[n,t] ≤ Wmax_n[n])
         @constraint(model,
             h2[n in N, t in T[T.>1]],
-            w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])
+            w_nt[n,t] == w_nt[n,t-1] + AH_nt[n,t-1] - h_nt[n,t-1]*τ_t)
         @constraint(model,
             h3[n in N],
             w_nt[n,1] == w_nt[n,T[end]])
         @constraint(model,
             h4[n in N, t in T],
-            f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
+            h_nt[n,t] ≤ ̄h_n[n] - Fmin_n[n]*AH_nt[n,t])
         @constraint(model,
             h5[n in N, t in T],
-            f_ont[n,t] ≥ F_onmin[n])
+            Hmin_n[n] ≤ ̄h_n[n] ≤ Hmax_n[n])
         @constraint(model,
             h6[n in N, t in T],
-            0 ≤ f′_ont[n,t] ≤ H_n[n])
+            hr_nt[n,t] ≤ AR_nt[n,t])
         @constraint(model,
             h7[n in N, t in T],
-            0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
+            hr_nt[n,t] ≤ HRcap_n[n])
         @constraint(model,
             h8[n in N, t in T],
-            0 ≤ h′_nt[n,t] ≤ H′_n[n])
-        @constraint(model,
-            h9[n in N, t in T],
-            h_nt[n,t] == h′_nt[n,t] + f′_ont[n,t])
+            ̄h_n[n] ≤ Hmax_n[n])
     end
 
     return model

@@ -58,7 +58,7 @@ save_json(objectives, joinpath(output_dir, results_dir, "objectives.json"))
 
 @info "Plotting"
 using Plots
-ENV["GKSwstype"]="nul"
+ENV["GKSwstype"]="nul"                      # Prevent opening plots windows
 using StatsPlots
 gr()
 
