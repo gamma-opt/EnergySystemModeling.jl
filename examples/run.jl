@@ -4,7 +4,7 @@ push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
 
 @info "Creating output directory"
-output_dir = "output"
+output_dir = "output_small"
 results_dir = "results"
 plots_dir = "plots"
 csv_dir = "csv"
@@ -18,7 +18,7 @@ mkpath(joinpath(output_dir,csv_dir))
 constants_path = "constants"
 structure = "8nodes"
 structures_path = joinpath("structures",structure)
-instance = "big"
+instance = "small"
 instances_path = joinpath(structures_path,"instances",instance)
 
 parameters = Params(constants_path, instances_path)
@@ -28,7 +28,8 @@ specs = Specs(
     nuclear_limit=false,
     storage=true,
     ramping=true,
-    voltage_angles=false
+    voltage_angles=false,
+    hydro = true
 )
 
 @info "Creating the energy system model"
@@ -49,11 +50,17 @@ variables = Variables(model)
 objectives = Objectives(model)
 expressions = Expressions(parameters, variables)
 
-@info "Saving results"
+@info "Saving results (JSON)"
 save_json(specs, joinpath(output_dir, results_dir, "specs.json"))
 save_json(parameters, joinpath(output_dir, results_dir, "parameters.json"))
 save_json(variables, joinpath(output_dir, results_dir, "variables.json"))
 save_json(objectives, joinpath(output_dir, results_dir, "objectives.json"))
+
+@info "Saving results (CSV)"
+save_csv(specs, joinpath(output_dir, csv_dir, "specs.csv"))
+save_csv(parameters, joinpath(output_dir, csv_dir, "parameters.csv"))
+save_csv(variables, joinpath(output_dir, csv_dir, "variables.csv"))
+save_csv(objectives, joinpath(output_dir, csv_dir, "objectives.csv"))
 
 @info "Plotting"
 using Plots

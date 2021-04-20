@@ -1,4 +1,4 @@
-node,Hydro_cap_min,Hydro_cap_max,HydroRoR,Min_Hyd_Level,Max_Hyd_Level
+node,hcap_min,hcap_max,HydroRoR,Min_Hyd_Level,Max_Hyd_Level
 1,0,0,3149,202125,768075
 2,26819,26819,1328,7578508,28798331
 3,15949,15949,0,4045250,15371950

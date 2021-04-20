@@ -2,7 +2,7 @@ using Plots, StatsPlots, LaTeXStrings
 
 techcolors = [:lightblue :cyan :yellow :darkgreen :lime :gray :orange :brown :blue]
 
-function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_generation_dispatch(p_gnt, h_nt, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = Plots.plot(
         legend=:outertopright,
@@ -17,17 +17,11 @@ function plot_generation_dispatch(p_gnt, p̄_gn, h_nt, H_n, H′_n, G, n, T, reg
               xlabel=L"t",
               ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
               label=technology_g[g])
-        # plot!(p, T, [p̄_gn[g, n] for t in T],
-        #       color = colors[g],
-        #       label="")
     end
     plot!(p, T, [h_nt[n, t] for t in T],
           color = colors[9],
           alpha=0.3,
           label="hydro")
-    # plot!(p, T, [H_n[n] + H′_n[n] for t in T],
-    #       color = colors[9],
-    #       label="")
     return p
 end
 
@@ -281,8 +275,6 @@ function plot_generation_capacities(parameters::Params, variables::Variables, ex
     plot_generation_capacities(variables.p̄_gn, parameters.H_n, parameters.H′_n, parameters.G, n, parameters.region_n,
                                parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
-
-
 
 
 """Plot stacked generation capacities as a stacked graph."""

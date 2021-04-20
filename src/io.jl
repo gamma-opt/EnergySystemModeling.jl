@@ -96,8 +96,8 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
     Wmax_n[1:length(N)] = hydro.Max_Hyd_Level[1:length(N)] |> Array{AbstractFloat, 1}
     Wmix_n[1:length(N)] = hydro.Min_Hyd_Level[1:length(N)] |> Array{AbstractFloat, 1}
-    Hmin_n[1:length(N)] = hydro.Hydro_cap_min[1:length(N)] |> Array{AbstractFloat, 1}
-    Hmax_n[1:length(N)] = hydro.Hydro_cap_max[1:length(N)] |> Array{AbstractFloat, 1}
+    Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
+    Hmax_n[1:length(N)] = hydro.hcap_max[1:length(N)] |> Array{AbstractFloat, 1}
     H_n = copy(Hmin_n)
     H′_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
 
@@ -130,15 +130,15 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     C_l = transmission.C |> Array{AbstractFloat, 1}
     B_l = transmission.B |> Array{AbstractFloat, 1}
     e_l = transmission.efficiency |> Array{AbstractFloat, 1}
-    t0_l = transmission.cap_min |> Array{AbstractFloat, 1}
-    tmax_l = transmission.cap_max |> Array{AbstractFloat, 1}
+    Tmin_l = transmission.tcap_min |> Array{AbstractFloat, 1}
+    Tmax_l = transmission.tcap_max |> Array{AbstractFloat, 1}
 
     # Load storage parameters
     ξ_s = zeros(length(S))
     I_s = zeros(length(S))
     C_s = zeros(length(S))
-    b0_sn = zeros(length(S),length(N))
-    bmax_sn = zeros(length(S),length(N))
+    Smin_sn = zeros(length(S),length(N))
+    Smax_sn = zeros(length(S),length(N))
     storage = joinpath(Instances_path, "storage.csv") |>
         CSV.File |> DataFrame
     sto_capacity = joinpath(Instances_path, "sto_capacity.csv") |>
@@ -149,18 +149,18 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         C_s = storage.C |> Array{AbstractFloat, 1}
         for n in N
             line_search = findfirst((sto_capacity.s .== s) .& (sto_capacity.node .== n))
-            b0_sn[s,n] = sto_capacity.b0[line_search]
-            bmax_sn[s,n] = sto_capacity.b_max[line_search]
+            Smin_sn[s,n] = sto_capacity.scap_min[line_search]
+            Smax_sn[s,n] = sto_capacity.scap_max[line_search]
         end
     end
-    b0_sn = b0_sn  |> Array{AbstractFloat, 2}
-    bmax_sn = bmax_sn  |> Array{AbstractFloat, 2}
+    Smin_sn = Smin_sn  |> Array{AbstractFloat, 2}
+    Smax_sn = Smax_sn  |> Array{AbstractFloat, 2}
 
     # Return Params struct
     Params(
         region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-        Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin)
+        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
+        Wmax_n, Wmix_n, Hmax_n, Hmin_n, f_int, f′_int, H_n, H′_n, F_onmin)
 end
 
 
@@ -172,6 +172,17 @@ end
 function save_json(object, filepath::AbstractString)
     open(filepath, "w") do io
         JSON.print(io, object)
+    end
+end
+
+"""Save object into .csv file.
+# Arguments
+- `object`
+- `filepath::AbstractString`: Full filepath, e.g., `path.csv`.
+"""
+function save_csv(object, filepath::AbstractString)
+    open(filepath, "w") do io
+        CSV.write(io,object)
     end
 end
 
@@ -218,7 +229,7 @@ function load_json(type, filepath::AbstractString)
 end
 
 #Replace NaN's with 0
-function replace_nans(array::Array{Float64, N}) where N
+function replace_nans!(array::Array{Float64, N}) where N
     for i = eachindex(array)
         if isnan(array[i])
             array[i] = zero(1)
@@ -258,11 +269,11 @@ function create_nodedata(DataInput_path::AbstractString, era_year::AbstractStrin
     CFtime_pvrooftop = solarvars["CFtime_pvrooftop"]
 
     #Replace NaNs from hourly data with 0's
-    replace_nans(CFtime_cspplantA)
-    replace_nans(CFtime_cspplantB)
-    replace_nans(CFtime_pvplantA)
-    replace_nans(CFtime_pvplantB)
-    replace_nans(CFtime_pvrooftop)
+    replace_nans!(CFtime_cspplantA)
+    replace_nans!(CFtime_cspplantB)
+    replace_nans!(CFtime_pvplantA)
+    replace_nans!(CFtime_pvplantB)
+    replace_nans!(CFtime_pvrooftop)
 
     #Preallocate arrays for results
     avail_sol_cspA = zeros(Float64, T, n)
@@ -296,9 +307,9 @@ function create_nodedata(DataInput_path::AbstractString, era_year::AbstractStrin
     CFtime_windonshoreB = windvars["CFtime_windonshoreB"]
 
     #Replace NaNs from hourly data with 0's
-    replace_nans(CFtime_windoffshore)
-    replace_nans(CFtime_windonshoreA)
-    replace_nans(CFtime_windonshoreB)
+    replace_nans!(CFtime_windoffshore)
+    replace_nans!(CFtime_windonshoreA)
+    replace_nans!(CFtime_windonshoreB)
 
     #Preallocate arrays for results
     avail_wind_offshore = zeros(Float64, T, n)
@@ -324,7 +335,7 @@ function create_nodedata(DataInput_path::AbstractString, era_year::AbstractStrin
     #Monthly inflow
     existinginflow = permutedims(hydrovars["existinginflowcf"])
     #Replace NaNs from monthly data with 0's
-    replace_nans(existinginflow)
+    replace_nans!(existinginflow)
     #Preallocate array for intermediate result
     avail_inflow = zeros(Float64, T, n)
 

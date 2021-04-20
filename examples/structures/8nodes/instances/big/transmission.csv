@@ -1,4 +1,4 @@
-L_ind,line,dist,cost,converter_cost,M,C,B,efficiency,lifetime,cap_min,cap_max
+L_ind,line,dist,cost,converter_cost,M,C,B,efficiency,lifetime,tcap_min,tcap_max
 1,"[1, 2]",1665,400,150000,0.02,0,1,0.95,40,0,1000000000
 2,"[1, 3]",1071,400,150000,0.02,0,1,0.95,40,0,1000000000
 3,"[2, 3]",669,400,150000,0.02,0,1,0.95,40,0,1000000000

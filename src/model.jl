@@ -18,6 +18,7 @@ are not specified are included by default.
     storage::Bool
     ramping::Bool
     voltage_angles::Bool
+    hydro::Bool
 end
 
 """Input indices and parameters for the model."""
@@ -58,9 +59,11 @@ end
     ξ_s::Array{AbstractFloat, 1}
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
-    b0_sn::Array{AbstractFloat, 2}
+    Smin_sn::Array{AbstractFloat, 2}
     Wmax_n::Array{AbstractFloat, 1}
-    Wmix_n::Array{AbstractFloat, 1}
+    Wmin_n::Array{AbstractFloat, 1}
+    Hmax_n::Array{AbstractFloat, 1}
+    Hmin_n::Array{AbstractFloat, 1}
     f_int::Array{AbstractFloat, 2}
     f′_int::Array{AbstractFloat, 2}
     H_n::Array{AbstractFloat, 1}
@@ -150,8 +153,8 @@ end
 """
 function Expressions(parameters::Params, variables::Variables)
     @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-            Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin =
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
+            Wmax_n, Wmin_n, Hmax_n, Hmin_n, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
     p_gnt = variables.p_gnt
@@ -175,8 +178,8 @@ end
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
     @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-            Wmax_n, Wmix_n, f_int, f′_int, H_n, H′_n, F_onmin =
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
+            Wmax_n, Wmin_n, Hmax_n, Hmin_n, f_int, f′_int, H_n, H′_n, F_onmin =
             parameters
 
     # Indices of lines L: L_ind
@@ -349,33 +352,36 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
     end
 
-    # Hydro energy
-    @constraint(model,
-        h1[n in N, t in T],
-        Wmix_n[n] ≤ w_nt[n,t] ≤ Wmax_n[n])
-    @constraint(model,
-        h2[n in N, t in T[T.>1]],
-        w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])
-    @constraint(model,
-        h3[n in N],
-        w_nt[n,1] == w_nt[n,T[end]])
-    @constraint(model,
-        h4[n in N, t in T],
-        f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
-    @constraint(model,
-        h5[n in N, t in T],
-        f_ont[n,t] ≥ F_onmin[n])
-    @constraint(model,
-        h6[n in N, t in T],
-        0 ≤ f′_ont[n,t] ≤ H_n[n])
-    @constraint(model,
-        h7[n in N, t in T],
-        0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
-    @constraint(model,
-        h8[n in N, t in T],
-        0 ≤ h′_nt[n,t] ≤ H′_n[n])
-    @constraint(model,
-        h9[n in N, t in T],
-        h_nt[n,t] == h′_nt[n,t] + f′_ont[n,t])
+    if specs.hydro
+        # Hydro energy
+        @constraint(model,
+            h1[n in N, t in T],
+            Wmin_n[n] ≤ w_nt[n,t] ≤ Wmax_n[n])
+        @constraint(model,
+            h2[n in N, t in T[T.>1]],
+            w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])
+        @constraint(model,
+            h3[n in N],
+            w_nt[n,1] == w_nt[n,T[end]])
+        @constraint(model,
+            h4[n in N, t in T],
+            f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
+        @constraint(model,
+            h5[n in N, t in T],
+            f_ont[n,t] ≥ F_onmin[n])
+        @constraint(model,
+            h6[n in N, t in T],
+            0 ≤ f′_ont[n,t] ≤ H_n[n])
+        @constraint(model,
+            h7[n in N, t in T],
+            0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
+        @constraint(model,
+            h8[n in N, t in T],
+            0 ≤ h′_nt[n,t] ≤ H′_n[n])
+        @constraint(model,
+            h9[n in N, t in T],
+            h_nt[n,t] == h′_nt[n,t] + f′_ont[n,t])
+    end
+
     return model
 end
