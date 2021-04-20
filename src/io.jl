@@ -175,17 +175,6 @@ function save_json(object, filepath::AbstractString)
     end
 end
 
-"""Save object into .csv file.
-# Arguments
-- `object`
-- `filepath::AbstractString`: Full filepath, e.g., `path.csv`.
-"""
-function save_csv(object, filepath::AbstractString)
-    open(filepath, "w") do io
-        CSV.write(io,object)
-    end
-end
-
 flatten(x::Array{<:Array, 1}) = Iterators.flatten(x)|> collect|> flatten
 flatten(x::Array{<:Number, 1}) = x
 

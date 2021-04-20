@@ -56,12 +56,6 @@ save_json(parameters, joinpath(output_dir, results_dir, "parameters.json"))
 save_json(variables, joinpath(output_dir, results_dir, "variables.json"))
 save_json(objectives, joinpath(output_dir, results_dir, "objectives.json"))
 
-@info "Saving results (CSV)"
-save_csv(specs, joinpath(output_dir, csv_dir, "specs.csv"))
-save_csv(parameters, joinpath(output_dir, csv_dir, "parameters.csv"))
-save_csv(variables, joinpath(output_dir, csv_dir, "variables.csv"))
-save_csv(objectives, joinpath(output_dir, csv_dir, "objectives.csv"))
-
 @info "Plotting"
 using Plots
 ENV["GKSwstype"]="nul"
