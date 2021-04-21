@@ -64,7 +64,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     # Load generation parameters (per node / per generation technology)
     Gmin_gn = zeros(length(G), length(N))
     Gmax_gn = zeros(length(G), length(N))
-    F_onmin = zeros(length(N))
     gen_capacity = CSV.File(joinpath(Instances_path, "gen_capacity.csv")) |> DataFrame
 
     for n in N
@@ -82,7 +81,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         A_gnt[A_gnt .< 0.001] .= 0
         AH_nt[n,:] = nodes.Hyd_In[T]
         AR_nt[n,:] = nodes.HydRoR_In[T]
-        F_onmin[n] = (sum(AH_nt[n, :]) / length(T)) * 0.05
         region_n[n] =  nodes.Name[1]
     end
 
@@ -92,14 +90,15 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Hmin_n = zeros(length(N))
     Hmax_n = zeros(length(N))
     Fmin_n = zeros(length(N))
+    HRcap_n = zeros(length(N))
     hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
     Hmax_n[1:length(N)] = hydro.hcap_max[1:length(N)] |> Array{AbstractFloat, 1}
     Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
-    HRcap_n[1:length(N)] = hydro.HydRoR[1:length(N)] |> Array{AbstractFloat, 1}
+    HRcap_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
     Wmax_n[1:length(N)] = hydro.wcap_max[1:length(N)] |> Array{AbstractFloat, 1}
     Wmin_n[1:length(N)] = hydro.wcap_min[1:length(N)] |> Array{AbstractFloat, 1}
     Fmin_n[1:length(N)] = hydro.Fmin[1:length(N)] |> Array{AbstractFloat, 1}
-    hydro_technology = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
+    hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
     I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
                                   interest_rate) |> Array{AbstractFloat, 1}
     M_h = hydro_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
@@ -169,7 +168,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Params(
         region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn,
-        Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt, F_onmin,
+        Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
         I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
 end
 
