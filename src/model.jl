@@ -354,7 +354,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Storage capacity bounds
         @constraint(model,
             s7[s in S, n in N],
-            b̄_sn[s,n] ≤ Smax_sn)
+            b̄_sn[s,n] ≤ Smax_sn[s,n])
     end
 
     if specs.ramping
@@ -367,8 +367,12 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             p_gnt[g,n,t]-p_gnt[g,n,t-1] ≥ -r⁻_g[g] * p̄_gn[g,n])
         if specs.hydro
             @constraint(model,
-            r3[n in N, t in T[T.>1]],
-            h_nt[n,t]-h_nt[n,t-1] ≥ -r⁻_h * h̄_gn[g,n])            
+                r3[g in G, n in N, t in T[T.>1]],
+                h_nt[n,t]-h_nt[n,t-1] ≤ r⁺_h[1] * h̄_n[n])
+
+            @constraint(model,
+                r4[n in N, t in T[T.>1]],
+                h_nt[n,t]-h_nt[n,t-1] ≥ -r⁻_h[1] * h̄_n[n])            
         end
     end
 
@@ -386,7 +390,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             w_nt[n,t] ≤ Wmax_n[n])
         @constraint(model,
             h2[n in N, t in T[T.>1]],
-            w_nt[n,t] == w_nt[n,t-1] + AH_nt[n,t-1] - h_nt[n,t-1]*τ_t)
+            w_nt[n,t] == w_nt[n,t-1] + AH_nt[n,t-1] - h_nt[n,t-1]*τ_t[t])
         @constraint(model,
             h3[n in N],
             w_nt[n,1] == w_nt[n,T[end]])
