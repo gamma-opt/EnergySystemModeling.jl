@@ -25,7 +25,7 @@ function plot_generation_dispatch(p_gnt, h_nt, G, n, T, region_n, technology_g, 
     return p
 end
 
-function plot_balance_stacked(p_gnt, p̄_gn, h_nt, h̄_n, h̄r_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_balance_stacked(p_gnt, p̄_gn, h_nt, h̄_n, HRcap_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = Plots.plot(
         legend=:outertopright,
@@ -48,14 +48,14 @@ function plot_balance_stacked(p_gnt, p̄_gn, h_nt, h̄_n, h̄r_n, G, n, T, regio
           color = colors[9],
           alpha=0.3,
           label="hydro")
-    plot!(p, T, [h̄_n[n] + h̄r_n[n] for t in T],
+    plot!(p, T, [h̄_n[n] + HRcap_n[n] for t in T],
           color = colors[9],
           label="")
     return p
 end
 
-function plot_generation_capacities(p̄_gn, h̄_n, h̄r_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
-    StatsPlots.bar([G;9], [[p̄_gn[g, n] for g in G]; [h̄_n[n] + h̄r_n[n]]],
+function plot_generation_capacities(p̄_gn, h̄_n, HRcap_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
+    StatsPlots.bar([G;9], [[p̄_gn[g, n] for g in G]; [h̄_n[n] + HRcap_n[n]]],
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         title = "Generation capacity by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -66,9 +66,9 @@ function plot_generation_capacities(p̄_gn, h̄_n, h̄r_n, G, n, region_n, techn
 end
    
 
-function plot_generation_capacities_stacked(p̄_gn, h̄_n, h̄r_n, N, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_generation_capacities_stacked(p̄_gn, h̄_n, HRcap_n, N, region_n, technology_g, κ, C_E, κ′, C′_E)
     p̄_gn
-    H_tot = h̄_n + h̄r_n
+    H_tot = h̄_n + HRcap_n
     dispatches = permutedims([p̄_gn; permutedims(H_tot)])
     StatsPlots.groupedbar(dispatches,
         bar_position = :stack,
@@ -272,14 +272,14 @@ end
 
 """Plot generation capacities."""
 function plot_generation_capacities(parameters::Params, variables::Variables, expressions::Expressions, n::Integer)
-    plot_generation_capacities(variables.p̄_gn, variables.h̄_n, variables.h̄r_n, parameters.G, n, parameters.region_n,
+    plot_generation_capacities(variables.p̄_gn, variables.h̄_n, parameters.HRcap_n, parameters.G, n, parameters.region_n,
                                parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 
 
 """Plot stacked generation capacities as a stacked graph."""
 function plot_generation_capacities_stacked(parameters::Params, variables::Variables, expressions::Expressions)
-    plot_generation_capacities_stacked(variables.p̄_gn, variables.h̄_n, variables.h̄r_n, parameters.N,
+    plot_generation_capacities_stacked(variables.p̄_gn, variables.h̄_n, parameters.HRcap_n, parameters.N,
                        parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
 end
 

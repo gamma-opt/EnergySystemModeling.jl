@@ -84,31 +84,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         region_n[n] =  nodes.Name[1]
     end
 
-    # Load hydro capacity and technology parameters
-    Wmax_n = zeros(length(N))
-    Wmin_n = zeros(length(N))
-    Hmin_n = zeros(length(N))
-    Hmax_n = zeros(length(N))
-    Fmin_n = zeros(length(N))
-    HRcap_n = zeros(length(N))
-    hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
-    Hmax_n[1:length(N)] = hydro.hcap_max[1:length(N)] |> Array{AbstractFloat, 1}
-    Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
-    HRcap_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
-    Wmax_n[1:length(N)] = hydro.wcap_max[1:length(N)] |> Array{AbstractFloat, 1}
-    Wmin_n[1:length(N)] = hydro.wcap_min[1:length(N)] |> Array{AbstractFloat, 1}
-    Fmin_n[1:length(N)] = hydro.Fmin[1:length(N)] |> Array{AbstractFloat, 1}
-    hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
-    I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
-                                  interest_rate) |> Array{AbstractFloat, 1}
-    M_h = hydro_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
-    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM |> Array{AbstractFloat, 1}
-    e_h = hydro_technology.efficiency |> Array{AbstractFloat, 1}
-    E_h = hydro_technology.emissions |> Array{AbstractFloat, 1}
-    r⁻_h = hydro_technology.r_minus |> Array{AbstractFloat, 1}
-    r⁺_h = hydro_technology.r_plus |> Array{AbstractFloat, 1}
-
-
     # Load technology parameters
     gen_technology = joinpath(Instances_path, "gen_technology.csv") |>
         CSV.File |> DataFrame
@@ -164,10 +139,34 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Smin_sn = Smin_sn  |> Array{AbstractFloat, 2}
     Smax_sn = Smax_sn  |> Array{AbstractFloat, 2}
 
+    # Load hydro capacity and technology parameters
+    Wmax_n = zeros(length(N))
+    Wmin_n = zeros(length(N))
+    Hmin_n = zeros(length(N))
+    Hmax_n = zeros(length(N))
+    Fmin_n = zeros(length(N))
+    HRcap_n = zeros(length(N))
+    hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
+    Hmax_n[1:length(N)] = hydro.hcap_max[1:length(N)] |> Array{AbstractFloat, 1}
+    Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
+    HRcap_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
+    Wmax_n[1:length(N)] = hydro.wcap_max[1:length(N)] |> Array{AbstractFloat, 1}
+    Wmin_n[1:length(N)] = hydro.wcap_min[1:length(N)] |> Array{AbstractFloat, 1}
+    Fmin_n[1:length(N)] = hydro.Fmin[1:length(N)] |> Array{AbstractFloat, 1}
+    hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
+    I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
+                                    interest_rate) |> Array{AbstractFloat, 1}
+    M_h = hydro_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
+    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM |> Array{AbstractFloat, 1}
+    e_h = hydro_technology.efficiency |> Array{AbstractFloat, 1}
+    E_h = hydro_technology.emissions |> Array{AbstractFloat, 1}
+    r⁻_h = hydro_technology.r_minus |> Array{AbstractFloat, 1}
+    r⁺_h = hydro_technology.r_plus |> Array{AbstractFloat, 1}
+    
     # Return Params struct
     Params(
         region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn,
+        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
         Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
         I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
 end

@@ -62,6 +62,7 @@ end
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
     Smin_sn::Array{AbstractFloat, 2}
+    Smax_sn::Array{AbstractFloat, 2}
     Wmax_n::Array{AbstractFloat, 1}
     Wmin_n::Array{AbstractFloat, 1}
     Hmax_n::Array{AbstractFloat, 1}
@@ -96,7 +97,6 @@ end
     h_nt::Array{AbstractFloat, 2}
     hr_nt::Array{AbstractFloat, 2}
     h̄_n::Array{AbstractFloat, 1}
-    h̄r_n::Array{AbstractFloat, 1}
 end
 
 """Objective values:
@@ -161,7 +161,7 @@ end
 """
 function Expressions(parameters::Params, variables::Variables)
     @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
             Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
             I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =
             parameters
@@ -186,8 +186,8 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, Smin_sn,
+    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, 
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
             Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
             I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =
             parameters
@@ -201,25 +201,24 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
     @variable(model, p̄_gn[g in G, n in N]≥Gmin_gn[g,n])
     @variable(model, σ_nt[n in N, t in T]≥0)
-    @variable(model, f_lt[l in L_ind, t in T]≥0)
+    @variable(model, f_lt[l in L_ind, t in T])
     @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
-    @variable(model, f̄_l[l in L_ind])
+    @variable(model, f̄_l[l in L_ind]≥Tmin_l[l])
     @variable(model, b_snt[s in S, n in N, t in T]≥0)
-    @variable(model, b̄_sn[s in S, n in N]≥0)
+    @variable(model, b̄_sn[s in S, n in N]≥Smin_sn[s,n])
     @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
     @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
     @variable(model, θ_nt[n in N, t in T]≥0)
     @variable(model, θ′_nt[n in N, t in T]≥0)
-    @variable(model, w_nt[n in N, t in T]≥0)
+    @variable(model, w_nt[n in N, t in T]≥Wmin_n[n])
     @variable(model, h_nt[n in N, t in T]≥0)
     @variable(model, hr_nt[n in N, t in T]≥0)
-    @variable(model, h̄_n[n in N, t in T]≥0)
-    @variable(model, h̄r_n[n in N, t in T]≥0)
+    @variable(model, h̄_n[n in N]≥Hmin_n[n])
 
     ## -- Objective --
     ## Investment and maintenance of generation capacity
     @expression(model, f1,
-        sum((I_g[g]+M_g[g])*(p̄_gn[g,n]-Gmin_gn[g,n]) for g in G, n in N))
+        sum(I_g[g]*(p̄_gn[g,n]-Gmin_gn[g,n]) + M_g[g]*p̄_gn[g,n] for g in G, n in N))
     
     ## Operational cost of generation dispatch
     @expression(model, f2,
@@ -231,7 +230,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     ##Investment and maintenance cost of transmission cpacity
     @expression(model, f4,
-        sum((I_l[l]+M_l[l])*(f̄_l[l] - Tmin_l) for l in L_ind))
+        sum(I_l[l]*(f̄_l[l]-Tmin_l[l]) + M_l[l]*f̄_l[l] for l in L_ind))
     
     ## Operational cost of transmission flow
     @expression(model, f5,
@@ -239,15 +238,16 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     
     ## Investment cost of storage capacity
     @expression(model, f6,
-        sum(I_s[s]*b̄_sn[s,n] for s in S, n in N))
+        sum(I_s[s]*(b̄_sn[s,n] - Smin_sn[s,n]) for s in S, n in N))
    
     ## Operational cost of storage
     @expression(model, f7,
         sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ_t[t] for s in S, n in N, t in T))
 
-    ## Investment cost of hydro capacity
+    ## Investment cost of hydro capacity 
+    # TODO: create an index h for hydro plants
     @expression(model, f8,
-        sum((I_h + M_h)*(h̄_n - Hmin_n) for n in N))
+        sum(I_h[1]*(h̄_n[n] - Hmin_n[n]) for n in N))
     
     @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8)
 
@@ -265,13 +265,14 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) -
         sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
         sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
-        h_nt[n,t] ==
+        h_nt[n,t] +
+        hr_nt[n,t] ==
         D_nt[n,t])
 
     # Generation capacity
     @constraint(model,
         g1[g in G, n in N, t in T],
-        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Gmin_gn[g,n] + p̄_gn[g,n]))
+        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * p̄_gn[g,n])
     @constraint(model,
         g2[g in G, n in N],
         p̄_gn[g,n] ≤ Gmax_gn[g,n])
@@ -318,6 +319,10 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         t4[l in L_ind, t in T],
         f_abs_lt[l,t] ≥ -f_lt[l,t])
 
+    @constraint(model,
+        t6[l in L_ind, t in T],
+        f̄_l[l] ≤ Tmax_l[l])
+
     if specs.storage
     ## TODO: revise storage
 
@@ -345,6 +350,11 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
             s6[s in S, n in N],
             b_snt[s,n,1]==b_snt[s,n,T[end]])
+
+        # Storage capacity bounds
+        @constraint(model,
+            s7[s in S, n in N],
+            b̄_sn[s,n] ≤ Smax_sn)
     end
 
     if specs.ramping
@@ -373,7 +383,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Hydro energy
         @constraint(model,
             h1[n in N, t in T],
-            Wmin_n[n] ≤ w_nt[n,t] ≤ Wmax_n[n])
+            w_nt[n,t] ≤ Wmax_n[n])
         @constraint(model,
             h2[n in N, t in T[T.>1]],
             w_nt[n,t] == w_nt[n,t-1] + AH_nt[n,t-1] - h_nt[n,t-1]*τ_t)
@@ -385,16 +395,16 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             h_nt[n,t] ≤ h̄_n[n] - Fmin_n[n]*AH_nt[n,t])
         @constraint(model,
             h5[n in N, t in T],
-            Hmin_n[n] ≤ h̄_n[n] ≤ Hmax_n[n])
+            h_nt[n,t] ≤ AH_nt[n,t])
         @constraint(model,
             h6[n in N, t in T],
-            hr_nt[n,t] ≤ AR_nt[n,t])
+            h̄_n[n] ≤ Hmax_n[n])
         @constraint(model,
             h7[n in N, t in T],
-            hr_nt[n,t] ≤ HRcap_n[n])
+            hr_nt[n,t] ≤ AR_nt[n,t])
         @constraint(model,
             h8[n in N, t in T],
-            Hmin_n[n] ≤ h̄_n[n] ≤ Hmax_n[n])
+            hr_nt[n,t] ≤ HRcap_n[n])
     end
 
     return model
