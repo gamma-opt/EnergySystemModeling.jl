@@ -103,8 +103,8 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     C_l = zeros(length(L_ind))
     B_l = zeros(length(L_ind))
     e_l = zeros(length(L_ind))
-    t0_l = zeros(length(L_ind))
-    tmax_l = zeros(length(L_ind))
+    Tmin_l = zeros(length(L_ind))
+    Tmax_l = zeros(length(L_ind))
     transmission = joinpath(Instances_path, "transmission.csv") |>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
