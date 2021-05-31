@@ -412,6 +412,11 @@ function update_clust!(_ClustInstance, _SeriesInstance, min_dist::T) where {T <:
 
     @assert merging_clust >= 2 "unitary merging_clust not allowed"
 
+    # Updating the centroids
+    (k_change,) = aggreg1D(series[[sc in merging_clust for sc in series_clust],:], rep_value)
+    k_change = reshape(k_change[1,:],(1,nseries))
+    k_cent = replace_lines(k_cent,sort(Dict(merging_clust => k_change)))
+
     # Update series_clust
     change_marker = zeros(lseries) |> Vector{Int}                        # Mark whenever the change in the cluster assignment happens for the series_clust
     @inbounds for l in 2:L[end]
@@ -432,12 +437,7 @@ function update_clust!(_ClustInstance, _SeriesInstance, min_dist::T) where {T <:
 
     # New number of clusters
     nclusters = series_clust[end]
- 
-    # Updating the centroids
-    (k_change,) = aggreg1D(series[[sc in merging_clust for sc in series_clust],:], rep_value)
-    k_change = reshape(k_change[1,:],(1,nseries))
-    k_cent = replace_lines(k_cent,sort(Dict(merging_clust => k_change)))
-
+     
     ## TODO: update weights / search_range
     # Update search_range
     new_search_range = 1:(1+nclusters-block_size)
