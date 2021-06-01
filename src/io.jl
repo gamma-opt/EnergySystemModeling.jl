@@ -1,4 +1,5 @@
-using CSV, JSON, DataFrames, JLD, MAT
+using CSV, JSON, DataFrames, JLD, MAT, FileIO, JLD2
+import aggreg
 
 """Equivalent annual cost (EAC)
 # Arguments
@@ -8,7 +9,7 @@ using CSV, JSON, DataFrames, JLD, MAT
 """
 function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
     factor = if iszero(r) n else (1 - (1 + r)^(-n)) / r end
-    cost / factor
+    return cost / factor
 end
 
 """Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instance_path`.
@@ -227,7 +228,7 @@ end
 
 #Replace NaN's with 0
 function replace_nans!(array::Array{Float64, N}) where N
-    for i = eachindex(array)
+    for i in eachindex(array)
         if isnan(array[i])
             array[i] = zero(1)
         end
@@ -371,4 +372,35 @@ function create_nodedata(DataInput_path::AbstractString, era_year::AbstractStrin
         rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind_On", "Avail_Wind_Off", "Hyd_In", "HydRoR_In"])
         CSV.write(joinpath(DataInput_path, "nodes", "$i.csv"), nodedata)
     end
+end
+
+"""
+read_clusters(ClustersDataInput::AbstractString, k::Int)
+Read clusters from a julia dictionary (.jld2) with the structure ClustInstance.
+# Output:
+- _ClustInstance: Instance of clustering with weights, centroids, etc.
+- _SeriesInstance: Instance of series used to form the clusters.
+"""
+function read_clusters(ClustersDataInput::AbstractString, k::Int)
+    _ClustUpdate = load(joinpath(ClustersDataInput,"clust_out.jld2"))
+    _SeriesUpdate = load(joinpath(ClustersDataInput,"series_out.jld2"));
+
+    return _ClustUpdate[string(k)], _SeriesUpdate[string(k)] 
+end
+
+"""
+unpack_clusters_features(_ClustInstance::ClustInstance)
+# Output:
+- k_cent: centroids.
+- weights: respective centroids' weights.
+- series_clust: mapping between series and clusters.
+"""
+function unpack_clusters_features(_ClustInstance::ClustInstance)
+    @assert _ClustInstance.nclusters == _ClustInstance.series_clust[end] "Number of clusters inconsistent in the cluster instance"
+
+    k_cent = _ClustInstance.k_cent
+    weights = _ClustInstance.weights
+    series_clust = _ClustInstance.series_clust
+
+    return k_cent, weights, series_clust
 end

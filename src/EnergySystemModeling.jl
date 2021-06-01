@@ -13,7 +13,9 @@ export EnergySystemModel,
     load_json,
     create_nodedata,
     replace_nans,
-    getdispatch
+    getdispatch,
+    read_clusters,
+    unpack_clusters_features
 
 include("plotting.jl")
 export plot_objective_values,
@@ -29,5 +31,24 @@ export plot_objective_values,
     plot_box,
     plot_box_all,
     plot_dispatch_bars
+
+include("aggreg.jl")
+export SData,
+    InputData,
+    SeriesInstance,
+    ClustInstance,
+    AggregInstance,
+    DistUpdate,
+    load_series_instance,
+    load_clust_instance,
+    aggreg1D,
+    cdad,
+    search_min_dist!,
+    compute_dist,
+    update_marker,
+    replace_lines,
+    update_clust!,
+    update_k!,
+    find_clusters!
 
 end # module

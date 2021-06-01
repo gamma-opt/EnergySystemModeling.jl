@@ -33,3 +33,6 @@ Manifest.toml
 
 # VScode specs
 .vscode/
+
+# Git attributes
+.gitattributes

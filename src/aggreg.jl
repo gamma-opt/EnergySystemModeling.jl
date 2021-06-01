@@ -353,6 +353,8 @@ function update_marker(_SeriesInstance, _ClustInstance, min_dist::T) where {T <:
     return marker
 end
 
+## TODO: normalisation function (for example to use medoids representative values and the wasserstein distance as the discrepancy metric - via cdad)
+
 """
 function replace_lines(mat::VecOrMat{T}, mergings::OrderedDict{UnitRange{Int64},Matrix{T}}) where {T <: Float64}
 Replace lines of a matrix/vector by another matrix/vector with the same number of columns than the original matrix/vector.
@@ -437,13 +439,14 @@ function update_clust!(_ClustInstance, _SeriesInstance, min_dist::T) where {T <:
 
     # New number of clusters
     nclusters = series_clust[end]
-     
-    ## TODO: update weights / search_range
+    # Update weights
+    weights = [sum(series_clust .== i) for i in 1:nclusters] .|> Int
     # Update search_range
     new_search_range = 1:(1+nclusters-block_size)
 
     # Update struct
     _ClustInstance.series_clust = series_clust
+    _ClustInstance.weights = weights
     _ClustInstance.nclusters = nclusters
     _ClustInstance.k_cent = k_cent
     _ClustInstance.search_range = new_search_range
