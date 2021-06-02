@@ -1,6 +1,6 @@
 using Statistics, OrderedCollections, Dates
 
-abstract type SData end
+# abstract type SData end
 
 """
 InputData <: SData
@@ -13,7 +13,8 @@ Attributes:
 - nseries::Int: number of time series inputed (treated separately as if independent from each other)
 - data::Dict{String,Array}: Dictionary with an entry for each attribute `[file name (attribute: e.g technology)]-[column name (node: e.g. location)]`, Each entry of the dictionary is a 2-dimensional `time-steps T x periods K`-Array holding the data
 """
-mutable struct InputData <: SData
+# mutable struct InputData <: SData
+mutable struct InputData
     region::String
     period_from::DateTime
     period_to::DateTime
@@ -26,7 +27,7 @@ end
 SeriesInstance <: SData
 Contains the series and respective attributes needed for performing the aggregation
 Attributes:
-- series::Union{Array{T,2},Vector{T}}: original time series
+- series::VecOrMat{T}: original time series
 - block_size::Int: number of clusters to be aggregated at once each iteration
 - stopping_k::Int: reduced number of clusters pre-established
 - current_k::Int: current number of clusters
@@ -35,8 +36,9 @@ Attributes:
 - lseries::Int: length of series
 - nseries::Int: number of series
 """
-mutable struct SeriesInstance{T<:Float64,S<:Int} <: SData
-    series::Union{Array{T,2},Vector{T}}
+# mutable struct SeriesInstance{T<:Float64,S<:Int} <: SData
+mutable struct SeriesInstance{T<:Float64,S<:Int}
+        series::VecOrMat{T}
     block_size::S
     stopping_k::S
     current_k::S
@@ -50,14 +52,15 @@ end
 ClustInstance <: SData
 Contains clusters information
 Fields:
-- k_cent::Union{Array{T,2},Vector{T}}: 
+- k_cent::VecOrMat{T}: 
 - weights::Vector{<:Int}: 1-dimensional `periods K`-Array with the absolute weight for each period. E.g. for a yearly resolution time series of 365 days, sum(weights) = 365
 - series_clust::Vector{<:Int}: clusters assignment for the original series (vector with the from-to relationship between the original series and the clusters)
 - nclusters::Int: current number of clusters
 - search_range::UnitRange: range in which the clusters can be merged, considering the amount of clusters and the block_size (generally equals to 1:(nclusters-block_size+1))
 """
-mutable struct ClustInstance{T<:Float64,S<:Int} <: SData
-    k_cent::Union{Array{T,2},Vector{T}}
+# mutable struct ClustInstance{T<:Float64,S<:Int} <: SData
+mutable struct ClustInstance{T<:Float64,S<:Int}
+        k_cent::VecOrMat{T}
     weights::Vector{S}
     series_clust::Vector{S}
     nclusters::S
@@ -69,13 +72,14 @@ AggregInstance <: SData
 Contains the aggregation instance temporary values.
 Attributes:
 - merging_clust::UnitRange{<:Int}: 
-- series_comp::Union{Array{T,2},Vector{T}}: 
-- k_cent_comp::Union{Array{T,2},Vector{T}}: 
+- series_comp::VecOrMat{T}: 
+- k_cent_comp::VecOrMat{T}: 
 """
-mutable struct AggregInstance{T<:Float64,S<:Int} <: SData
+# mutable struct AggregInstance{T<:Float64,S<:Int} <: SData
+mutable struct AggregInstance{T<:Float64,S<:Int}
     merging_clust::UnitRange{S}
-    series_comp::Union{Array{T,2},Vector{T}}
-    k_cent_comp::Union{Array{T,2},Vector{T}}
+    series_comp::VecOrMat{T}
+    k_cent_comp::VecOrMat{T}
 end
 
 """
@@ -83,23 +87,24 @@ DistUpdate <: SData
 Type to store the history of minimal distances.
 """
 
-mutable struct DistUpdate{T<:Float64, S<:Int} <: SData
+# mutable struct DistUpdate{T<:Float64, S<:Int} <: SData
+mutable struct DistUpdate{T<:Float64, S<:Int}
     dist::Vector{T}
     min_dist::S
     merging_clust::UnitRange{S}
 end
 
 """
-aggreg1D(series::Union{Array{T,2},Vector{T}}, marker::Vector{Bool}, rep_value::Symbol = :mean)
+aggreg1D(series::VecOrMat{T}, marker::Vector{Bool}, rep_value::Symbol = :mean)
 The function aggregates N one-dimensional vectors concomitantly following a marker gave as the input of the function. It assumes the collection of 1D vectors is vertically concatanated so forming a 2D matrix with the first dimension equal to the size of the vectors analysed and the second dimension equal to the number of vectors analysed.
 Fields:
-- series::Union{Array{T,2},Vector{T}}: collection of vectors
+- series::VecOrMat{T}: collection of vectors
 - marker::Vector{Bool}: vector with the flag on where to aggregate - so whenever marker[i] = 1 the aggregation happens between i and i+1
 - rep_value::Symbol: value to be used for representation of the aggregated interval (we use mean by default)
 """
 
 # (first method)
-function aggreg1D(series::Union{Array{T,2},Vector{T}}, marker::Vector{Bool}, representation::Symbol = :mean) where {T<:Float64}
+function aggreg1D(series::VecOrMat{T}, marker::Vector{Bool}, representation::Symbol = :mean) where {T<:Float64}
     #### Function to aggregate vectors under a representative value, normally used in hierarchical
     #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever there's a marker
 
@@ -147,14 +152,14 @@ function aggreg1D(series::Union{Array{T,2},Vector{T}}, marker::Vector{Bool}, rep
 end
 
 """
-aggreg1D(series::Union{Array{T,2},Vector{T}}, rep_value::Symbol = :mean)
+aggreg1D(series::VecOrMat{T}, rep_value::Symbol = :mean)
 The function aggregates N one-dimensional vectors concomitantly following a marker gave as the input of the function. It assumes the collection of 1D vectors is vertically concatanated so forming a 2D matrix with the first dimension equal to the size of the vectors analysed and the second dimension equal to the number of vectors analysed.
 Fields:
-- series::Union{Array{T,2},Vector{T}}: collection of vectors
+- series::VecOrMat{T}: collection of vectors
 - rep_value::Symbol: value to be used for representation of the aggregated interval (we use mean by default)
 """
 # (second method)
-function aggreg1D(series::Union{Array{T,2},Vector{T}}, representation::Symbol = :mean) where {T<:Float64}
+function aggreg1D(series::VecOrMat{T}, representation::Symbol = :mean) where {T<:Float64}
     #### Function to aggregate vectors under a representative value, normally used in hierarchical
     #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever there's a marker
 
@@ -207,11 +212,11 @@ function cdad(u::Vector{T},v::Vector{T}) where {T<:Float64}
 end
 
 """
-load_series_instance(series::Union{Array{T,2},Vector{T}}, block_size::S, current_k::S, stopping_k::S = 1, dm::Symbol = :ward, rep_value::Symbol = :mean, lseries::S = size(series,1), nseries::S = size(series,2)
+load_series_instance(series::VecOrMat{T}, block_size::S, current_k::S, stopping_k::S = 1, dm::Symbol = :ward, rep_value::Symbol = :mean, lseries::S = size(series,1), nseries::S = size(series,2)
 ) where {T<:Float64, S<:Int}
 Function to load the data provided and fit into a struct SeriesInstance().
 """
-function load_series_instance(series::Union{Array{T,2},Vector{T}},
+function load_series_instance(series::VecOrMat{T},
     block_size::S,
     current_k::S,
     stopping_k::S = 1,
@@ -230,11 +235,11 @@ function load_series_instance(series::Union{Array{T,2},Vector{T}},
 end
 
 """
-load_clust_instance(k_cent::Union{Array{T,2},Vector{T}}, weights::Vector{S} = ones(size(k_cent,1)), series_clust::Vector{S}, search_range::UnitRange = collect(1:size(k_cent,1))
+load_clust_instance(k_cent::VecOrMat{T}, weights::Vector{S} = ones(size(k_cent,1)), series_clust::Vector{S}, search_range::UnitRange = collect(1:size(k_cent,1))
 ) where {T<:Float64,S<:Int}
 Function to load the clusters attributes.
 """
-function load_clust_instance(k_cent::Union{Array{T,2},Vector{T}},
+function load_clust_instance(k_cent::VecOrMat{T},
     series_clust::Vector{S},
     weights::Vector{S} = ones(size(k_cent,1)),
     search_range::UnitRange = collect(1:size(k_cent,1))
@@ -321,10 +326,10 @@ function find_clusters!(_SeriesInstance, _ClustInstance, _DistUpdate)
 end
 
 """
-function compute_dist(N::UnitRange, dm::Symbol, series_comp::Union{Array{T,2},Vector{T}}, k_cent_comp::Union{Array{T,2},Vector{T}})  where {T <: Float64}
+function compute_dist(N::UnitRange, dm::Symbol, series_comp::VecOrMat{T}, k_cent_comp::VecOrMat{T})  where {T <: Float64}
 Compute the distances between two matrices (series_comp and k_cent_comp).
 """
-function compute_dist(N::UnitRange, dm::Symbol, series_comp::Union{Array{T,2},Vector{T}}, k_cent_comp::Union{Array{T,2},Vector{T}})  where {T <: Float64}
+function compute_dist(N::UnitRange, dm::Symbol, series_comp::VecOrMat{T}, k_cent_comp::VecOrMat{T})  where {T <: Float64}
     # Distances matrix designation (TODO: add more discrepancy metrics (e.g., DTW and others) and wrap their calculation in a function)
     if dm == :wd  # Wasserstein distance (or cumulative distribution absolute difference) between the agglomerated cluster and the original series
         dist = sum(cdad(series_comp[:,n], k_cent_comp[:,n]) for n in N)
