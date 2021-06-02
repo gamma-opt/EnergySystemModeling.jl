@@ -1,6 +1,6 @@
 using Statistics, OrderedCollections, Dates
 
-abstract type SData <: Any end
+abstract type SData end
 
 """
 InputData <: SData
