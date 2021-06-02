@@ -1,5 +1,4 @@
 using CSV, JSON, DataFrames, JLD, MAT, FileIO, JLD2
-import aggreg
 
 """Equivalent annual cost (EAC)
 # Arguments
