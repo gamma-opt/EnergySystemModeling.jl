@@ -235,8 +235,8 @@ load_clust_instance(k_cent::Union{Array{T,2},Vector{T}}, weights::Vector{S} = on
 Function to load the clusters attributes.
 """
 function load_clust_instance(k_cent::Union{Array{T,2},Vector{T}},
-    weights::Vector{S} = ones(size(k_cent,1)),
     series_clust::Vector{S},
+    weights::Vector{S} = ones(size(k_cent,1)),
     search_range::UnitRange = collect(1:size(k_cent,1))
 ) where {T<:Float64,S<:Int}
 
