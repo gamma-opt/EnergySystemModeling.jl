@@ -38,7 +38,6 @@ end
     C̄::AbstractFloat
     C_E::AbstractFloat
     R_E::AbstractFloat
-    τ::Integer
     τ_t::Array{Integer, 1}
     Gmin_gn::Array{AbstractFloat, 2}
     Gmax_gn::Array{AbstractFloat, 2}
@@ -160,7 +159,7 @@ end
 - `variables::Variables`
 """
 function Expressions(parameters::Params, variables::Variables)
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
+    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
             Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
             I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =
@@ -186,7 +185,7 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, 
+    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, 
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
             Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
             I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =

@@ -1,6 +1,6 @@
 using Statistics, OrderedCollections, Dates
 
-# abstract type SData end
+abstract type SData end
 
 """
 InputData <: SData
@@ -38,7 +38,7 @@ Attributes:
 """
 # mutable struct SeriesInstance{T<:Float64,S<:Int} <: SData
 mutable struct SeriesInstance{T<:Float64,S<:Int}
-        series::VecOrMat{T}
+    series::VecOrMat{T}
     block_size::S
     stopping_k::S
     current_k::S
@@ -60,7 +60,7 @@ Fields:
 """
 # mutable struct ClustInstance{T<:Float64,S<:Int} <: SData
 mutable struct ClustInstance{T<:Float64,S<:Int}
-        k_cent::VecOrMat{T}
+    k_cent::VecOrMat{T}
     weights::Vector{S}
     series_clust::Vector{S}
     nclusters::S
@@ -102,7 +102,6 @@ Fields:
 - marker::Vector{Bool}: vector with the flag on where to aggregate - so whenever marker[i] = 1 the aggregation happens between i and i+1
 - rep_value::Symbol: value to be used for representation of the aggregated interval (we use mean by default)
 """
-
 # (first method)
 function aggreg1D(series::VecOrMat{T}, marker::Vector{Bool}, representation::Symbol = :mean) where {T<:Float64}
     #### Function to aggregate vectors under a representative value, normally used in hierarchical
@@ -189,6 +188,57 @@ function aggreg1D(series::VecOrMat{T}, representation::Symbol = :mean) where {T<
     end
 
     return new_v, class
+end
+
+"""
+aggreg1D(series::VecOrMat{T}, marker::Vector{Bool}, rep_value::Symbol = :mean)
+The function aggregates N one-dimensional vectors concomitantly following a marker gave as the input of the function. It assumes the collection of 1D vectors is vertically concatanated so forming a 2D matrix with the first dimension equal to the size of the vectors analysed and the second dimension equal to the number of vectors analysed.
+Fields:
+- series::VecOrMat{T}: collection of vectors
+- marker::Vector{Bool}: vector indicating the assignment of the series
+- rep_value::Symbol: value to be used for representation of the aggregated interval (we use mean by default)
+"""
+# (third method)
+function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symbol = :mean) where {T<:Float64}
+    #### Function to aggregate vectors under a representative value, normally used in hierarchical
+    #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever there's a marker
+
+    @assert length(size(series)) <= 2 "Series to be aggregated need to be represented as a Matrix (2D)"
+
+    # Initialization
+    lseries = size(series,1)                      # Length of vectors
+    nseries = size(series,2)                      # Number of vectors
+    D = 1:nseries                                 # Range for the number of series
+    class = collect(1:lseries)                    # Vector to mark the new classes
+    new_lseries = maximum(marker)                 # New vectors length
+
+    # Error control
+    @assert lseries == length(marker) "Different sizes between series and assignment vector"
+
+    # Finding the unique class vector
+    class = unique(sort(marker))
+    weights = [count(i->(i == j),marker) for j in class] .|> Int
+
+    # Declaring the new VecOrMat object
+    new_v = zeros(length(class))                          # New vector to be formed after aggregation
+
+    # Calculate the representative value and replace it in the new_v
+    if representation == :mean
+        for i in 1:length(class), d in D
+            new_v[i,d] .= mean(series[marker .== class[i],d])
+        end
+    elseif representation == :medoid
+        for i in 1:class[end], d in D
+            dist = pairwise(Euclidean(),series[marker .== class[i],d])
+            s_medoid = kmedoids(dist, 1)
+            s_medoid = s_medoid.medoids[1]
+            new_v[i,d] .= series[marker .== class[i],d][s_medoid]
+        end
+    else
+        @assert false "Representation method not defined."
+    end
+
+    return new_v, class, weights
 end
 
 """

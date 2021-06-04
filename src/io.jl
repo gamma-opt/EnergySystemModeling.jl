@@ -32,7 +32,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(Instances_path, "indices.json"))
 
-    # TODO: implement time period clustering: τ, T, τ_t
+    # TODO: implement time period clustering: T, τ_t
 
     # Load indices. Convert JSON values to right types.
     G = indices["G"] |> Array{Int}
@@ -40,7 +40,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
     L_ind = indices["L_ind"] |> Array{Int}
-    τ = 1
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
 
@@ -55,7 +54,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     R_E = constants["R_E"]
 
     # Load time clustered parameters and region
-    τ_t = ones(length(T))
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
     AH_nt = zeros(length(N), length(T))
@@ -84,6 +82,10 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         AR_nt[n,:] = nodes.HydRoR_In[T]
         region_n[n] =  nodes.Name[1]
     end
+
+    # Load weights
+    clust_weights = CSV.File(joinpath(Instances_path, "weights.csv")) |> DataFrame
+    τ_t = clust_weights.Weights[T]
 
     # Load technology parameters
     gen_technology = joinpath(Instances_path, "gen_technology.csv") |>
@@ -166,7 +168,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     
     # Return Params struct
     Params(
-        region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
         Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
         I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
@@ -375,15 +377,15 @@ function create_nodedata(DataInput_path::AbstractString, era_year::AbstractStrin
 end
 
 """
-read_clusters(ClustersDataInput::AbstractString, k::Int)
+read_clusters(ClustersDataPath::AbstractString, k::Int)
 Read clusters from a julia dictionary (.jld2) with the structure ClustInstance.
 # Output:
 - _ClustInstance: Instance of clustering with weights, centroids, etc.
 - _SeriesInstance: Instance of series used to form the clusters.
 """
-function read_clusters(ClustersDataInput::AbstractString, k::Int)
-    _ClustUpdate = load(joinpath(ClustersDataInput,"clust_out.jld2"))
-    _SeriesUpdate = load(joinpath(ClustersDataInput,"series_out.jld2"));
+function read_clusters(ClustersDataPath::AbstractString, k::Int)
+    _ClustUpdate = load(joinpath(ClustersDataPath,"clust_out.jld2"))
+    _SeriesUpdate = load(joinpath(ClustersDataPath,"series_out.jld2"));
 
     return _ClustUpdate[string(k)], _SeriesUpdate[string(k)] 
 end
