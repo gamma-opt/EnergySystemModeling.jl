@@ -1,0 +1,67 @@
+
+Gurobi 9.1.0 (win64) logging started Fri Jun  4 17:28:37 2021
+
+
+Gurobi 9.1.0 (win64) logging started Fri Jun  4 17:28:44 2021
+
+Gurobi Optimizer version 9.1.0 build v9.1.0rc0 (win64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 74298 rows, 27983 columns and 213984 nonzeros
+Model fingerprint: 0x8b333af0
+Coefficient statistics:
+  Matrix range     [3e-04, 1e+00]
+  Objective range  [1e+01, 4e+05]
+  Bounds range     [1e+03, 8e+06]
+  RHS range        [6e-02, 1e+09]
+Presolve removed 8184 rows and 26684 columns
+Presolve time: 0.16s
+
+Barrier solved model in 0 iterations and 0.16 seconds
+Model is infeasible
+
+User-callback calls 27, time in user-callback 0.00 sec
+
+Gurobi 9.1.0 (win64) logging started Mon Jun  7 12:15:22 2021
+
+
+Gurobi 9.1.0 (win64) logging started Mon Jun  7 12:15:33 2021
+
+Gurobi Optimizer version 9.1.0 build v9.1.0rc0 (win64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 52866 rows, 27983 columns and 164480 nonzeros
+Model fingerprint: 0xcd5e30f6
+Coefficient statistics:
+  Matrix range     [3e-04, 1e+00]
+  Objective range  [1e+01, 4e+05]
+  Bounds range     [1e+03, 8e+06]
+  RHS range        [6e-02, 1e+09]
+Presolve removed 52866 rows and 27983 columns
+Presolve time: 0.05s
+Presolve: All rows and columns removed
+
+Barrier solved model in 0 iterations and 0.05 seconds
+Optimal objective 9.53674316e-07
+
+User-callback calls 26, time in user-callback 0.01 sec
+
+Gurobi 9.1.0 (win64) logging started Mon Jun  7 12:19:40 2021
+
+
+Gurobi 9.1.0 (win64) logging started Mon Jun  7 12:19:50 2021
+
+Gurobi Optimizer version 9.1.0 build v9.1.0rc0 (win64)
+Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+Optimize a model with 74298 rows, 27983 columns and 213984 nonzeros
+Model fingerprint: 0x8b333af0
+Coefficient statistics:
+  Matrix range     [3e-04, 1e+00]
+  Objective range  [1e+01, 4e+05]
+  Bounds range     [1e+03, 8e+06]
+  RHS range        [6e-02, 1e+09]
+Presolve removed 8184 rows and 26684 columns
+Presolve time: 0.19s
+
+Barrier solved model in 0 iterations and 0.19 seconds
+Model is infeasible
+
+User-callback calls 27, time in user-callback 0.01 sec

@@ -42,6 +42,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     L_ind = indices["L_ind"] |> Array{Int}
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
+    H = indices["H"] |> Array{Int}
 
     # Load constant parameters
     constants = JSON.parsefile(joinpath(DataInput_path, "constants.json"))

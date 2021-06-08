@@ -4,7 +4,7 @@ push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
 
 @info "Creating output directory"
-output_dir = "output_small"
+output_dir = "output_aggreg"
 results_dir = "results"
 plots_dir = "plots"
 csv_dir = "csv"
@@ -18,6 +18,7 @@ mkpath(joinpath(output_dir,csv_dir))
 constants_path = "constants"
 structure = "8nodes"
 structures_path = joinpath("structures",structure)
+# instance = "08n8670h0168_cmm"
 instance = "small"
 instances_path = joinpath(structures_path,"instances",instance)
 
