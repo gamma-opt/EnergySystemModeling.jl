@@ -189,6 +189,8 @@ end
 
 flatten(x::Array{<:Array, 1}) = Iterators.flatten(x)|> collect|> flatten
 flatten(x::Array{<:Number, 1}) = x
+flatten(x::AffExpr) = x
+flatten(x::Array{<:Any}) = x[:]
 
 shape(x::Array{<:Array, 1}) = vcat(shape(first(x)), [length(x)])
 shape(x::Array{<:Number, 1}) = [length(x)]
