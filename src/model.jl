@@ -12,7 +12,7 @@ are not specified are included by default.
 - `voltage_angles::Bool`: Whether to include voltage angle constraints.
 """
 @with_kw struct Specs
-    transmission::Bool = true
+    transmission::Bool = false
     renewable_target::Bool = false
     carbon_cap::Bool = false
     nuclear_limit::Bool = false
