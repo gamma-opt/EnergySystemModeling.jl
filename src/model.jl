@@ -255,14 +255,14 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     if specs.hydro
         # TODO: create an index h for hydro plants
         @expression(model, f8,
-            sum(I_h[1]*(h̄_n[n] - Hmin_n[n]) + M_h*h̄_n[n] for n in N))
+            sum(I_h*(h̄_n[n] - Hmin_n[n]) + M_h*h̄_n[n] for n in N))
         ObjectivesDict["f8"] = f8
 
         # TODO: add operational costs for hydro generation (i.e., C_h)
 
     end
 
-    @objective(model, Min, sum(ObjectivesDict[i] for i in keys(ObjectivesDict)))
+    @objective(model, Min, sum(flatten(ObjectivesDict[i]) for i in keys(ObjectivesDict)))
 
     ## -- Constraints --
     # Transmission lines to node n
