@@ -32,7 +32,7 @@ specs = Specs(
         storage=true,
         ramping=true,
         voltage_angles=false,
-        hydro = true
+        hydro=true
 )
 
 @info "Creating the energy system model"
