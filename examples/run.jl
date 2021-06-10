@@ -1,11 +1,11 @@
 using Logging
 
-
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
 
 @info "Creating output directory"
-output_dir = "output_aggreg"
+# output_dir = "output_aggreg"
+output_dir = "output_tmp"
 results_dir = "results"
 plots_dir = "plots"
 csv_dir = "csv"
@@ -19,13 +19,13 @@ mkpath(joinpath(output_dir,csv_dir))
 constants_path = "constants"
 structure = "8nodes"
 structures_path = joinpath("structures",structure)
-instance = "08n8670h0168_cmm"
-# instance = "small"
+# instance = "08n8670h0168_cmm"
+instance = "small"
 instances_path = joinpath(structures_path,"instances",instance)
 
 parameters = Params(constants_path, instances_path)
 specs = Specs(
-        transmission = true,
+        transmission=true,
         renewable_target=true,
         carbon_cap=true,
         nuclear_limit=false,
