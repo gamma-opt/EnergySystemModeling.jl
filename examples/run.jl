@@ -1,5 +1,6 @@
 using Logging
 
+
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
 
@@ -18,23 +19,24 @@ mkpath(joinpath(output_dir,csv_dir))
 constants_path = "constants"
 structure = "8nodes"
 structures_path = joinpath("structures",structure)
-# instance = "08n8670h0168_cmm"
-instance = "small"
+instance = "08n8670h0168_cmm"
+# instance = "small"
 instances_path = joinpath(structures_path,"instances",instance)
 
 parameters = Params(constants_path, instances_path)
 specs = Specs(
-    renewable_target=true,
-    carbon_cap=true,
-    nuclear_limit=false,
-    storage=true,
-    ramping=true,
-    voltage_angles=false,
-    hydro = true
+        transmission = true,
+        renewable_target=true,
+        carbon_cap=true,
+        nuclear_limit=false,
+        storage=true,
+        ramping=true,
+        voltage_angles=false,
+        hydro = true
 )
 
 @info "Creating the energy system model"
-model = EnergySystemModel(parameters, specs)
+(model, VariablesDict, ObjectivesDict) = EnergySystemModel(parameters, specs)
 
 @info "Optimizing the model"
 using Gurobi, JuMP
@@ -44,11 +46,12 @@ set_optimizer(model, optimizer)
 set_optimizer_attributes(model, "Method" => 2)
 set_optimizer_attributes(model, "Crossover" => 0)
 set_optimizer_attributes(model, "NumericFocus" => 1)
+
 optimize!(model)
 
 @info "Extracting results"
-variables = Variables(model)
-objectives = Objectives(model)
+variables = JuMPObj(model, VariablesDict)
+objectives = JuMPObj(model, ObjectivesDict)
 expressions = Expressions(parameters, variables)
 
 @info "Saving results (JSON)"

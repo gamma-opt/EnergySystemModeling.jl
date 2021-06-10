@@ -80,84 +80,19 @@ end
     r⁺_h::Array{AbstractFloat, 1}
 end
 
-"""Variable values."""
-# @with_kw struct Variables
-#     p_gnt::Array{AbstractFloat, 3}
-#     p̄_gn::Array{AbstractFloat, 2}
-#     σ_nt::Array{AbstractFloat, 2}
-#     f_lt::Array{AbstractFloat, 2}
-#     f̄_l::Array{AbstractFloat, 1}
-#     b_snt::Array{AbstractFloat, 3}
-#     b̄_sn::Array{AbstractFloat, 2}
-#     b⁺_snt::Array{AbstractFloat, 3}
-#     b⁻_snt::Array{AbstractFloat, 3}
-#     θ_nt::Array{AbstractFloat, 2}
-#     θ′_nt::Array{AbstractFloat, 2}
-#     w_nt::Array{AbstractFloat, 2}
-#     h_nt::Array{AbstractFloat, 2}
-#     hr_nt::Array{AbstractFloat, 2}
-#     h̄_n::Array{AbstractFloat, 1}
-# end
-
-VariablesDict = Dict{String, Any}()
-
-"""Objective values:
-# Attributes
-- `f1: Generation investment and maintenance
-- `f2: Generation operational cost
-- `f3: Shedding cost
-- `f4: Transmission investment and maintenance
-- `f5: Transmission operational cost
-- `f6: Storage investment cost
-- `f7: Storage operational cost
-"""
-# @with_kw struct Objectives
-#     f1::AbstractFloat
-#     f2::AbstractFloat
-#     f3::AbstractFloat
-#     f4::AbstractFloat
-#     f5::AbstractFloat
-#     f6::AbstractFloat
-#     f7::AbstractFloat
-#     f8::AbstractFloat
-# end
-
-ObjectivesDict = Dict{String, Any}()
-
-"""Expression values:
-# Attributes
-- `κ′: Renewable generation share
-- `μ′: Hydro share
-- `C′_E: CO2 emission reduction
-"""
-# @with_kw struct Expressions
-#     κ′::AbstractFloat
-#     μ′::AbstractFloat
-#     C′_E::AbstractFloat
-# end
-
-ExpressionsDict = Dict{String, Any}()
-
 """Retrieving data from objects typed JuMP.Containers.DenseAxisArray"""
 retrieve_data(a::Number) = a
 retrieve_data(a::JuMP.Containers.DenseAxisArray) = a.data
+retrieve_data(a::Union{JuMP.VariableRef, JuMP.Array{VariableRef}, AffExpr, Array{AffExpr}}) = JuMP.value.(a);
 
-"""Extract variable values from model.
+"""Extract variables, objectives, and expression (i.e., JuMP objects) values from a JuMP model.
 # Arguments
 - `model::EnergySystemModel`
+- `JuMPObjDict::::Union{Dict{String, Float64}, Dict{String, Any}}`
 """
-function Variables(model::EnergySystemModel)
-    tup = Tuple(value.(model[i]) |> retrieve_data for i in keys(VariablesDict))
-    Variables(tup...)
-end
-
-"""Extract objective values from model.
-# Arguments
-- `model::EnergySystemModel`
-"""
-function Objectives(model::EnergySystemModel)
-    tup = Tuple(value.(model[i]) |> retrieve_data for i in keys(ObjectivesDict))
-    return Objectives(tup...)
+function JuMPObj(model::EnergySystemModel, JuMPObjDict::Union{Dict{String, Float64}, Dict{String, Any}})
+    dict = Dict(i => model[Symbol(i)] |> retrieve_data for i in keys(JuMPObjDict))
+    return dict
 end
 
 """Compute expression values from the results.
@@ -166,11 +101,14 @@ end
 - `variables::Variables`
 """
 function Expressions(parameters::Params, VariablesDict::Dict{String, Any})
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
-            Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
-            I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =
-            parameters
+    @unpack G, G_r, N, T, R_E, e_g, E_g = parameters
+
+    """Expression values:
+    # Attributes
+    - `κ′: Renewable generation share
+    - `μ′: Hydro share
+    - `C′_E: CO2 emission reduction
+    """
 
     p_gnt = VariablesDict["p_gnt"]
     h_nt = VariablesDict["h_nt"]
@@ -194,7 +132,7 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, 
+    @unpack G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, 
             C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
             Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
             I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h =
@@ -202,22 +140,72 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     # Indices of lines L: L_ind
 
+    """Variable values."""
+    VariablesDict = Dict{String, Any}()
+
+    """Objective values:
+    # Attributes
+    - `f1: Generation investment and maintenance
+    - `f2: Generation operational cost
+    - `f3: Shedding cost
+    - `f4: Transmission investment and maintenance
+    - `f5: Transmission operational cost
+    - `f6: Storage investment cost
+    - `f7: Storage operational cost
+    """
+    ObjectivesDict = Dict{String, Any}()
+
+    # Create an expressions dictionary to declare constraints conditionaly following the specs
+    ModelExpressionsDict = Dict{String, Any}()
+
     # Create an instance of JuMP model.
     model = EnergySystemModel()
 
     # -- Main variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
+    VariablesDict[""]
     @variable(model, p̄_gn[g in G, n in N]≥Gmin_gn[g,n])
+    VariablesDict[""]
     @variable(model, σ_nt[n in N, t in T]≥0)
+    VariablesDict[""]
 
     # Transmission variables
     if specs.transmission
         @variable(model, f_lt[l in L_ind, t in T])
+        VariablesDict[""]
         @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
+        VariablesDict[""]
         @variable(model, f̄_l[l in L_ind]≥Tmin_l[l])
+        VariablesDict[""]
     end
 
-    # -- Objective --
+    if specs.storage
+        # Storage variables
+        @variable(model, b_snt[s in S, n in N, t in T]≥0)
+        VariablesDict[""]
+        @variable(model, b̄_sn[s in S, n in N]≥Smin_sn[s,n])
+        VariablesDict[""]
+        @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
+        VariablesDict[""]
+        @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
+        VariablesDict[""]
+    end
+
+    if specs.voltage_angles
+        # Voltage variables
+        @variable(model, θ_nt[n in N, t in T]≥0)
+        @variable(model, θ′_nt[n in N, t in T]≥0)
+    end
+
+    if specs.hydro
+        # Hydro energy variables
+        @variable(model, w_nt[n in N, t in T]≥Wmin_n[n])
+        @variable(model, h_nt[n in N, t in T]≥0)
+        @variable(model, hr_nt[n in N, t in T]≥0)
+        @variable(model, h̄_n[n in N]≥Hmin_n[n])
+    end
+
+    ## -- Objective --
     # Investment and maintenance of generation capacity
     @expression(model, f1,
         sum(I_g[g]*(p̄_gn[g,n]-Gmin_gn[g,n]) + M_g[g]*p̄_gn[g,n] for g in G, n in N))
@@ -261,30 +249,38 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     if specs.hydro
         # TODO: create an index h for hydro plants
         @expression(model, f8,
-            sum(I_h[1]*(h̄_n[n] - Hmin_n[n]) for n in N))
+            sum(I_h[1]*(h̄_n[n] - Hmin_n[n]) + M_h*h̄_n[n] for n in N))
         ObjectivesDict["f8"] = f8
+
+        # TODO: add operational costs for hydro generation (i.e., C_h)
+
     end
 
-    # @objective(model, Min, sum(f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8))
     @objective(model, Min, sum(ObjectivesDict[i] for i in keys(ObjectivesDict)))
 
-    # -- Constraints --
+    ## -- Constraints --
     # Transmission lines to node n
     L⁻(n) = (l for (l,(i,j)) in zip(L_ind,L) if j==n)
     # Transmission lines from node n
     L⁺(n) = (l for (l,(i,j)) in zip(L_ind,L) if i==n)
 
-    # Energy balance
+    # TODO: add hydro generation efficiency dependencies (i.e., e_h)
+
+    # Energy balance (dependent on the features selected)
+    ModelExpressionsDict["b1.basis"] = sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t]
+    if specs.transmission
+        ModelExpressionsDict["b1.t"] = sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n))
+    end
+    if specs.storage
+        ModelExpressionsDict["b1.s"] = sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S)
+    end
+    if specs.hydro
+        ModelExpressionsDict["b1.h"] = h_nt[n,t] + hr_nt[n,t]
+    end
+
     @constraint(model,
         b1[n in N, t in T],
-        sum(p_gnt[g,n,t] for g in G) +
-        σ_nt[n,t] +
-        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) -
-        sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
-        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
-        h_nt[n,t] +
-        hr_nt[n,t] ==
-        D_nt[n,t])
+        sum(ModelExpressionsDict[i] for i in keys(ModelExpressionsDict)) == D_nt[n,t])
 
     # Generation capacity
     @constraint(model,
@@ -318,35 +314,31 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         g6[n in N, t in T],
         σ_nt[n,t] ≤ C̄ * D_nt[n,t])
 
-    # Transmission capacity
-    @constraint(model,
-        t1[l in L_ind, t in T],
-        f_lt[l,t] ≤ f̄_l[l])
+    if specs.transmission
+        # Transmission capacity
+        @constraint(model,
+            t1[l in L_ind, t in T],
+            f_lt[l,t] ≤ f̄_l[l])
 
-    @constraint(model,
-        t2[l in L_ind, t in T],
-        f_lt[l,t] ≥ -f̄_l[l])
+        @constraint(model,
+            t2[l in L_ind, t in T],
+            f_lt[l,t] ≥ -f̄_l[l])
 
-    # Absolute value of f_lt
-    @constraint(model,
-        t3[l in L_ind, t in T],
-        f_abs_lt[l,t] ≥ f_lt[l,t])
+        # Absolute value of f_lt
+        @constraint(model,
+            t3[l in L_ind, t in T],
+            f_abs_lt[l,t] ≥ f_lt[l,t])
 
-    @constraint(model,
-        t4[l in L_ind, t in T],
-        f_abs_lt[l,t] ≥ -f_lt[l,t])
+        @constraint(model,
+            t4[l in L_ind, t in T],
+            f_abs_lt[l,t] ≥ -f_lt[l,t])
 
-    @constraint(model,
-        t6[l in L_ind, t in T],
-        f̄_l[l] ≤ Tmax_l[l])
+        @constraint(model,
+            t6[l in L_ind, t in T],
+            f̄_l[l] ≤ Tmax_l[l])
+    end
 
     if specs.storage
-        # Storage variables
-        @variable(model, b_snt[s in S, n in N, t in T]≥0)
-        @variable(model, b̄_sn[s in S, n in N]≥Smin_sn[s,n])
-        @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
-        @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
-
         # Storage capacity
         @constraint(model,
             s1[s in S, n in N, t in T],
@@ -398,10 +390,6 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     end
 
     if specs.voltage_angles
-        # Voltage variables
-        @variable(model, θ_nt[n in N, t in T]≥0)
-        @variable(model, θ′_nt[n in N, t in T]≥0)
-
         # Voltage angles
         @constraint(model,
             v1[g in G, l in L_ind, n in N, n′ in N, t in T[T.>1]],
@@ -409,12 +397,6 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     end
 
     if specs.hydro
-        # Hydro energy variables
-        @variable(model, w_nt[n in N, t in T]≥Wmin_n[n])
-        @variable(model, h_nt[n in N, t in T]≥0)
-        @variable(model, hr_nt[n in N, t in T]≥0)
-        @variable(model, h̄_n[n in N]≥Hmin_n[n])
-
         # Hydro energy constraints
         @constraint(model,
             h1[n in N, t in T],
@@ -442,5 +424,5 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             hr_nt[n,t] ≤ HRcap_n[n])
     end
 
-    return model
+    return model, VariablesDict, ObjectivesDict
 end
