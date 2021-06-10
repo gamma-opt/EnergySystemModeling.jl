@@ -163,46 +163,52 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     # -- Main variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
-    VariablesDict[""]
+    VariablesDict["p_gnt"] = p_gnt
     @variable(model, p̄_gn[g in G, n in N]≥Gmin_gn[g,n])
-    VariablesDict[""]
+    VariablesDict["p̄_gn"] = p̄_gn
     @variable(model, σ_nt[n in N, t in T]≥0)
-    VariablesDict[""]
+    VariablesDict["σ_nt"] = σ_nt
 
     # Transmission variables
     if specs.transmission
         @variable(model, f_lt[l in L_ind, t in T])
-        VariablesDict[""]
+        VariablesDict["f_lt"] = f_lt
         @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
-        VariablesDict[""]
+        VariablesDict["f_abs_lt"] = f_abs_lt
         @variable(model, f̄_l[l in L_ind]≥Tmin_l[l])
-        VariablesDict[""]
+        VariablesDict["f̄_l"] = f̄_l
     end
 
     if specs.storage
         # Storage variables
         @variable(model, b_snt[s in S, n in N, t in T]≥0)
-        VariablesDict[""]
+        VariablesDict["b_snt"] = b_snt
         @variable(model, b̄_sn[s in S, n in N]≥Smin_sn[s,n])
-        VariablesDict[""]
+        VariablesDict["b̄_sn"] = b̄_sn
         @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
-        VariablesDict[""]
+        VariablesDict["b⁺_snt"] = b⁺_snt
         @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
-        VariablesDict[""]
+        VariablesDict["b⁻_snt"] = b⁻_snt
     end
 
     if specs.voltage_angles
         # Voltage variables
         @variable(model, θ_nt[n in N, t in T]≥0)
+        VariablesDict["θ_nt"] = θ_nt
         @variable(model, θ′_nt[n in N, t in T]≥0)
+        VariablesDict["θ′_nt"] = θ′_nt
     end
 
     if specs.hydro
         # Hydro energy variables
         @variable(model, w_nt[n in N, t in T]≥Wmin_n[n])
+        VariablesDict["w_nt"] = w_nt
         @variable(model, h_nt[n in N, t in T]≥0)
+        VariablesDict["h_nt"] = h_nt
         @variable(model, hr_nt[n in N, t in T]≥0)
+        VariablesDict["hr_nt"] = hr_nt
         @variable(model, h̄_n[n in N]≥Hmin_n[n])
+        VariablesDict["h̄_n"] = h̄_n
     end
 
     ## -- Objective --
