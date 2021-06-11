@@ -100,7 +100,7 @@ end
 - `parameters::Params`
 - `variables::Variables`
 """
-function Expressions(parameters::Params, VariablesDict::Dict{String, Any})
+function Expressions(parameters::Params, VariablesDict::Union{Dict{String, Any}, Dict{String, Array{Any}}})
     @unpack G, G_r, N, T, R_E, e_g, E_g = parameters
 
     """Expression values:

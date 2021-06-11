@@ -72,70 +72,70 @@ savefig(plot_objective_values(objectives),
         joinpath(output_dir, plots_dir, "objectives.pdf")
         )
 
-## Plotting part 2
-@info "Plotting dispatch and storage levels"
+# ## Plotting part 2
+# @info "Plotting dispatch and storage levels"
 
-for n in parameters.N
-    savefig(plot_generation_dispatch(parameters, variables, expressions, n),
-            joinpath(output_dir, plots_dir, "generation_dispatch_n$n.pdf"))
-    savefig(plot_generation_capacities(parameters, variables, expressions, n),
-            joinpath(output_dir, plots_dir, "generation_capacities_n$n.pdf"))
-    savefig(plot_storage_level(parameters, variables, expressions, n),
-            joinpath(output_dir, plots_dir, "storage_n$n.pdf"))
-    savefig(plot_box(parameters, variables, expressions, n),
-           joinpath(output_dir, plots_dir, "boxplot$n.pdf"))
-end
+# for n in parameters.N
+#     savefig(plot_generation_dispatch(parameters, variables, expressions, n),
+#             joinpath(output_dir, plots_dir, "generation_dispatch_n$n.pdf"))
+#     savefig(plot_generation_capacities(parameters, variables, expressions, n),
+#             joinpath(output_dir, plots_dir, "generation_capacities_n$n.pdf"))
+#     savefig(plot_storage_level(parameters, variables, expressions, n),
+#             joinpath(output_dir, plots_dir, "storage_n$n.pdf"))
+#     savefig(plot_box(parameters, variables, expressions, n),
+#            joinpath(output_dir, plots_dir, "boxplot$n.pdf"))
+# end
 
-## Plotting part 3
-@info "Plotting storage capacities"
+# ## Plotting part 3
+# @info "Plotting storage capacities"
 
-savefig(plot_storage_capacities(parameters, variables, expressions),
-        joinpath(output_dir, plots_dir, "storage_capacities.pdf")
-        )
+# savefig(plot_storage_capacities(parameters, variables, expressions),
+#         joinpath(output_dir, plots_dir, "storage_capacities.pdf")
+#         )
 
-## Plotting part 4
-@info "Plotting dispatch all"
+# ## Plotting part 4
+# @info "Plotting dispatch all"
 
-savefig(plot_box_all(parameters, variables, expressions),
-        joinpath(output_dir, plots_dir, "boxplotall.pdf"))
+# savefig(plot_box_all(parameters, variables, expressions),
+#         joinpath(output_dir, plots_dir, "boxplotall.pdf"))
 
-## Plotting part 5
-@info "Plotting capacities stacked"
+# ## Plotting part 5
+# @info "Plotting capacities stacked"
 
-savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
-            joinpath(output_dir, plots_dir, "generation_capacities_stacked.pdf"))
+# savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
+#             joinpath(output_dir, plots_dir, "generation_capacities_stacked.pdf"))
 
-## Plotting part 6
-@info "Plotting dispatch all (boxplot)"
+# ## Plotting part 6
+# @info "Plotting dispatch all (boxplot)"
 
-savefig(plot_dispatch_bars(parameters, variables, expressions),
-        joinpath(output_dir, plots_dir, "dispatchbars.pdf"))
+# savefig(plot_dispatch_bars(parameters, variables, expressions),
+#         joinpath(output_dir, plots_dir, "dispatchbars.pdf"))
 
-## Plotting part 7
-@info "Plotting transmission flow"
+# ## Plotting part 7
+# @info "Plotting transmission flow"
 
-for l in 1:length(parameters.L_ind)
-    savefig(plot_transmission_flow(parameters, variables, expressions, l),
-            joinpath(output_dir, plots_dir, "transmission_flow_L$l.pdf"))
-end
+# for l in 1:length(parameters.L_ind)
+#     savefig(plot_transmission_flow(parameters, variables, expressions, l),
+#             joinpath(output_dir, plots_dir, "transmission_flow_L$l.pdf"))
+# end
 
-## Plotting part 8
-@info "Plotting transmission capacities"
+# ## Plotting part 8
+# @info "Plotting transmission capacities"
 
-savefig(plot_transmission_capacities(parameters, variables, expressions),
-        joinpath(output_dir, plots_dir, "transmission_capacities.pdf"))
+# savefig(plot_transmission_capacities(parameters, variables, expressions),
+#         joinpath(output_dir, plots_dir, "transmission_capacities.pdf"))
 
-## Plotting part 9
-@info "Plotting transmission flow"
+# ## Plotting part 9
+# @info "Plotting transmission flow"
 
-savefig(plot_transmission_bars(parameters, variables, expressions),
-        joinpath(output_dir, plots_dir, "transmission_bars.pdf"))
+# savefig(plot_transmission_bars(parameters, variables, expressions),
+#         joinpath(output_dir, plots_dir, "transmission_bars.pdf"))
 
-## Plotting part 10
-@info "Plotting LoL"
+# ## Plotting part 10
+# @info "Plotting LoL"
 
-savefig(plot_loss_of_load(parameters, variables, expressions),
-        joinpath(output_dir, plots_dir, "loss_of_load.pdf"))
+# savefig(plot_loss_of_load(parameters, variables, expressions),
+#         joinpath(output_dir, plots_dir, "loss_of_load.pdf"))
 
-## Plotting in development
-@info "Plotting stacked dispatch (not ready)"
+# ## Plotting in development
+# @info "Plotting stacked dispatch (not ready)"
