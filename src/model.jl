@@ -82,15 +82,15 @@ end
 
 """Retrieving data from objects typed JuMP.Containers.DenseAxisArray"""
 retrieve_data(a::Number) = a
-retrieve_data(a::JuMP.Containers.DenseAxisArray) = a.data
-retrieve_data(a::Union{JuMP.VariableRef, JuMP.Array{VariableRef}, AffExpr, Array{AffExpr}}) = JuMP.value.(a);
+retrieve_data(a::JuMP.Containers.DenseAxisArray) = (JuMP.value.(a)).data
+retrieve_data(a::Vector{AffExpr}) = JuMP.value.(a);
 
 """Extract variables, objectives, and expression (i.e., JuMP objects) values from a JuMP model.
 # Arguments
 - `model::EnergySystemModel`
 - `JuMPObjDict::::Union{Dict{String, Float64}, Dict{String, Any}}`
 """
-function JuMPObj(model::EnergySystemModel, JuMPObjDict::Union{Dict{String, Float64}, Dict{String, Any}})
+function JuMPObj(model::EnergySystemModel, JuMPObjDict::Dict{String, Any})
     dict = Dict(i => model[Symbol(i)] |> retrieve_data for i in keys(JuMPObjDict))
     return dict
 end
@@ -100,7 +100,7 @@ end
 - `parameters::Params`
 - `variables::Variables`
 """
-function Expressions(parameters::Params, VariablesDict::Union{Dict{String, Any}, Dict{String, Array{Any}}})
+function Expressions(parameters::Params, variables::Dict{String, Array{Float64}})
     @unpack G, G_r, N, T, R_E, e_g, E_g = parameters
 
     """Expression values:
@@ -109,11 +109,8 @@ function Expressions(parameters::Params, VariablesDict::Union{Dict{String, Any},
     - `μ′: Hydro share
     - `C′_E: CO2 emission reduction
     """
-
-    p_gnt = VariablesDict["p_gnt"]
-    h_nt = VariablesDict["h_nt"]
-    E_g = VariablesDict["E_g"]
-    e_g = VariablesDict["e_g"]
+    p_gnt = variables["p_gnt"]
+    h_nt = variables["h_nt"]
 
     κ′ = (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) /
          (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))

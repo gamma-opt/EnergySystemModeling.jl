@@ -159,13 +159,13 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Fmin_n[1:length(N)] = hydro.Fmin[1:length(N)] |> Array{AbstractFloat, 1}
     hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
     I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
-                                    interest_rate) |> Array{AbstractFloat, 1}
-    M_h = hydro_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
-    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM |> Array{AbstractFloat, 1}
-    e_h = hydro_technology.efficiency |> Array{AbstractFloat, 1}
-    E_h = hydro_technology.emissions |> Array{AbstractFloat, 1}
-    r⁻_h = hydro_technology.r_minus |> Array{AbstractFloat, 1}
-    r⁺_h = hydro_technology.r_plus |> Array{AbstractFloat, 1}
+                                    interest_rate) |> Float64
+    M_h = hydro_technology.fixedOM .* 1000 |>  Float64
+    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM
+    e_h = hydro_technology.efficiency
+    E_h = hydro_technology.emissions
+    r⁻_h = hydro_technology.r_minus
+    r⁺_h = hydro_technology.r_plus
     
     # Return Params struct
     Params(
