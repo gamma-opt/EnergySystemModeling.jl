@@ -262,7 +262,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     end
 
-    @objective(model, Min, sum(flatten(ObjectivesDict[i]) for i in keys(ObjectivesDict)))
+    @objective(model, Min, sum(sum(flatten(ObjectivesDict[i])) for i in keys(ObjectivesDict)))
 
     ## -- Constraints --
     # Transmission lines to node n
@@ -273,20 +273,59 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # TODO: add hydro generation efficiency dependencies (i.e., e_h)
 
     # Energy balance (dependent on the features selected)
-    ModelExpressionsDict["b1.basis"] = sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t]
-    if specs.transmission
-        ModelExpressionsDict["b1.t"] = sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n))
-    end
-    if specs.storage
-        ModelExpressionsDict["b1.s"] = sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S)
-    end
-    if specs.hydro
-        ModelExpressionsDict["b1.h"] = h_nt[n,t] + hr_nt[n,t]
-    end
-
-    @constraint(model,
+    if specs.transmission && specs.storage && specs.hydro                   # Trans/Stor/Hydro
+        @constraint(model,
         b1[n in N, t in T],
-        sum(ModelExpressionsDict[i] for i in keys(ModelExpressionsDict)) == D_nt[n,t])
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) +
+        h_nt[n,t] + hr_nt[n,t] 
+        == D_nt[n,t])
+    elseif specs.transmission && specs.storage && !(specs.hydro)            # Trans/Stor
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S)
+        == D_nt[n,t])
+    elseif specs.transmission && !(specs.storage) && specs.hydro            # Trans/Hydro
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
+        h_nt[n,t] + hr_nt[n,t] 
+        == D_nt[n,t])
+    elseif specs.transmission && !(specs.storage) && !(specs.hydro)         # Trans
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n))
+        == D_nt[n,t])
+    elseif !(specs.transmission) && !(specs.storage) && !(specs.hydro)      # -
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t]
+        == D_nt[n,t])
+    elseif !(specs.transmission) && specs.storage && !(specs.hydro)         # Stor
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S)
+        == D_nt[n,t])
+    elseif !(specs.transmission) && !(specs.storage) && specs.hydro         # Hydro
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        h_nt[n,t] + hr_nt[n,t] 
+        == D_nt[n,t])
+    elseif !(specs.transmission) && specs.storage && specs.hydro            # Stor/Hydro
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) +
+        h_nt[n,t] + hr_nt[n,t] 
+        == D_nt[n,t])
+    end
 
     # Generation capacity
     @constraint(model,
