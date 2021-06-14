@@ -176,10 +176,10 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     
     # Return Params struct
     Params(
-        region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        region_n, technology_g, G, G_r, N, L, L_ind, T, S, H, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
         Wmax_hn, Wmin_hn, Hmax_hn, Hmin_hn, HRmax_n, Fmin_n, AH_nt, AR_nt,
-        H, I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
+        I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
 end
 
 """Save object into JSON file.

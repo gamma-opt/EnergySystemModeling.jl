@@ -33,6 +33,7 @@ end
     L_ind::Array{Integer, 1}
     T::Array{Integer, 1}
     S::Array{Integer, 1}
+    H::Array{Integer, 1}
     κ::AbstractFloat
     μ::AbstractFloat 
     C::AbstractFloat
