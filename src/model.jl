@@ -64,10 +64,10 @@ end
     C_s::Array{AbstractFloat, 1}
     Smin_sn::Array{AbstractFloat, 2}
     Smax_sn::Array{AbstractFloat, 2}
-    Wmax_hn::Array{AbstractFloat, 1}
-    Wmin_hn::Array{AbstractFloat, 1}
-    Hmax_hn::Array{AbstractFloat, 1}
-    Hmin_hn::Array{AbstractFloat, 1}
+    Wmax_hn::Array{AbstractFloat, 2}
+    Wmin_hn::Array{AbstractFloat, 2}
+    Hmax_hn::Array{AbstractFloat, 2}
+    Hmin_hn::Array{AbstractFloat, 2}
     HRmax_n::Array{AbstractFloat, 1}
     Fmin_n::Array{AbstractFloat, 1}
     AH_nt::Array{AbstractFloat, 2}
