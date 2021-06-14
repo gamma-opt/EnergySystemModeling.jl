@@ -275,7 +275,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
-        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) +
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] 
         == D_nt[n,t])
     elseif specs.transmission && specs.storage && !(specs.hydro)            # Trans/Stor
@@ -283,7 +283,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
-        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S)
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S)
         == D_nt[n,t])
     elseif specs.transmission && !(specs.storage) && specs.hydro            # Trans/Hydro
         @constraint(model,
@@ -307,7 +307,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
-        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S)
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S)
         == D_nt[n,t])
     elseif !(specs.transmission) && !(specs.storage) && specs.hydro         # Hydro
         @constraint(model,
@@ -319,7 +319,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
         b1[n in N, t in T],
         sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
-        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) +
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] 
         == D_nt[n,t])
     end
@@ -335,14 +335,14 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g3,
-            ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[n,t] for h in H, n in N, t in T)) / 1000) ≥
-            κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[n,t] for h in H, n in N, t in T)) / 1000)
+            ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000) ≥
+            κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000)
     end
 
     # Maximum nuclear share
     if specs.nuclear_limit
         @constraint(model, g4,
-            (sum(p_gnt[5,n,t] for n in N, t in T) / 1000) ≤ (μ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[n,t] for h in H, n in N, t in T)) / 1000))
+            (sum(p_gnt[5,n,t] for n in N, t in T) / 1000) ≤ (μ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000))
     end
 
     #Carbon cap
