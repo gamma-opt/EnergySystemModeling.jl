@@ -70,7 +70,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         # Load node values from CSV files.
         nodes = CSV.File(joinpath(Instances_path, "nodes", "$n.csv")) |> DataFrame
         for g in G
-            line_search = findall((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))[1]
+            line_search = findfirst((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))
             Gmin_gn[g,n] = gen_capacity.gcap_min[line_search]
             Gmax_gn[g,n] = gen_capacity.gcap_max[line_search]
         end
@@ -144,37 +144,43 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Smax_sn = Smax_sn  |> Array{AbstractFloat, 2}
 
     # Load hydro capacity and technology parameters
-    Wmax_n = zeros(length(N))
-    Wmin_n = zeros(length(N))
-    Hmin_n = zeros(length(N))
-    Hmax_n = zeros(length(N))
+    Wmax_hn = zeros(length(H),length(N))
+    Wmin_hn = zeros(length(H),length(N))
+    Hmin_hn = zeros(length(H),length(N))
+    Hmax_hn = zeros(length(H),length(N))
     Fmin_n = zeros(length(N))
-    HRcap_n = zeros(length(N))
-    hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame;   
-    Hmax_n[1:length(N)] = hydro.hcap_max[1:length(N)] |> Array{AbstractFloat, 1}
-    Hmin_n[1:length(N)] = hydro.hcap_min[1:length(N)] |> Array{AbstractFloat, 1}
-    HRcap_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
-    Wmax_n[1:length(N)] = hydro.wcap_max[1:length(N)] |> Array{AbstractFloat, 1}
-    Wmin_n[1:length(N)] = hydro.wcap_min[1:length(N)] |> Array{AbstractFloat, 1}
-    Fmin_n[1:length(N)] = hydro.Fmin[1:length(N)] |> Array{AbstractFloat, 1}
+    HRmax_n = zeros(length(N))
+
+    hydro_capacity = joinpath(Instances_path, "hydro_capacity.csv") |> CSV.File |> DataFrame   
+    for h in H, n in N
+        line_search = findfirst((hydro_capacity.hydro_tech .== h) .& (hydro_capacity.node .== n))
+        Hmin_hn[h,n] = hydro_capacity.hcap_min[line_search]
+        Hmax_hn[h,n] = hydro_capacity.hcap_max[line_search]
+        Wmin_hn[h,n] = hydro_capacity.wcap_min[line_search]
+        Wmax_hn[h,n] = hydro_capacity.wcap_max[line_search]
+    end
+
+    hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame   
+    HRmax_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
+    Fmin_n[1:length(N)] = hydro.hyd_flow_min[1:length(N)] |> Array{AbstractFloat, 1}
+
     hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
     I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
-                                    interest_rate) |> Float64
-    M_h = hydro_technology.fixedOM .* 1000 |>  Float64
-    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM
-    e_h = hydro_technology.efficiency
-    E_h = hydro_technology.emissions
-    r⁻_h = hydro_technology.r_minus
-    r⁺_h = hydro_technology.r_plus
+                                    interest_rate) |> Vector{Float64}
+    M_h = hydro_technology.fixedOM .* 1000 |> Vector{Float64}
+    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM |> Vector{Float64}
+    e_h = hydro_technology.efficiency |> Vector{Float64}
+    E_h = hydro_technology.emissions |> Vector{Float64}
+    r⁻_h = hydro_technology.r_minus |> Vector{Float64}
+    r⁺_h = hydro_technology.r_plus |> Vector{Float64}
     
     # Return Params struct
     Params(
         region_n, technology_g, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
-        Wmax_n, Wmin_n, Hmax_n, Hmin_n, HRcap_n, Fmin_n, AH_nt, AR_nt,
-        I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
+        Wmax_hn, Wmin_hn, Hmax_hn, Hmin_hn, HRmax_n, Fmin_n, AH_nt, AR_nt,
+        H, I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
 end
-
 
 """Save object into JSON file.
 # Arguments

@@ -43,12 +43,11 @@ export SData,
     load_clust_instance,
     aggreg1D,
     cdad,
-    search_min_dist!,
+    search_min_dist,
     compute_dist,
     update_marker,
     replace_lines,
     update_clust!,
     update_k!,
     find_clusters!
-
 end # module
