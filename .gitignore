@@ -36,3 +36,6 @@ Manifest.toml
 
 # Git attributes
 .gitattributes
+
+# Triton files
+.triton/
