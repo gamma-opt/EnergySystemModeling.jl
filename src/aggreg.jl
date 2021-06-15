@@ -1,4 +1,4 @@
-using Statistics, OrderedCollections, Dates
+using Statistics, OrderedCollections, Dates, Parameters
 
 abstract type SData end
 
@@ -13,8 +13,7 @@ Attributes:
 - nseries::Int: number of time series inputed (treated separately as if independent from each other)
 - data::Dict{String,Array}: Dictionary with an entry for each attribute `[file name (attribute: e.g technology)]-[column name (node: e.g. location)]`, Each entry of the dictionary is a 2-dimensional `time-steps T x periods K`-Array holding the data
 """
-# mutable struct InputData <: SData
-mutable struct InputData
+@with_kw struct InputData
     region::String
     period_from::DateTime
     period_to::DateTime
@@ -36,8 +35,7 @@ Attributes:
 - lseries::Int: length of series
 - nseries::Int: number of series
 """
-# mutable struct SeriesInstance{T<:Float64,S<:Int} <: SData
-mutable struct SeriesInstance{T<:Float64,S<:Int}
+@with_kw struct SeriesInstance{T<:Float64,S<:Int}
     series::VecOrMat{T}
     block_size::S
     stopping_k::S
@@ -58,8 +56,7 @@ Fields:
 - nclusters::Int: current number of clusters
 - search_range::UnitRange: range in which the clusters can be merged, considering the amount of clusters and the block_size (generally equals to 1:(nclusters-block_size+1))
 """
-# mutable struct ClustInstance{T<:Float64,S<:Int} <: SData
-mutable struct ClustInstance{T<:Float64,S<:Int}
+@with_kw struct ClustInstance{T<:Float64,S<:Int}
     k_cent::VecOrMat{T}
     weights::Vector{S}
     series_clust::Vector{S}
@@ -75,8 +72,7 @@ Attributes:
 - series_comp::VecOrMat{T}: 
 - k_cent_comp::VecOrMat{T}: 
 """
-# mutable struct AggregInstance{T<:Float64,S<:Int} <: SData
-mutable struct AggregInstance{T<:Float64,S<:Int}
+@with_kw struct AggregInstance{T<:Float64,S<:Int}
     merging_clust::UnitRange{S}
     series_comp::VecOrMat{T}
     k_cent_comp::VecOrMat{T}
@@ -87,8 +83,7 @@ DistUpdate <: SData
 Type to store the history of minimal distances.
 """
 
-# mutable struct DistUpdate{T<:Float64, S<:Int} <: SData
-mutable struct DistUpdate{T<:Float64, S<:Int}
+@with_kw struct DistUpdate{T<:Float64, S<:Int}
     dist::Vector{T}
     min_dist::S
     merging_clust::UnitRange{S}

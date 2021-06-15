@@ -59,7 +59,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     A_gnt = ones(length(G), length(N), length(T))
     AH_nt = zeros(length(N), length(T))
     AR_nt = zeros(length(N), length(T))
-    region_n = Array{AbstractString, 1}(undef, length(N))    
 
     # Load generation parameters (per node / per generation technology)
     Gmin_gn = zeros(length(G), length(N))
@@ -81,7 +80,17 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         A_gnt[A_gnt .< 0.001] .= 0
         AH_nt[n,:] = nodes.Hyd_In[T]
         AR_nt[n,:] = nodes.HydRoR_In[T]
-        region_n[n] =  nodes.Name[1]
+    end
+
+    # Nodes specifications
+    region_n = Array{AbstractString, 1}(undef, length(N))    
+    max_dem_n = Array{Float64, 1}(undef, length(N))    
+
+    nodes_specs = CSV.File(joinpath(Instances_path, "nodes_specs.csv")) |> DataFrame
+
+    for n in N
+        region_n[n] =  nodes_specs.Name[n]
+        max_dem_n[n] = nodes_specs.Max_Demand[n]
     end
 
     # Load weights
@@ -176,7 +185,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     
     # Return Params struct
     Params(
-        region_n, technology_g, G, G_r, N, L, L_ind, T, S, H, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        region_n, max_dem_n, technology_g, G, G_r, N, L, L_ind, T, S, H, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
         Wmax_hn, Wmin_hn, Hmax_hn, Hmin_hn, HRmax_n, Fmin_n, AH_nt, AR_nt,
         I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
@@ -196,6 +205,7 @@ end
 flatten(x::Array{<:Array, 1}) = Iterators.flatten(x)|> collect|> flatten
 flatten(x::Array{<:Number, 1}) = x
 flatten(x::AffExpr) = x
+flatten(x::VecOrMat{AffExpr}) = x[:]
 flatten(x::Array{<:Any}) = x[:]
 
 shape(x::Array{<:Array, 1}) = vcat(shape(first(x)), [length(x)])

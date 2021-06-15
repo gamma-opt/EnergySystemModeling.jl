@@ -2,7 +2,7 @@ using Plots, StatsPlots, LaTeXStrings
 
 techcolors = [:lightblue :cyan :yellow :darkgreen :lime :gray :orange :brown :blue]
 
-function plot_generation_dispatch(p_gnt, h_nt, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_generation_dispatch(p_gnt, h_hnt, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = Plots.plot(
         legend=:outertopright,
@@ -18,14 +18,14 @@ function plot_generation_dispatch(p_gnt, h_nt, G, n, T, region_n, technology_g, 
               ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
               label=technology_g[g])
     end
-    plot!(p, T, [h_nt[n, t] for t in T],
+    plot!(p, T, [h_hnt[1, n, t] for t in T],
           color = colors[9],
           alpha=0.3,
           label="hydro")
     return p
 end
 
-function plot_balance_stacked(p_gnt, p̄_gn, h_nt, h̄_n, HRmax_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_balance_stacked(p_gnt, p̄_gn, h_hnt, h̄_hn, HRmax_n, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = Plots.plot(
         legend=:outertopright,
@@ -44,18 +44,18 @@ function plot_balance_stacked(p_gnt, p̄_gn, h_nt, h̄_n, HRmax_n, G, n, T, regi
               color = colors[g],
               label="")
     end
-    plot!(p, T, [h_nt[n, t] for t in T],
+    plot!(p, T, [h_hnt[1, n, t] for t in T],
           color = colors[9],
           alpha=0.3,
           label="hydro")
-    plot!(p, T, [h̄_n[n] + HRmax_n[n] for t in T],
+    plot!(p, T, [h̄_hn[n] + HRmax_n[n] for t in T],
           color = colors[9],
           label="")
     return p
 end
 
-function plot_generation_capacities(p̄_gn, h̄_n, HRmax_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
-    StatsPlots.bar([G;9], [[p̄_gn[g, n] for g in G]; [h̄_n[n] + HRmax_n[n]]],
+function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
+    StatsPlots.bar([G;9], [[p̄_gn[g, n] for g in G]; [h̄_hn[n] + HRmax_n[n]]],
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         title = "Generation capacity by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -66,9 +66,9 @@ function plot_generation_capacities(p̄_gn, h̄_n, HRmax_n, G, n, region_n, tech
 end
    
 
-function plot_generation_capacities_stacked(p̄_gn, h̄_n, HRmax_n, N, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, region_n, technology_g, κ, C_E, κ′, C′_E)
     p̄_gn
-    H_tot = h̄_n + HRmax_n
+    H_tot = sum(h̄_hn[h,:] for h in H) .+ HRmax_n
     dispatches = permutedims([p̄_gn; permutedims(H_tot)])
     StatsPlots.groupedbar(dispatches,
         bar_position = :stack,
@@ -181,7 +181,7 @@ function plot_loss_of_load(σ_nt, N, T, region_n, κ, C_E, κ′, C′_E)
     return p
 end
 
-function plot_box(p_gnt, h_nt, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_box(p_gnt, h_hnt, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = StatsPlots.plot(
         size=(780, 400),
@@ -197,7 +197,7 @@ function plot_box(p_gnt, h_nt, G, n, region_n, technology_g, κ, C_E, κ′, C�
             label=false
         )
     end
-    StatsPlots.boxplot!([9], [h_nt[n,:]],
+    StatsPlots.boxplot!([9], [h_hnt[1, n,:]],
         color = colors[9],
         alpha=0.7,
         label=false
@@ -205,7 +205,7 @@ function plot_box(p_gnt, h_nt, G, n, region_n, technology_g, κ, C_E, κ′, C�
     return p
 end
 
-function plot_box_all(p_gnt, h_nt, G, technology_g, κ, C_E, κ′, C′_E)
+function plot_box_all(p_gnt, h_hnt, G, H, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = StatsPlots.plot(
         size=(780, 400),
@@ -222,7 +222,7 @@ function plot_box_all(p_gnt, h_nt, G, technology_g, κ, C_E, κ′, C′_E)
             label=false
         )
     end
-    h_t = permutedims(sum(h_nt[:,:], dims=1))
+    h_t = permutedims(sum(sum(h_hnt[h,:,:] for h in H), dims=1))
     StatsPlots.boxplot!([9], [h_t],
         color = colors[9],
         alpha=0.7,
@@ -231,10 +231,10 @@ function plot_box_all(p_gnt, h_nt, G, technology_g, κ, C_E, κ′, C′_E)
     return p
 end
 
-function plot_dispatch_bars(p_gnt, h_nt, D_nt, N, T, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, technology_g, κ, C_E, κ′, C′_E)
     p_gn = sum(p_gnt[:,:,t] for t in T)
-    h_n = sum(h_nt[:,t] for t in T)
-    D_n = sum(D_nt[:,t] for t in T)
+    h_n = sum(h_hnt[h,:,t] for h in H, t in T)
+    D_n = sum(max_dem_n[:].*D_nt[:,t] for t in T)
     dispatches = permutedims([p_gn; permutedims(h_n)])
     groupedbar(dispatches,
         bar_position = :stack,
@@ -265,69 +265,69 @@ function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{Str
 end
 
 """Plot generation dispatch."""
-function plot_generation_dispatch(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
-    plot_generation_dispatch(variables.p_gnt, variables.h_nt, parameters.G, n, parameters.T, parameters.region_n, 
-                             parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_generation_dispatch(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
+    plot_generation_dispatch(variables["p_gnt"], variables["h_hnt"], parameters.G, n, parameters.T, parameters.region_n, 
+                             parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot generation capacities."""
-function plot_generation_capacities(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
-    plot_generation_capacities(variables.p̄_gn, variables.h̄_n, parameters.HRmax_n, parameters.G, n, parameters.region_n,
-                               parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_generation_capacities(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
+    plot_generation_capacities(variables["p̄_gn"], variables["h̄_hn"], parameters.HRmax_n, parameters.G, n, parameters.region_n,
+                               parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 
 """Plot stacked generation capacities as a stacked graph."""
-function plot_generation_capacities_stacked(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_generation_capacities_stacked(variables.p̄_gn, variables.h̄_n, parameters.HRmax_n, parameters.N,
-                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_generation_capacities_stacked(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_generation_capacities_stacked(variables["p̄_gn"], variables["h̄_hn"], parameters.HRmax_n, parameters.N, parameters.H,
+                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 
 """Plot transmission flow."""
-function plot_transmission_flow(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, l::Integer)
-    plot_transmission_flow(variables.f_lt, variables.f̄_l, l, parameters.L, parameters.T, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_transmission_flow(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, l::Integer)
+    plot_transmission_flow(variables["f_lt"], variables["f̄_l"], l, parameters.L, parameters.T, parameters.region_n, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot transmission bars."""
-function plot_transmission_bars(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_transmission_bars(variables.f_lt, parameters.L, parameters.L_ind, parameters.T,
-                           parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_transmission_bars(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_transmission_bars(variables["f_lt"], parameters.L, parameters.L_ind, parameters.T,
+                           parameters.region_n, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot transmission capacities."""
-function plot_transmission_capacities(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_transmission_capacities(variables.f̄_l, parameters.L, parameters.L_ind, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_transmission_capacities(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_transmission_capacities(variables["f̄_l"], parameters.L, parameters.L_ind, parameters.region_n, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot storage level."""
-function plot_storage_level(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
-    plot_storage_level(variables.b_snt, variables.b̄_sn, parameters.S, n, parameters.T, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_storage_level(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
+    plot_storage_level(variables["b_snt"], variables["b̄_sn"], parameters.S, n, parameters.T, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot storage capacities."""
-function plot_storage_capacities(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_storage_capacities(variables.b̄_sn, parameters.N, parameters.region_n,
-                            parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_storage_capacities(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_storage_capacities(variables["b̄_sn"], parameters.N, parameters.region_n,
+                            parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot loss of load."""
-function plot_loss_of_load(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_loss_of_load(variables.σ_nt, parameters.N, parameters.T, parameters.region_n, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_loss_of_load(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_loss_of_load(variables["σ_nt"], parameters.N, parameters.T, parameters.region_n, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot generation box."""
-function plot_box(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
-    plot_box(variables.p_gnt, variables.h_nt, parameters.G, n, parameters.region_n,
-             parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_box(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
+    plot_box(variables["p_gnt"], variables["h_hnt"], parameters.G, n, parameters.region_n,
+             parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
-function plot_box_all(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_box_all(variables.p_gnt, variables.h_nt, parameters.G,
-              parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_box_all(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_box_all(variables["p_gnt"], variables["h_hnt"], parameters.G, parameters.H,
+              parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
-function plot_dispatch_bars(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Any}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
-    plot_dispatch_bars(variables.p_gnt, variables.h_nt, parameters.D_nt, parameters.N, parameters.T,
-                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions.κ′, expressions.C′_E)
+function plot_dispatch_bars(parameters::Params, variables::Union{Dict{String, Float64}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
+    plot_dispatch_bars(parameters.max_dem_n, variables["p_gnt"], variables["h_hnt"], parameters.D_nt, parameters.N, parameters.T, parameters.H,
+                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
