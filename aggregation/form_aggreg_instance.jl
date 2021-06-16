@@ -31,7 +31,7 @@ series = hcat(dnt, reshape(permutedims(parameters.A_gnt[1:navail,:,:],[3,1,2]),(
 
 ## Series attributes:
 block_size = 2
-stopping_k = 8750
+stopping_k = 1
 current_k = size(series,1)
 dm = :wd
 rep_value = :mean
@@ -90,5 +90,5 @@ while k >= stopping_k + block_size - 1
     global _SeriesUpdate = merge(+,_SeriesUpdate,Dict("$k" => copy(_SeriesInstance)))
 end
 
-save(joinpath(output_dir,"clust_out.jld2"),_ClustUpdate)
-save(joinpath(output_dir,"series_out.jld2"),_SeriesUpdate)
+save(joinpath(output_dir,"clust_out_$dm.jld2"),_ClustUpdate)
+save(joinpath(output_dir,"series_out_$dm.jld2"),_SeriesUpdate)
