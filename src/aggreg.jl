@@ -13,7 +13,7 @@ Attributes:
 - nseries::Int: number of time series inputed (treated separately as if independent from each other)
 - data::Dict{String,Array}: Dictionary with an entry for each attribute `[file name (attribute: e.g technology)]-[column name (node: e.g. location)]`, Each entry of the dictionary is a 2-dimensional `time-steps T x periods K`-Array holding the data
 """
-@with_kw struct InputData
+mutable struct InputData
     region::String
     period_from::DateTime
     period_to::DateTime
@@ -35,7 +35,7 @@ Attributes:
 - lseries::Int: length of series
 - nseries::Int: number of series
 """
-@with_kw struct SeriesInstance{T<:Float64,S<:Int}
+mutable struct SeriesInstance{T<:Float64,S<:Int}
     series::VecOrMat{T}
     block_size::S
     stopping_k::S
@@ -56,7 +56,7 @@ Fields:
 - nclusters::Int: current number of clusters
 - search_range::UnitRange: range in which the clusters can be merged, considering the amount of clusters and the block_size (generally equals to 1:(nclusters-block_size+1))
 """
-@with_kw struct ClustInstance{T<:Float64,S<:Int}
+mutable struct ClustInstance{T<:Float64,S<:Int}
     k_cent::VecOrMat{T}
     weights::Vector{S}
     series_clust::Vector{S}
@@ -72,7 +72,7 @@ Attributes:
 - series_comp::VecOrMat{T}: 
 - k_cent_comp::VecOrMat{T}: 
 """
-@with_kw struct AggregInstance{T<:Float64,S<:Int}
+mutable struct AggregInstance{T<:Float64,S<:Int}
     merging_clust::UnitRange{S}
     series_comp::VecOrMat{T}
     k_cent_comp::VecOrMat{T}
@@ -83,7 +83,7 @@ DistUpdate <: SData
 Type to store the history of minimal distances.
 """
 
-@with_kw struct DistUpdate{S<:Int}
+mutable struct DistUpdate{S<:Int}
     min_dist::S
     merging_clust::UnitRange{S}
 end
@@ -365,7 +365,7 @@ function find_clusters!(_SeriesInstance, _ClustInstance, _DistUpdate)
     new_current_k = _ClustInstance.nclusters
     update_k!(_SeriesInstance, new_current_k)
 
-    return new_current_k
+    return new_current_k, _DistUpdate
 end
 
 """
@@ -447,6 +447,7 @@ function update_clust!(_ClustInstance, _SeriesInstance, min_dist::T) where {T <:
 Updates clusters attributes in the _ClustInstance object.
 """
 function update_clust!(_ClustInstance, _SeriesInstance, min_dist::T) where {T <: Int}
+    series = _SeriesInstance.series
     series_clust = _ClustInstance.series_clust
     nclusters = _ClustInstance.nclusters
     k_cent = _ClustInstance.k_cent
@@ -460,7 +461,7 @@ function update_clust!(_ClustInstance, _SeriesInstance, min_dist::T) where {T <:
     L = 1:lseries
     merging_clust = min_dist:min_dist + block_size - 1
 
-    @assert merging_clust >= 2 "unitary merging_clust not allowed"
+    @assert length(merging_clust) >= 2 "unitary merging_clust not allowed"
 
     # Updating the centroids
     (k_change,) = aggreg1D(series[[sc in merging_clust for sc in series_clust],:], rep_value)
@@ -510,5 +511,5 @@ function update_k!(_SeriesInstance, new_current_k::Int)
     _SeriesInstance.current_k = new_current_k
     stopping_k = _SeriesInstance.stopping_k
 
-    @assert current_k > stopping_k "Number of clusters $new_current_k is now ≤ then $stopping_k"
+    @assert new_current_k >= stopping_k "Number of clusters $new_current_k is now < then $stopping_k"
 end

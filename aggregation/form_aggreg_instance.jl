@@ -75,12 +75,13 @@ _DistUpdate = Dict{Vector{Bool}, DistUpdate}()
 _ClustUpdate = Dict{String,ClustInstance}()
 _SeriesUpdate = Dict{String,SeriesInstance}()
 
+@info "Started clustering..."
 while k >= stopping_k + block_size - 1
     # Intermediate saving and logging
     if k % 200 == 0
         @info string("Last update: ", round(100*k/parameters.T[end], digits=2), "% @ ", now())
-        save("clust_prelim.jld2",_ClustUpdate)
-        save("series_prelim.jld2",_SeriesUpdate)
+        save(joinpath(output_dir,"clust_prelim.jld2"),_ClustUpdate)
+        save(joinpath(output_dir,"series_prelim.jld2"),_SeriesUpdate)
     end
     global (k, _DistUpdate) = find_clusters!(_SeriesInstance, _ClustInstance, _DistUpdate)
     
@@ -89,5 +90,5 @@ while k >= stopping_k + block_size - 1
     global _SeriesUpdate = merge(+,_SeriesUpdate,Dict("$k" => copy(_SeriesInstance)))
 end
 
-save("clust_out.jld2",_ClustUpdate)
-save("series_out.jld2",_SeriesUpdate)
+save(joinpath(output_dir,"clust_out.jld2"),_ClustUpdate)
+save(joinpath(output_dir,"series_out.jld2"),_SeriesUpdate)
