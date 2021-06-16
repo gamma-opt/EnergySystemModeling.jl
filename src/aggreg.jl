@@ -83,8 +83,7 @@ DistUpdate <: SData
 Type to store the history of minimal distances.
 """
 
-@with_kw struct DistUpdate{T<:Float64, S<:Int}
-    dist::Vector{T}
+@with_kw struct DistUpdate{S<:Int}
     min_dist::S
     merging_clust::UnitRange{S}
 end
@@ -358,7 +357,6 @@ function find_clusters!(_SeriesInstance, _ClustInstance, _DistUpdate)
 
     # Update _DistUpdate dictionary with the minimal distance found and the new marker
     _DistUpdate = merge(+, _DistUpdate, Dict(marker => DistUpdate(dist,min_dist,merging_clust)))
-
 
     # Update clusters and series_clust
     update_clust!(_ClustInstance, _SeriesInstance, min_dist)

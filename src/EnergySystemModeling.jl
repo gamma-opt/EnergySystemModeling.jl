@@ -34,7 +34,11 @@ export plot_objective_values,
     plot_dispatch_bars
 
 include("aggreg.jl")
-export load_series_instance,
+export SeriesInstance,
+    ClustInstance,
+    AggregInstance,
+    DistUpdate,
+    load_series_instance,
     load_clust_instance,
     aggreg1D,
     cdad,
