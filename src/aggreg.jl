@@ -356,7 +356,7 @@ function find_clusters!(_SeriesInstance, _ClustInstance, _DistUpdate)
     (marker, min_dist, merging_clust) = search_min_dist(_SeriesInstance, _ClustInstance)
 
     # Update _DistUpdate dictionary with the minimal distance found and the new marker
-    _DistUpdate = merge(+, _DistUpdate, Dict(marker => DistUpdate(dist,min_dist,merging_clust)))
+    _DistUpdate = merge(+, _DistUpdate, Dict(marker => DistUpdate(min_dist,merging_clust)))
 
     # Update clusters and series_clust
     update_clust!(_ClustInstance, _SeriesInstance, min_dist)
