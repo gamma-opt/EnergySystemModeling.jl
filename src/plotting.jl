@@ -6,7 +6,7 @@ function plot_generation_dispatch(p_gnt, h_hnt, G, n, T, region_n, technology_g,
     colors = techcolors
     p = Plots.plot(
         legend=:outertopright,
-        size=(780, 400),
+        size=(800, 600),
         title = "Hourly generation dispatch by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10
     )
@@ -29,7 +29,7 @@ function plot_balance_stacked(p_gnt, p̄_gn, h_hnt, h̄_hn, HRmax_n, G, n, T, re
     colors = techcolors
     p = Plots.plot(
         legend=:outertopright,
-        size=(780, 400),
+        size=(800, 600),
         title = "Hourly generation dispatch by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10
     )
@@ -64,7 +64,6 @@ function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, tec
         alpha=0.7,
         legend=false)
 end
-   
 
 function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, region_n, technology_g, κ, C_E, κ′, C′_E)
     p̄_gn
@@ -83,7 +82,6 @@ function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, regio
         alpha=0.7)
 end
 
-
 function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, C′_E)
     p = Plots.plot(T, [f_lt[l, t] for t in T],
              xlabel=L"t",
@@ -92,7 +90,7 @@ function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, 
              titlefontsize = 10,
              alpha=0.7,
              legend=false,
-             size=(780, 400))
+             size=(800, 600))
     plot!(p, T, [f̄_l[l] for t in T], color=:green)
     plot!(p, T, [-f̄_l[l] for t in T], color=:green)
     return p
@@ -104,9 +102,9 @@ function plot_transmission_bars(f_lt, L, L_ind, T, region_n, κ, C_E, κ′, C�
         lines[i] = "$(region_n[L[i][1]])-$(region_n[L[i][2]])"
     end
     f_l = sum(f_lt[:,t] for t in T)
-    p = StatsPlots.plot(size=(780, 400),
+    p = StatsPlots.plot(size=(800, 600),
              ylabel=L"\sum_t f_{l,t}\,\mathrm{[MWh]}",
-             title = "Transmission by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
+             title = "Transmission flow by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
              titlefontsize = 10,
              xticks=(L_ind, lines),
              xrotation = 90,
@@ -129,6 +127,7 @@ function plot_transmission_capacities(f̄_l, L, L_ind, region_n, κ, C_E, κ′,
         ylabel=L"\bar{f}_l\,\mathrm{[MW]}",
         legend=false,
         alpha = 0.7,
+        size=(800, 600),
         lw = 0)
 end
 
@@ -143,7 +142,7 @@ function plot_storage_level(b_snt, b̄_sn, S, n, T, κ, C_E, κ′, C′_E)
               ylabel=L"b_{s,n,t}\,\mathrm{[MWh]}",
               labels="battery",
               alpha=0.7,
-              size=(780, 400))
+              size=(800, 600))
         plot!(p, T, [b̄_sn[s, n] for t in T], labels="battery capacity")
     end
     return p
@@ -167,7 +166,7 @@ end
 function plot_loss_of_load(σ_nt, N, T, region_n, κ, C_E, κ′, C′_E)
     p = Plots.plot(
         legend=:outertopright,
-        size=(780, 400),
+        size=(800, 600),
         title = "Loss of load by region\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10
     )
@@ -184,7 +183,7 @@ end
 function plot_box(p_gnt, h_hnt, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = StatsPlots.plot(
-        size=(780, 400),
+        size=(800, 600),
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"p_{g,n,t}\,\mathrm{[MWh]}",
         title = "Hourly generation dispatch by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -208,7 +207,7 @@ end
 function plot_box_all(p_gnt, h_hnt, G, H, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = StatsPlots.plot(
-        size=(780, 400),
+        size=(800, 600),
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\sum_n p_{g,n,t}\,\mathrm{[MWh]}",
         title = "Hourly generation dispatch by technology\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
@@ -246,7 +245,8 @@ function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, te
         color=techcolors,
         labels=permutedims([technology_g;"hydro"]),
         lw = 0,
-        alpha=0.7)
+        alpha=0.7,
+        size = (800,600))
     bar!(N, D_n, bar_width=0.03, fillcolor=repeat([:black], length(N)), label="demand")
 end
 
@@ -256,12 +256,13 @@ end
 function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{String, Any}})
     fs = keys(objectives)
     vs = [objectives[i] for i in fs]
-    title = string("Objective value: ", round(sum(vs), digits = 4))
+    title = string("Objective value: ", round(sum(vs), digits = 2))
     bar(vs,
         xlabel="Objective function",
         ylabel="EUR",
         title=title,
-        legend=false)
+        legend=false,
+        size = (800,600))
 end
 
 """Plot generation dispatch."""
