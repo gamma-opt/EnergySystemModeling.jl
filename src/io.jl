@@ -66,12 +66,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
 
     for n in N
         # Load node values from CSV files.
-<<<<<<<
-        df = CSV.File(joinpath(Data_path, "nodes", "$n.csv")) |> DataFrame
-        capacitydf = CSV.File(joinpath(Data_path, "capacity.csv")) |> DataFrame
-=======
         nodes = CSV.File(joinpath(Instances_path, "nodes", "$n.csv")) |> DataFrame
->>>>>>>
         for g in G
             line_search = findfirst((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))
             Gmin_gn[g,n] = gen_capacity.gcap_min[line_search]
@@ -102,11 +97,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     τ_t = clust_weights.Weights[T]
 
     # Load technology parameters
-<<<<<<<
-    technology = joinpath(Data_path, "technology.csv") |>
-=======
     gen_technology = joinpath(Instances_path, "gen_technology.csv") |>
->>>>>>>
         CSV.File |> DataFrame
     I_g = equivalent_annual_cost.(gen_technology.investment_cost .* 1000, gen_technology.lifetime,
                                   interest_rate) |> Array{AbstractFloat, 1}
@@ -119,9 +110,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     technology_g = gen_technology.name
 
     # Load transmission parameters
-<<<<<<<
-    transmission = joinpath(Data_path, "transmission.csv") |>
-=======
     I_l = zeros(length(L_ind))
     M_l = zeros(length(L_ind))
     C_l = zeros(length(L_ind))
@@ -130,7 +118,6 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Tmin_l = zeros(length(L_ind))
     Tmax_l = zeros(length(L_ind))
     transmission = joinpath(Instances_path, "transmission.csv") |>
->>>>>>>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
                                   transmission.lifetime[1], interest_rate) |> Array{AbstractFloat, 1}
@@ -142,80 +129,13 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Tmax_l = transmission.tcap_max |> Array{AbstractFloat, 1}
 
     # Load storage parameters
-<<<<<<<
-    storage = joinpath(Data_path, "storage.csv") |>
-=======
     ξ_s = zeros(length(S))
     I_s = zeros(length(S))
     C_s = zeros(length(S))
     Smin_sn = zeros(length(S),length(N))
     Smax_sn = zeros(length(S),length(N))
     storage = joinpath(Instances_path, "storage.csv") |>
->>>>>>>
         CSV.File |> DataFrame
-<<<<<<<
-    ξ_s = storage.xi
-    I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
-    C_s = storage.C
-    b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
-
-    # Return Params struct
-    Params(
-        region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-        W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
-end
-
-
-## Params for large Instance
-
-function Params(Data_path::AbstractString) 
-    # Load indexes and constant parameters
-    indices = JSON.parsefile(joinpath(Data_path, "IndicesComplete.json"))
-
-    # TODO: implement time period clustering: τ, T, τ_t
-
-    # Load indices. Convert JSON values to right types.
-    G = indices["G"] |> Array{Int}
-    G_r = indices["G_r"] |> Array{Int}
-    N = indices["N"] |> Array{Int}
-    L = indices["L"] |> Array{Array{Int}}
-    τ = 1
-    T = 1:indices["T"]
-    S = indices["S"] |> Array{Int}
-
-    # Load constant parameters
-    constants = JSON.parsefile(joinpath(Data_path, "constants.json"))
-    κ = constants["kappa"]
-    μ = constants["mu"]
-    C = constants["C"]
-    C̄ = constants["C_bar"]
-    C_E = constants["C_E"]
-    interest_rate = constants["r"]
-    R_E = constants["R_E"]
-
-    # Load time clustered parameters
-    τ_t = ones(length(T))
-    Q_gn = zeros(length(G), length(N))
-    Q̄_gn = zeros(length(G), length(N))
-    D_nt = zeros(length(N), length(T))
-    A_gnt = ones(length(G), length(N), length(T))
-    W_nmax = zeros(length(N))
-    W_nmin = zeros(length(N))
-    f_int = zeros(length(N), length(T))
-    f′_int = zeros(length(N), length(T))
-    H_n = zeros(length(N))
-    H′_n = zeros(length(N))
-    F_onmin = zeros(length(N))
-    region_n = Array{AbstractString, 1}(undef, length(N))    
-    for n in N
-        # Load node values from CSV files.
-        df = CSV.File(joinpath(Data_path, "nodes", "$n.csv")) |> DataFrame
-        capacitydf = CSV.File(joinpath(Data_path, "capacity.csv")) |> DataFrame
-        for g in G
-            Q_gn[g, n] = capacitydf[n, g+1]
-            Q̄_gn[g, n] = capacitydf[n, g+13]
-=======
     sto_capacity = joinpath(Instances_path, "sto_capacity.csv") |>
         CSV.File |> DataFrame
     for s in S
@@ -226,26 +146,11 @@ function Params(Data_path::AbstractString)
             line_search = findfirst((sto_capacity.s .== s) .& (sto_capacity.node .== n))
             Smin_sn[s,n] = sto_capacity.scap_min[line_search]
             Smax_sn[s,n] = sto_capacity.scap_max[line_search]
->>>>>>>
         end
     end
     Smin_sn = Smin_sn  |> Array{AbstractFloat, 2}
     Smax_sn = Smax_sn  |> Array{AbstractFloat, 2}
 
-<<<<<<<
-    # Load technology parameters
-    technology = joinpath(Data_path, "technology.csv") |>
-        CSV.File |> DataFrame
-    I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
-                                  interest_rate)
-    M_g = technology.fixedOM .* 1000
-    C_g = technology.fuel_cost ./ technology.efficiency .+ technology.varOM
-    e_g = technology.efficiency
-    E_g = technology.emissions
-    r⁻_g = technology.r_minus
-    r⁺_g = technology.r_plus
-    technology_g = technology.name
-=======
     # Load hydro capacity and technology parameters
     Wmax_hn = zeros(length(H),length(N))
     Wmin_hn = zeros(length(H),length(N))
@@ -253,19 +158,7 @@ function Params(Data_path::AbstractString)
     Hmax_hn = zeros(length(H),length(N))
     Fmin_n = zeros(length(N))
     HRmax_n = zeros(length(N))
->>>>>>>
 
-<<<<<<<
-    # Load transmission parameters
-    transmission = joinpath(Data_path, "transmission.csv") |>
-        CSV.File |> DataFrame
-    I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
-                                  transmission.lifetime[1], interest_rate)
-    M_l = transmission.M[1] .* I_l
-    C_l = transmission.C[1]
-    B_l = transmission.B[1]
-    e_l = transmission.efficiency[1]
-=======
     hydro_capacity = joinpath(Instances_path, "hydro_capacity.csv") |> CSV.File |> DataFrame   
     for h in H, n in N
         line_search = findfirst((hydro_capacity.hydro_tech .== h) .& (hydro_capacity.node .== n))
@@ -274,23 +167,11 @@ function Params(Data_path::AbstractString)
         Wmin_hn[h,n] = hydro_capacity.wcap_min[line_search]
         Wmax_hn[h,n] = hydro_capacity.wcap_max[line_search]
     end
->>>>>>>
 
     hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame   
     HRmax_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
     Fmin_n[1:length(N)] = hydro.hyd_flow_min[1:length(N)] |> Array{AbstractFloat, 1}
 
-<<<<<<<
-
-    # Load storage parameters
-    storage = joinpath(Data_path, "storage.csv") |>
-        CSV.File |> DataFrame
-    ξ_s = storage.xi
-    I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
-    C_s = storage.C
-    b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
-
-=======
     hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
     I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
                                     interest_rate) |> Vector{Float64}
@@ -301,7 +182,6 @@ function Params(Data_path::AbstractString)
     r⁻_h = hydro_technology.r_minus |> Vector{Float64}
     r⁺_h = hydro_technology.r_plus |> Vector{Float64}
     
->>>>>>>
     # Return Params struct
     Params(
         region_n, max_dem_n, technology_g, G, G_r, N, L, L_ind, T, S, H, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
