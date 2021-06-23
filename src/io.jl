@@ -23,7 +23,7 @@ end
 - `transmission.csv` with fields `M`, `cost`, `dist`, `lifetime`, `C`, `B`
 - `storage.csv` with fields `xi`, `cost`, `lifetime`, `C`, `b0_1, ..., b0_n`
 # Arguments
-- `Data_path::AbstractString`: Path to the instance directory.
+- `DataInput_path::AbstractString`: Path to the instance directory.
 """
 ## Params for small instance
 
@@ -44,7 +44,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     H = indices["H"] |> Array{Int}
 
     # Load constant parameters
-    constants = JSON.parsefile(joinpath(Data_path, "constants.json"))
+    constants = JSON.parsefile(joinpath(DataInput_path, "constants.json"))
     κ = constants["kappa"]
     μ = constants["mu"]
     C = constants["C"]
@@ -257,16 +257,16 @@ end
 
 """Reads wind, solar and hydro data produced by the GlobalEnergyGIS package into CSV node files.
 # Arguments
-- `Data_path::AbstractString`: Path to the instance directory.
+- `DataInput_path::AbstractString`: Path to the instance directory.
 - `era_year::AbstractString`: Year of the ERA5 data used in the GlobalEnergyGIS package.
 - `era_year::AbstractString`: Name of the GIS region used.
 """
-function create_nodedata(Data_path::AbstractString, era_year::AbstractString, gisregion::AbstractString)
+function create_nodedata(DataInput_path::AbstractString, era_year::AbstractString, gisregion::AbstractString)
 
     #Read files
-    solarvars = matread(joinpath(Data_path, "GISdata_solar$(era_year)_$gisregion.mat"))
-    windvars = matread(joinpath(Data_path, "GISdata_wind$(era_year)_$gisregion.mat"))
-    hydrovars = matread(joinpath(Data_path, "GISdata_hydro_$gisregion.mat"))
+    solarvars = matread(joinpath(DataInput_path, "GISdata_solar$(era_year)_$gisregion.mat"))
+    windvars = matread(joinpath(DataInput_path, "GISdata_wind$(era_year)_$gisregion.mat"))
+    hydrovars = matread(joinpath(DataInput_path, "GISdata_hydro_$gisregion.mat"))
     demandvars = load(joinpath(instance_path, "SyntheticDemand_$(gisregion)_$(era_year).jld"), "demand")
 
     #Solar
@@ -390,7 +390,7 @@ function create_nodedata(Data_path::AbstractString, era_year::AbstractString, gi
         nodedata[:,6] = hydRoR_in[:,i]
         nodedata = convert(DataFrame, nodedata)
         rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind_On", "Avail_Wind_Off", "Hyd_In", "HydRoR_In"])
-        CSV.write(joinpath(Data_path, "nodes", "$i.csv"), nodedata)
+        CSV.write(joinpath(DataInput_path, "nodes", "$i.csv"), nodedata)
     end
 end
 
