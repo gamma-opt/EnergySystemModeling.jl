@@ -1,4 +1,5 @@
-using CSV, JSON, DataFrames, JLD, MAT
+using CSV, JSON, DataFrames, JLD, MAT, FileIO, JLD2
+include("aggreg.jl")
 
 """Equivalent annual cost (EAC)
 # Arguments
@@ -8,7 +9,7 @@ using CSV, JSON, DataFrames, JLD, MAT
 """
 function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
     factor = if iszero(r) n else (1 - (1 + r)^(-n)) / r end
-    cost / factor
+    return cost / factor
 end
 
 """Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instance_path`.
@@ -26,20 +27,21 @@ end
 """
 ## Params for small instance
 
-function Params(Data_path::AbstractString, Instances_path::AbstractString) 
+function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     # Load indexes and constant parameters
-    indices = JSON.parsefile(joinpath(Instances_path, "IndicesSmall.json"))
+    indices = JSON.parsefile(joinpath(Instances_path, "indices.json"))
 
-    # TODO: implement time period clustering: τ, T, τ_t
+    # TODO: implement time period clustering: T, τ_t
 
     # Load indices. Convert JSON values to right types.
     G = indices["G"] |> Array{Int}
     G_r = indices["G_r"] |> Array{Int}
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
-    τ = 1
+    L_ind = indices["L_ind"] |> Array{Int}
     T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
+    H = indices["H"] |> Array{Int}
 
     # Load constant parameters
     constants = JSON.parsefile(joinpath(Data_path, "constants.json"))
@@ -51,72 +53,107 @@ function Params(Data_path::AbstractString, Instances_path::AbstractString)
     interest_rate = constants["r"]
     R_E = constants["R_E"]
 
-    # Load time clustered parameters
-    τ_t = ones(length(T))
-    Q_gn = zeros(length(G), length(N))
-    Q̄_gn = zeros(length(G), length(N))
+    # Load time clustered parameters and region
     D_nt = zeros(length(N), length(T))
     A_gnt = ones(length(G), length(N), length(T))
-    W_nmax = zeros(length(N))
-    W_nmin = zeros(length(N))
-    f_int = zeros(length(N), length(T))
-    f′_int = zeros(length(N), length(T))
-    H_n = zeros(length(N))
-    H′_n = zeros(length(N))
-    F_onmin = zeros(length(N))
-    region_n = Array{AbstractString, 1}(undef, length(N))    
+    AH_nt = zeros(length(N), length(T))
+    AR_nt = zeros(length(N), length(T))
+
+    # Load generation parameters (per node / per generation technology)
+    Gmin_gn = zeros(length(G), length(N))
+    Gmax_gn = zeros(length(G), length(N))
+    gen_capacity = CSV.File(joinpath(Instances_path, "gen_capacity.csv")) |> DataFrame
+
     for n in N
         # Load node values from CSV files.
+<<<<<<<
         df = CSV.File(joinpath(Data_path, "nodes", "$n.csv")) |> DataFrame
         capacitydf = CSV.File(joinpath(Data_path, "capacity.csv")) |> DataFrame
+=======
+        nodes = CSV.File(joinpath(Instances_path, "nodes", "$n.csv")) |> DataFrame
+>>>>>>>
         for g in G
-            Q_gn[g, n] = capacitydf[n, g+1]
-            Q̄_gn[g, n] = capacitydf[n, g+13]
+            line_search = findfirst((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))
+            Gmin_gn[g,n] = gen_capacity.gcap_min[line_search]
+            Gmax_gn[g,n] = gen_capacity.gcap_max[line_search]
         end
-        D_nt[n, :] = df.Demand[T]
-        A_gnt[1, n, :] = df.Avail_Wind_On[T]
-        A_gnt[2, n, :] = df.Avail_Wind_Off[T]
-        A_gnt[3, n, :] = df.Avail_Sol[T]
-        A_gnt[A_gnt .< 0.01] .= 0
-        W_nmax[n] = capacitydf.Max_Hyd_Level[n]
-        W_nmin[n] = capacitydf.Min_Hyd_Level[n]
-        f_int[n,:] = df.Hyd_In[T]
-        f′_int[n,:] = df.HydRoR_In[T]
-        H_n[n] = capacitydf.Hydro[n]
-        H′_n[n] = capacitydf.HydroRoR[n]
-        F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
-        region_n[n] =  df.Name[1]
-
+        D_nt[n, :] = nodes.Demand[T]
+        A_gnt[1, n, :] = nodes.Avail_Wind_On[T]
+        A_gnt[2, n, :] = nodes.Avail_Wind_Off[T]
+        A_gnt[3, n, :] = nodes.Avail_Sol[T]
+        A_gnt[A_gnt .< 0.001] .= 0
+        AH_nt[n,:] = nodes.Hyd_In[T]
+        AR_nt[n,:] = nodes.HydRoR_In[T]
     end
 
+    # Nodes specifications
+    region_n = Array{AbstractString, 1}(undef, length(N))    
+    max_dem_n = Array{Float64, 1}(undef, length(N))    
+
+    nodes_specs = CSV.File(joinpath(Instances_path, "nodes_specs.csv")) |> DataFrame
+
+    for n in N
+        region_n[n] =  nodes_specs.Name[n]
+        max_dem_n[n] = nodes_specs.Max_Demand[n]
+    end
+
+    # Load weights
+    clust_weights = CSV.File(joinpath(Instances_path, "weights.csv")) |> DataFrame
+    τ_t = clust_weights.Weights[T]
+
     # Load technology parameters
+<<<<<<<
     technology = joinpath(Data_path, "technology.csv") |>
+=======
+    gen_technology = joinpath(Instances_path, "gen_technology.csv") |>
+>>>>>>>
         CSV.File |> DataFrame
-    I_g = equivalent_annual_cost.(technology.investment_cost .* 1000, technology.lifetime,
-                                  interest_rate)
-    M_g = technology.fixedOM .* 1000
-    C_g = technology.fuel_cost ./ technology.efficiency .+ technology.varOM
-    e_g = technology.efficiency
-    E_g = technology.emissions
-    r⁻_g = technology.r_minus
-    r⁺_g = technology.r_plus
-    technology_g = technology.name
+    I_g = equivalent_annual_cost.(gen_technology.investment_cost .* 1000, gen_technology.lifetime,
+                                  interest_rate) |> Array{AbstractFloat, 1}
+    M_g = gen_technology.fixedOM .* 1000 |> Array{AbstractFloat, 1}
+    C_g = gen_technology.fuel_cost ./ gen_technology.efficiency .+ gen_technology.varOM |> Array{AbstractFloat, 1}
+    e_g = gen_technology.efficiency |> Array{AbstractFloat, 1}
+    E_g = gen_technology.emissions |> Array{AbstractFloat, 1}
+    r⁻_g = gen_technology.r_minus |> Array{AbstractFloat, 1}
+    r⁺_g = gen_technology.r_plus |> Array{AbstractFloat, 1}
+    technology_g = gen_technology.name
 
     # Load transmission parameters
+<<<<<<<
     transmission = joinpath(Data_path, "transmission.csv") |>
+=======
+    I_l = zeros(length(L_ind))
+    M_l = zeros(length(L_ind))
+    C_l = zeros(length(L_ind))
+    B_l = zeros(length(L_ind))
+    e_l = zeros(length(L_ind))
+    Tmin_l = zeros(length(L_ind))
+    Tmax_l = zeros(length(L_ind))
+    transmission = joinpath(Instances_path, "transmission.csv") |>
+>>>>>>>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
-                                  transmission.lifetime[1], interest_rate)
-    M_l = transmission.M[1] .* I_l
-    C_l = transmission.C[1]
-    B_l = transmission.B[1]
-    e_l = transmission.efficiency[1]
-
-
+                                  transmission.lifetime[1], interest_rate) |> Array{AbstractFloat, 1}
+    M_l = transmission.M .* I_l |> Array{AbstractFloat, 1}
+    C_l = transmission.C |> Array{AbstractFloat, 1}
+    B_l = transmission.B |> Array{AbstractFloat, 1}
+    e_l = transmission.efficiency |> Array{AbstractFloat, 1}
+    Tmin_l = transmission.tcap_min |> Array{AbstractFloat, 1}
+    Tmax_l = transmission.tcap_max |> Array{AbstractFloat, 1}
 
     # Load storage parameters
+<<<<<<<
     storage = joinpath(Data_path, "storage.csv") |>
+=======
+    ξ_s = zeros(length(S))
+    I_s = zeros(length(S))
+    C_s = zeros(length(S))
+    Smin_sn = zeros(length(S),length(N))
+    Smax_sn = zeros(length(S),length(N))
+    storage = joinpath(Instances_path, "storage.csv") |>
+>>>>>>>
         CSV.File |> DataFrame
+<<<<<<<
     ξ_s = storage.xi
     I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate)
     C_s = storage.C
@@ -178,23 +215,24 @@ function Params(Data_path::AbstractString)
         for g in G
             Q_gn[g, n] = capacitydf[n, g+1]
             Q̄_gn[g, n] = capacitydf[n, g+13]
+=======
+    sto_capacity = joinpath(Instances_path, "sto_capacity.csv") |>
+        CSV.File |> DataFrame
+    for s in S
+        ξ_s = storage.xi |> Array{AbstractFloat, 1}
+        I_s = equivalent_annual_cost.(storage.cost .* 1000, storage.lifetime, interest_rate) |> Array{AbstractFloat, 1}
+        C_s = storage.C |> Array{AbstractFloat, 1}
+        for n in N
+            line_search = findfirst((sto_capacity.s .== s) .& (sto_capacity.node .== n))
+            Smin_sn[s,n] = sto_capacity.scap_min[line_search]
+            Smax_sn[s,n] = sto_capacity.scap_max[line_search]
+>>>>>>>
         end
-        D_nt[n, :] = df.Demand[T]
-        A_gnt[1, n, :] = df.Avail_Wind_On[T]
-        A_gnt[2, n, :] = df.Avail_Wind_Off[T]
-        A_gnt[3, n, :] = df.Avail_Sol[T]
-        A_gnt[A_gnt .< 0.01] .= 0
-        W_nmax[n] = capacitydf.Max_Hyd_Level[n]
-        W_nmin[n] = capacitydf.Min_Hyd_Level[n]
-        f_int[n,:] = df.Hyd_In[T]
-        f′_int[n,:] = df.HydRoR_In[T]
-        H_n[n] = capacitydf.Hydro[n]
-        H′_n[n] = capacitydf.HydroRoR[n]
-        F_onmin[n] = (sum(f_int[n, :]) / length(T)) * 0.05
-        region_n[n] =  df.Name[1]
-
     end
+    Smin_sn = Smin_sn  |> Array{AbstractFloat, 2}
+    Smax_sn = Smax_sn  |> Array{AbstractFloat, 2}
 
+<<<<<<<
     # Load technology parameters
     technology = joinpath(Data_path, "technology.csv") |>
         CSV.File |> DataFrame
@@ -207,7 +245,17 @@ function Params(Data_path::AbstractString)
     r⁻_g = technology.r_minus
     r⁺_g = technology.r_plus
     technology_g = technology.name
+=======
+    # Load hydro capacity and technology parameters
+    Wmax_hn = zeros(length(H),length(N))
+    Wmin_hn = zeros(length(H),length(N))
+    Hmin_hn = zeros(length(H),length(N))
+    Hmax_hn = zeros(length(H),length(N))
+    Fmin_n = zeros(length(N))
+    HRmax_n = zeros(length(N))
+>>>>>>>
 
+<<<<<<<
     # Load transmission parameters
     transmission = joinpath(Data_path, "transmission.csv") |>
         CSV.File |> DataFrame
@@ -217,8 +265,22 @@ function Params(Data_path::AbstractString)
     C_l = transmission.C[1]
     B_l = transmission.B[1]
     e_l = transmission.efficiency[1]
+=======
+    hydro_capacity = joinpath(Instances_path, "hydro_capacity.csv") |> CSV.File |> DataFrame   
+    for h in H, n in N
+        line_search = findfirst((hydro_capacity.hydro_tech .== h) .& (hydro_capacity.node .== n))
+        Hmin_hn[h,n] = hydro_capacity.hcap_min[line_search]
+        Hmax_hn[h,n] = hydro_capacity.hcap_max[line_search]
+        Wmin_hn[h,n] = hydro_capacity.wcap_min[line_search]
+        Wmax_hn[h,n] = hydro_capacity.wcap_max[line_search]
+    end
+>>>>>>>
 
+    hydro = joinpath(Instances_path, "hydro.csv") |> CSV.File |> DataFrame   
+    HRmax_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
+    Fmin_n[1:length(N)] = hydro.hyd_flow_min[1:length(N)] |> Array{AbstractFloat, 1}
 
+<<<<<<<
 
     # Load storage parameters
     storage = joinpath(Data_path, "storage.csv") |>
@@ -228,11 +290,24 @@ function Params(Data_path::AbstractString)
     C_s = storage.C
     b0_sn = storage[:, [Symbol("b0_$n") for n in N]] |> Matrix
 
+=======
+    hydro_technology = joinpath(Instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
+    I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
+                                    interest_rate) |> Vector{Float64}
+    M_h = hydro_technology.fixedOM .* 1000 |> Vector{Float64}
+    C_h = hydro_technology.fuel_cost ./ hydro_technology.efficiency .+ hydro_technology.varOM |> Vector{Float64}
+    e_h = hydro_technology.efficiency |> Vector{Float64}
+    E_h = hydro_technology.emissions |> Vector{Float64}
+    r⁻_h = hydro_technology.r_minus |> Vector{Float64}
+    r⁺_h = hydro_technology.r_plus |> Vector{Float64}
+    
+>>>>>>>
     # Return Params struct
     Params(
-        region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g, C_g,
-        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-        W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin)
+        region_n, max_dem_n, technology_g, G, G_r, N, L, L_ind, T, S, H, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, C_g,
+        e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
+        Wmax_hn, Wmin_hn, Hmax_hn, Hmin_hn, HRmax_n, Fmin_n, AH_nt, AR_nt,
+        I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
 end
 
 """Save object into JSON file.
@@ -248,6 +323,9 @@ end
 
 flatten(x::Array{<:Array, 1}) = Iterators.flatten(x)|> collect|> flatten
 flatten(x::Array{<:Number, 1}) = x
+flatten(x::AffExpr) = x
+flatten(x::VecOrMat{AffExpr}) = x[:]
+flatten(x::Array{<:Any}) = x[:]
 
 shape(x::Array{<:Array, 1}) = vcat(shape(first(x)), [length(x)])
 shape(x::Array{<:Number, 1}) = [length(x)]
@@ -289,8 +367,8 @@ function load_json(type, filepath::AbstractString)
 end
 
 #Replace NaN's with 0
-function replace_nans(array::Array{Float64, N}) where N
-    for i = eachindex(array)
+function replace_nans!(array::Array{Float64, N}) where N
+    for i in eachindex(array)
         if isnan(array[i])
             array[i] = zero(1)
         end
@@ -329,11 +407,11 @@ function create_nodedata(Data_path::AbstractString, era_year::AbstractString, gi
     CFtime_pvrooftop = solarvars["CFtime_pvrooftop"]
 
     #Replace NaNs from hourly data with 0's
-    replace_nans(CFtime_cspplantA)
-    replace_nans(CFtime_cspplantB)
-    replace_nans(CFtime_pvplantA)
-    replace_nans(CFtime_pvplantB)
-    replace_nans(CFtime_pvrooftop)
+    replace_nans!(CFtime_cspplantA)
+    replace_nans!(CFtime_cspplantB)
+    replace_nans!(CFtime_pvplantA)
+    replace_nans!(CFtime_pvplantB)
+    replace_nans!(CFtime_pvrooftop)
 
     #Preallocate arrays for results
     avail_sol_cspA = zeros(Float64, T, n)
@@ -367,9 +445,9 @@ function create_nodedata(Data_path::AbstractString, era_year::AbstractString, gi
     CFtime_windonshoreB = windvars["CFtime_windonshoreB"]
 
     #Replace NaNs from hourly data with 0's
-    replace_nans(CFtime_windoffshore)
-    replace_nans(CFtime_windonshoreA)
-    replace_nans(CFtime_windonshoreB)
+    replace_nans!(CFtime_windoffshore)
+    replace_nans!(CFtime_windonshoreA)
+    replace_nans!(CFtime_windonshoreB)
 
     #Preallocate arrays for results
     avail_wind_offshore = zeros(Float64, T, n)
@@ -395,7 +473,7 @@ function create_nodedata(Data_path::AbstractString, era_year::AbstractString, gi
     #Monthly inflow
     existinginflow = permutedims(hydrovars["existinginflowcf"])
     #Replace NaNs from monthly data with 0's
-    replace_nans(existinginflow)
+    replace_nans!(existinginflow)
     #Preallocate array for intermediate result
     avail_inflow = zeros(Float64, T, n)
 
@@ -434,38 +512,35 @@ function create_nodedata(Data_path::AbstractString, era_year::AbstractString, gi
         rename!(nodedata, ["Demand", "Avail_Sol", "Avail_Wind_On", "Avail_Wind_Off", "Hyd_In", "HydRoR_In"])
         CSV.write(joinpath(Data_path, "nodes", "$i.csv"), nodedata)
     end
-
-    
 end
 
-function getdispatch(output_path::AbstractString)
-    println("ABC")
-    variables = JSON.parsefile(joinpath(output_path, "variables.json"))
-    parameters = JSON.parsefile(joinpath(output_path, "parameters.json"))
+"""
+read_clusters(ClustersDataPath::AbstractString, k::Int)
+Read clusters from a julia dictionary (.jld2) with the structure ClustInstance.
+# Output:
+- _ClustInstance: Instance of clustering with weights, centroids, etc.
+- _SeriesInstance: Instance of series used to form the clusters.
+"""
+function read_clusters(ClustersDataPath::AbstractString, k::Int)
+    _ClustUpdate = load(joinpath(ClustersDataPath,"clust_out.jld2"))
+    _SeriesUpdate = load(joinpath(ClustersDataPath,"series_out.jld2"));
 
-    pgnt = variables["p_gnt"] |> Array{Array{Array{Float64}}}
-    hyd = variables["h_nt"] |> Array{Array{Float64}}
-    dem = parameters["D_nt"] |> Array{Array{Float64}}
-    dispatch = zeros(13, 11)
-    for n in 1:2
-        for g in 1:8
-            for t in 1:T
-                dispatch[n, g] = dispatch[n, g] + pgnt[t][n][g]
-            end  
-        end
-        for t in 1:T
-            dispatch[n, 9] = dispatch[n, 9] + hyd[t][n]
-            dispatch[n, 11] = dispatch[n, 11] + dem[t][n]
-        end
-        dispatch[n, 10] = sum(dispatch[n, 1:9])
-    end
-    for i in 1:2
-        dispatch[12, i] = sum(dispatch[:, i])
-    end
-    dispatch[13, :] = dispatch[12, :] ./ dispatch[12, 10]
+    return _ClustUpdate[string(k)], _SeriesUpdate[string(k)] 
+end
 
-    dispatch = convert(DataFrame, dispatch)
-    rename!(dispatch, ["WIND_ON", "WIND_OFF", "SOLAR", "BIOMASS", "NUCLEAR", "COAL", "GAS_CC", "GAS_OC", "HYDRO", "TOTAL", "DEMAND"])
-    CSV.write(joinpath(output_path, "dispatch.csv"), dispatch)
+"""
+unpack_clusters_features(_ClustInstance::ClustInstance)
+# Output:
+- k_cent: centroids.
+- weights: respective centroids' weights.
+- series_clust: mapping between series and clusters.
+"""
+function unpack_clusters_features(_ClustInstance::ClustInstance)
+    @assert _ClustInstance.nclusters == _ClustInstance.series_clust[end] "Number of clusters inconsistent in the cluster instance"
 
+    k_cent = _ClustInstance.k_cent
+    weights = _ClustInstance.weights
+    series_clust = _ClustInstance.series_clust
+
+    return k_cent, weights, series_clust
 end

@@ -12,34 +12,38 @@ are not specified are included by default.
 - `voltage_angles::Bool`: Whether to include voltage angle constraints.
 """
 @with_kw struct Specs
-    renewable_target::Bool
-    carbon_cap::Bool
-    nuclear_limit::Bool
-    storage::Bool
-    ramping::Bool
-    voltage_angles::Bool
+    transmission::Bool = true
+    renewable_target::Bool = false
+    carbon_cap::Bool = false
+    nuclear_limit::Bool = false
+    storage::Bool = false
+    ramping::Bool = false
+    voltage_angles::Bool = false
+    hydro::Bool = false
 end
 
 """Input indices and parameters for the model."""
 @with_kw struct Params
     region_n::Array{AbstractString, 1}
+    max_dem_n::Array{Float64, 1}
     technology_g::Array{AbstractString, 1}
     G::Array{Integer, 1}
     G_r::Array{Integer, 1}
     N::Array{Integer, 1}
     L::Array{Array{Integer, 1}, 1}
+    L_ind::Array{Integer, 1}
     T::Array{Integer, 1}
     S::Array{Integer, 1}
+    H::Array{Integer, 1}
     κ::AbstractFloat
     μ::AbstractFloat 
     C::AbstractFloat
     C̄::AbstractFloat
     C_E::AbstractFloat
     R_E::AbstractFloat
-    τ::Integer
     τ_t::Array{Integer, 1}
-    Q_gn::Array{AbstractFloat, 2}
-    Q̄_gn::Array{AbstractFloat, 2}
+    Gmin_gn::Array{AbstractFloat, 2}
+    Gmax_gn::Array{AbstractFloat, 2}
     A_gnt::Array{AbstractFloat, 3}
     D_nt::Array{AbstractFloat, 2}
     I_g::Array{AbstractFloat, 1}
@@ -51,81 +55,57 @@ end
     r⁺_g::Array{AbstractFloat, 1}
     I_l::Array{AbstractFloat, 1}
     M_l::Array{AbstractFloat, 1}
-    C_l::AbstractFloat
-    B_l::AbstractFloat
-    e_l::AbstractFloat
+    C_l::Array{AbstractFloat, 1}
+    B_l::Array{AbstractFloat, 1}
+    e_l::Array{AbstractFloat, 1}
+    Tmin_l::Array{AbstractFloat, 1}
+    Tmax_l::Array{AbstractFloat, 1}
     ξ_s::Array{AbstractFloat, 1}
     I_s::Array{AbstractFloat, 1}
     C_s::Array{AbstractFloat, 1}
-    b0_sn::Array{AbstractFloat, 2}
-    W_nmax::Array{AbstractFloat, 1}
-    W_nmin::Array{AbstractFloat, 1}
-    f_int::Array{AbstractFloat, 2}
-    f′_int::Array{AbstractFloat, 2}
-    H_n::Array{AbstractFloat, 1}
-    H′_n::Array{AbstractFloat, 1}
-    F_onmin::Array{AbstractFloat, 1}
-    
+    Smin_sn::Array{AbstractFloat, 2}
+    Smax_sn::Array{AbstractFloat, 2}
+    Wmax_hn::Array{AbstractFloat, 2}
+    Wmin_hn::Array{AbstractFloat, 2}
+    Hmax_hn::Array{AbstractFloat, 2}
+    Hmin_hn::Array{AbstractFloat, 2}
+    HRmax_n::Array{AbstractFloat, 1}
+    Fmin_n::Array{AbstractFloat, 1}
+    AH_nt::Array{AbstractFloat, 2}
+    AR_nt::Array{AbstractFloat, 2}
+    I_h::Vector{Float64}
+    M_h::Vector{Float64}
+    C_h::Vector{Float64}
+    e_h::Vector{Float64}
+    E_h::Vector{Float64}
+    r⁻_h::Vector{Float64}
+    r⁺_h::Vector{Float64}
 end
 
-"""Variable values."""
-@with_kw struct Variables
-    p_gnt::Array{AbstractFloat, 3}
-    p̄_gn::Array{AbstractFloat, 2}
-    σ_nt::Array{AbstractFloat, 2}
-    f_lt::Array{AbstractFloat, 2}
-    f̄_l::Array{AbstractFloat, 1}
-    b_snt::Array{AbstractFloat, 3}
-    b̄_sn::Array{AbstractFloat, 2}
-    b⁺_snt::Array{AbstractFloat, 3}
-    b⁻_snt::Array{AbstractFloat, 3}
-    θ_nt::Array{AbstractFloat, 2}
-    θ′_nt::Array{AbstractFloat, 2}
-    w_nt::Array{AbstractFloat, 2}
-    f_ont::Array{AbstractFloat, 2}
-    f′_ont::Array{AbstractFloat, 2}
-    f′′_ont::Array{AbstractFloat, 2}
-    h_nt::Array{AbstractFloat, 2}
-    h′_nt::Array{AbstractFloat, 2}
-end
+"""Retrieving data from objects typed JuMP.Containers.DenseAxisArray"""
+retrieve_data(a::Number) = a
+retrieve_data(a::JuMP.Containers.DenseAxisArray) = (JuMP.value.(a)).data
+retrieve_data(a::AffExpr) = JuMP.value.(a)
+retrieve_data(a::Vector{AffExpr}) = JuMP.value.(a);
 
-"""Objective values."""
-@with_kw struct Objectives
-    f1::AbstractFloat
-    f2::AbstractFloat
-    f3::AbstractFloat
-    f4::AbstractFloat
-    f5::AbstractFloat
-    f6::AbstractFloat
-    f7::AbstractFloat
-end
-
-"""Expression values."""
-@with_kw struct Expressions
-    κ′::AbstractFloat
-    μ′::AbstractFloat
-    C′_E::AbstractFloat
-end
-
-data(a::Number) = a
-data(a::JuMP.Containers.DenseAxisArray) = a.data
-
-"""Extract variable values from model.
+"""Extract objective values from a JuMP model.
 # Arguments
 - `model::EnergySystemModel`
+- `JuMPObjDict::::Union{Dict{String, Float64}, Dict{String, Any}}`
 """
-function Variables(model::EnergySystemModel)
-    tup = Tuple(value.(model[i]) |> data for i in fieldnames(Variables))
-    Variables(tup...)
+function JuMPObj(model::EnergySystemModel, JuMPObjDict::Dict{String, Any})
+    dict = Dict(i => model[Symbol(i)] |> retrieve_data |> first for i in keys(JuMPObjDict))
+    return dict
 end
 
-"""Extract objective values from model.
+"""Extract objective values from a JuMP model.
 # Arguments
 - `model::EnergySystemModel`
+- `JuMPObjDict::::Union{Dict{String, Float64}, Dict{String, Any}}`
 """
-function Objectives(model::EnergySystemModel)
-    tup = Tuple(value.(model[i]) |> data for i in fieldnames(Objectives))
-    Objectives(tup...)
+function JuMPVar(model::EnergySystemModel, JuMPVarDict::Dict{String, Any})
+    dict = Dict(i => model[Symbol(i)] |> retrieve_data for i in keys(JuMPVarDict))
+    return dict
 end
 
 """Compute expression values from the results.
@@ -133,26 +113,27 @@ end
 - `parameters::Params`
 - `variables::Variables`
 """
-function Expressions(parameters::Params, variables::Variables)
-    G = parameters.G
-    G_r = parameters.G_r
-    T = parameters.T
-    N = parameters.N
-    L = parameters.L
-    R_E = parameters.R_E
+function Expressions(parameters::Params, variables::Dict{String, Array{Float64}})
+    @unpack G, G_r, N, T, H, R_E, e_g, E_g = parameters
 
-    p_gnt = variables.p_gnt
-    h_nt = variables.h_nt
-    E_g = parameters.E_g
-    e_g = parameters.e_g
+    """Expression values:
+    # Attributes
+    - `κ′: Renewable generation share
+    - `μ′: Hydro share
+    - `C′_E: CO2 emission reduction
+    """
+    p_gnt = variables["p_gnt"]
+    h_hnt = variables["h_hnt"]
 
-    κ′ = (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) /
-         (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))
+    κ′ = (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) /
+         (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T))
     μ′ = sum(p_gnt[5,n,t] for n in N, t in T) /
-        (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T))
+        (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T))
     C′_E = 1 - ((sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / R_E)
 
-    Expressions(κ′, μ′, C′_E)
+    ExpressionsDict = Dict("κ′" => κ′, "μ′" => μ′, "C′_E" => C′_E)
+
+    return ExpressionsDict
 end
 
 """Creates the energy system model.
@@ -161,105 +142,219 @@ end
 - `specs::Specs`
 """
 function EnergySystemModel(parameters::Params, specs::Specs)
-    @unpack region_n, technology_g, G, G_r, N, L, T, S, κ, μ, C, C̄, C_E, R_E, τ, τ_t, Q_gn, Q̄_gn, A_gnt, D_nt, I_g, M_g,
-            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, ξ_s, I_s, C_s, b0_sn,
-            W_nmax, W_nmin, f_int, f′_int, H_n, H′_n, F_onmin =
+    @unpack max_dem_n, G, G_r, N, L, L_ind, T, S, κ, μ, C, C̄, C_E, R_E, τ_t, Gmin_gn, Gmax_gn, A_gnt, D_nt, I_g, M_g, 
+            C_g, e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
+            Wmax_hn, Wmin_hn, Hmax_hn, Hmin_hn, HRmax_n, Fmin_n, AH_nt, AR_nt,
+            H, I_h, M_h, r⁻_h, r⁺_h =
             parameters
 
-    # Indices of lines L
-    L′ = 1:length(L)
+    # TODO: include hydro environment constraints: i.e., use C_h, e_h, E_h
+
+    """Variable values."""
+    VariablesDict = Dict{String, Any}()
+
+    """Objective values:
+    # Attributes
+    - `f1: Generation investment and maintenance
+    - `f2: Generation operational cost
+    - `f3: Shedding cost
+    - `f4: Transmission investment and maintenance
+    - `f5: Transmission operational cost
+    - `f6: Storage investment cost
+    - `f7: Storage operational cost
+    """
+    ObjectivesDict = Dict{String, Any}()
+
+    # Indices of lines L: L_ind
 
     # Create an instance of JuMP model.
     model = EnergySystemModel()
 
-    ## -- Variables --
+    # -- Main variables --
     @variable(model, p_gnt[g in G, n in N, t in T]≥0)
-    @variable(model, p̄_gn[g in G, n in N]≥0)
+    VariablesDict["p_gnt"] = p_gnt
+    @variable(model, p̄_gn[g in G, n in N]≥Gmin_gn[g,n])
+    VariablesDict["p̄_gn"] = p̄_gn
     @variable(model, σ_nt[n in N, t in T]≥0)
-    @variable(model, f_lt[l in L′, t in T]≥0)
-    @variable(model, f_abs_lt[l in L′, t in T]≥0)
-    @variable(model, f̄_l[l in L′])
-    @variable(model, b_snt[s in S, n in N, t in T]≥0)
-    @variable(model, b̄_sn[s in S, n in N]≥0)
-    @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
-    @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
-    @variable(model, θ_nt[n in N, t in T]≥0)
-    @variable(model, θ′_nt[n in N, t in T]≥0)
-    @variable(model, w_nt[n in N, t in T]≥0)
-    @variable(model, f_ont[n in N, t in T]≥0)
-    @variable(model, f′_ont[n in N, t in T]≥0)
-    @variable(model, f′′_ont[n in N, t in T]≥0)
-    @variable(model, h_nt[n in N, t in T]≥0)
-    @variable(model, h′_nt[n in N, t in T]≥0)
+    VariablesDict["σ_nt"] = σ_nt
+
+    # Transmission variables
+    if specs.transmission
+        @variable(model, f_lt[l in L_ind, t in T])
+        VariablesDict["f_lt"] = f_lt
+        @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
+        VariablesDict["f_abs_lt"] = f_abs_lt
+        @variable(model, f̄_l[l in L_ind]≥Tmin_l[l])
+        VariablesDict["f̄_l"] = f̄_l
+    end
+
+    if specs.storage
+        # Storage variables
+        @variable(model, b_snt[s in S, n in N, t in T]≥0)
+        VariablesDict["b_snt"] = b_snt
+        @variable(model, b̄_sn[s in S, n in N]≥Smin_sn[s,n])
+        VariablesDict["b̄_sn"] = b̄_sn
+        @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
+        VariablesDict["b⁺_snt"] = b⁺_snt
+        @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
+        VariablesDict["b⁻_snt"] = b⁻_snt
+    end
+
+    if specs.voltage_angles
+        # Voltage variables
+        @variable(model, θ_nt[n in N, t in T]≥0)
+        VariablesDict["θ_nt"] = θ_nt
+        @variable(model, θ′_nt[n in N, t in T]≥0)
+        VariablesDict["θ′_nt"] = θ′_nt
+    end
+
+    if specs.hydro
+        # Hydro energy variables
+        @variable(model, w_hnt[h in H, n in N, t in T]≥Wmin_hn[h,n])
+        VariablesDict["w_hnt"] = w_hnt
+        @variable(model, h_hnt[h in H, n in N, t in T]≥0)
+        VariablesDict["h_hnt"] = h_hnt
+        @variable(model, hr_nt[n in N, t in T]≥0)
+        VariablesDict["hr_nt"] = hr_nt
+        @variable(model, h̄_hn[h in H, n in N]≥Hmin_hn[h,n])
+        VariablesDict["h̄_hn"] = h̄_hn
+    end
 
     ## -- Objective --
-    ## Investment and maintenance of generation capacity
+    # Investment and maintenance of generation capacity
     @expression(model, f1,
-        sum((I_g[g]+M_g[g])*p̄_gn[g,n] for g in G, n in N))
+        sum(I_g[g]*(p̄_gn[g,n]-Gmin_gn[g,n]) + M_g[g]*p̄_gn[g,n] for g in G, n in N))
+    ObjectivesDict["f1"] = f1
     
-    ## Operational cost of generation dispatch
+    # Operational cost of generation dispatch
     @expression(model, f2,
         sum(C_g[g]*p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T))
+    ObjectivesDict["f2"] = f2
     
-    ## Shedding cost
+    # Shedding cost
     @expression(model, f3,
         sum(C*σ_nt[n,t]*τ_t[t] for n in N, t in T))
+    ObjectivesDict["f3"] = f3
 
-    ##Investment and maintenance cost of transmission cpacity
-    @expression(model, f4,
-        sum((I_l[l]+M_l[l])*f̄_l[l] for l in L′))
+    if specs.transmission
+        # Investment and maintenance cost of transmission cpacity
+        @expression(model, f4,
+            sum(I_l[l]*(f̄_l[l]-Tmin_l[l]) + M_l[l]*f̄_l[l] for l in L_ind))
+        ObjectivesDict["f4"] = f4
+
+        # Operational cost of transmission flow
+        @expression(model, f5,
+            sum(C_l[l]*f_abs_lt[l,t]*τ_t[t] for l in L_ind, t in T))
+        ObjectivesDict["f5"] = f5
+    end
     
-    ## Operational cost of transmission flow
-    @expression(model, f5,
-        sum(C_l*f_abs_lt[l,t]*τ_t[t] for l in L′, t in T))
-    
-    ## Investment costof storage capacity
-    @expression(model, f6,
-        sum(I_s[s]*b̄_sn[s,n] for s in S, n in N))
-   
-    ## Operational cost of storage
-    @expression(model, f7,
-        sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ_t[t] for s in S, n in N, t in T))
-    
-    
-    @objective(model, Min, f1 + f2 + f3 + f4 + f5 + f6 + f7)
+    if specs.storage
+        # Investment cost of storage capacity
+        @expression(model, f6,
+            sum(I_s[s]*(b̄_sn[s,n] - Smin_sn[s,n]) for s in S, n in N))
+        ObjectivesDict["f6"] = f6
+
+        # Operational cost of storage
+        @expression(model, f7,
+            sum(C_s[s]*(b⁺_snt[s,n,t] + b⁻_snt[s,n,t])*τ_t[t] for s in S, n in N, t in T))
+        ObjectivesDict["f7"] = f7
+    end
+
+    # Investment cost of hydro capacity 
+    if specs.hydro
+        # TODO: create an index h for hydro plants
+        @expression(model, f8,
+            sum(I_h*(h̄_hn[h,n] - Hmin_hn[h,n]) + M_h*h̄_hn[h,n] for h in H, n in N))
+        ObjectivesDict["f8"] = f8
+
+        # TODO: add operational costs for hydro generation (i.e., C_h)
+
+    end
+
+    @objective(model, Min, sum(sum(flatten(ObjectivesDict[i])) for i in keys(ObjectivesDict)))
 
     ## -- Constraints --
     # Transmission lines to node n
-    L⁻(n) = (l for (l,(i,j)) in zip(L′,L) if j==n)
+    L⁻(n) = (l for (l,(i,j)) in zip(L_ind,L) if j==n)
     # Transmission lines from node n
-    L⁺(n) = (l for (l,(i,j)) in zip(L′,L) if i==n)
+    L⁺(n) = (l for (l,(i,j)) in zip(L_ind,L) if i==n)
 
-    # Energy balance
-    @constraint(model,
+    # TODO: add hydro generation efficiency dependencies (i.e., e_h)
+
+    # Energy balance (dependent on the features selected)
+    if specs.transmission && specs.storage && specs.hydro                   # Trans/Stor/Hydro
+        @constraint(model,
         b1[n in N, t in T],
-        sum(p_gnt[g,n,t] for g in G) +
-        σ_nt[n,t] +
-        sum(e_l*f_lt[l,t] for l in L⁻(n)) -
-        sum(e_l*f_lt[l,t] for l in L⁺(n)) +
-        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) + 
-        h_nt[n,t] ==
-        D_nt[n,t])
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
+        sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] 
+        == max_dem_n[n]*D_nt[n,t])
+    elseif specs.transmission && specs.storage && !(specs.hydro)            # Trans/Stor
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S)
+        == max_dem_n[n]*D_nt[n,t])
+    elseif specs.transmission && !(specs.storage) && specs.hydro            # Trans/Hydro
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
+        sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] 
+        == max_dem_n[n]*D_nt[n,t])
+    elseif specs.transmission && !(specs.storage) && !(specs.hydro)         # Trans
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n))
+        == max_dem_n[n]*D_nt[n,t])
+    elseif !(specs.transmission) && !(specs.storage) && !(specs.hydro)      # -
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t]
+        == max_dem_n[n]*D_nt[n,t])
+    elseif !(specs.transmission) && specs.storage && !(specs.hydro)         # Stor
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S)
+        == max_dem_n[n]*D_nt[n,t])
+    elseif !(specs.transmission) && !(specs.storage) && specs.hydro         # Hydro
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] 
+        == max_dem_n[n]*D_nt[n,t])
+    elseif !(specs.transmission) && specs.storage && specs.hydro            # Stor/Hydro
+        @constraint(model,
+        b1[n in N, t in T],
+        sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
+        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
+        sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] 
+        == max_dem_n[n]*D_nt[n,t])
+    end
 
     # Generation capacity
     @constraint(model,
         g1[g in G, n in N, t in T],
-        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * (Q_gn[g,n] + p̄_gn[g,n]))
+        p_gnt[g,n,t] ≤ A_gnt[g,n,t] * p̄_gn[g,n])
     @constraint(model,
         g2[g in G, n in N],
-        (Q_gn[g,n] + p̄_gn[g,n]) / 1000 ≤ Q̄_gn[g,n] / 1000)
+        p̄_gn[g,n] ≤ Gmax_gn[g,n])
 
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g3,
-            ((sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000) ≥
-            κ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000)
+            ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000) ≥
+            κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000)
     end
 
     # Maximum nuclear share
     if specs.nuclear_limit
         @constraint(model, g4,
-            (sum(p_gnt[5,n,t] for n in N, t in T) / 1000) ≤ (μ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_nt[n,t] for n in N, t in T)) / 1000))
+            (sum(p_gnt[5,n,t] for n in N, t in T) / 1000) ≤ (μ * (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000))
     end
 
     #Carbon cap
@@ -271,97 +366,140 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Shedding upper bound
     @constraint(model,
         g6[n in N, t in T],
-        σ_nt[n,t] ≤ C̄ * D_nt[n,t])
+        σ_nt[n,t] ≤ C̄ * max_dem_n[n]*D_nt[n,t])
 
-    # Transmission capacity
-    @constraint(model,
-        t1[l in L′, t in T],
-        f_lt[l,t] ≤ f̄_l[l])
+    if specs.transmission
+        # Transmission capacity
+        @constraint(model,
+            t1[l in L_ind, t in T],
+            f_lt[l,t] ≤ f̄_l[l])
 
-    @constraint(model,
-        t2[l in L′, t in T],
-        f_lt[l,t] ≥ -f̄_l[l])
+        @constraint(model,
+            t2[l in L_ind, t in T],
+            f_lt[l,t] ≥ -f̄_l[l])
 
-    # Absolute value of f_lt
-    @constraint(model,
-        t3[l in L′, t in T],
-        f_abs_lt[l,t] ≥ f_lt[l,t])
+        # Absolute value of f_lt
+        @constraint(model,
+            t3[l in L_ind, t in T],
+            f_abs_lt[l,t] ≥ f_lt[l,t])
 
-    @constraint(model,
-        t4[l in L′, t in T],
-        f_abs_lt[l,t] ≥ -f_lt[l,t])
+        @constraint(model,
+            t4[l in L_ind, t in T],
+            f_abs_lt[l,t] ≥ -f_lt[l,t])
+
+        @constraint(model,
+            t6[l in L_ind, t in T],
+            f̄_l[l] ≤ Tmax_l[l])
+    end
 
     if specs.storage
+        # Full storage policy
+        @constraint(model,
+            s0[s in S, n in N, t in T],
+            b_snt[s,n,1] == b̄_sn[s,n])
         # Storage capacity
         @constraint(model,
             s1[s in S, n in N, t in T],
-            b_snt[s,n,t]≤b̄_sn[s,n])
-
-        # Discharge
+            b_snt[s,n,t] ≤ b̄_sn[s,n])
+        # Discharge limits (t = 1)
         @constraint(model,
-            s3[s in S, n in N, t in T],
-            b⁻_snt[s,n,t]≤b_snt[s,n,t])
-
+            s2[s in S, n in N, t in [1]],
+            τ_t[t]*b⁻_snt[s,n,t] ≤ b_snt[s,n,t])
+        # Discharge limits (t > 1)
+        @constraint(model,
+            s3[s in S, n in N, t in T[T.>1]],
+            τ_t[t]*b⁻_snt[s,n,t] ≤ τ_t[t-1]*b_snt[s,n,t-1])
         # Charge
         @constraint(model,
             s4[s in S, n in N, t in T],
-            ξ_s[s]*b⁺_snt[s,n,t]≤b̄_sn[s,n] - b_snt[s,n,t])
-
-        # Storage levels
+            τ_t[t]*ξ_s[s]*b⁺_snt[s,n,t] ≤ b̄_sn[s,n] - b_snt[s,n,t])
+        # Storage balance
         @constraint(model,
             s5[s in S, n in N, t in T[T.>1]],
-            b_snt[s,n,t]==b_snt[s,n,t-1] + ξ_s[s]*b⁺_snt[s,n,t-1] - b⁻_snt[s,n,t-1])
-
+            b_snt[s,n,t] == b_snt[s,n,t-1] + τ_t[t]*(ξ_s[s]*b⁺_snt[s,n,t] - b⁻_snt[s,n,t]))
         # Storage continuity
         @constraint(model,
             s6[s in S, n in N],
-            b_snt[s,n,1]==b_snt[s,n,T[end]])
+            b_snt[s,n,1] == b_snt[s,n,T[end]])
+        # Storage capacity bounds
+        @constraint(model,
+            s7[s in S, n in N],
+            b̄_sn[s,n] ≤ Smax_sn[s,n])
     end
 
     if specs.ramping
         # Ramping limits
         @constraint(model,
             r1[g in G, n in N, t in T[T.>1]],
-            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≤ r⁺_g[g] * (Q_gn[g,n] + p̄_gn[g,n]))
+            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≤ r⁺_g[g] * p̄_gn[g,n])
         @constraint(model,
             r2[g in G, n in N, t in T[T.>1]],
-            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≥ -r⁻_g[g] * (Q_gn[g,n] + p̄_gn[g,n]))
+            p_gnt[g,n,t]-p_gnt[g,n,t-1] ≥ -r⁻_g[g] * p̄_gn[g,n])
     end
 
     if specs.voltage_angles
         # Voltage angles
         @constraint(model,
-            v1[g in G, l in L′, n in N, n′ in N, t in T[T.>1]],
+            v1[g in G, l in L_ind, n in N, n′ in N, t in T[T.>1]],
             (θ_nt[n,t] - θ′_nt[n′,t])*B_l[l] == p_gnt[g,n,t]-p_gnt[g,n′,t])
     end
 
-    # Hydro energy
-    @constraint(model,
-        h1[n in N, t in T],
-        W_nmin[n] ≤ w_nt[n,t] ≤ W_nmax[n])
-    @constraint(model,
-        h2[n in N, t in T[T.>1]],
-        w_nt[n,t] == w_nt[n,t-1] + f_int[n,t-1] - f_ont[n,t-1])
-    @constraint(model,
-        h3[n in N],
-        w_nt[n,1] == w_nt[n,T[end]])
-    @constraint(model,
-        h4[n in N, t in T],
-        f_ont[n,t] == f′_ont[n,t] + f′′_ont[n,t])
-    @constraint(model,
-        h5[n in N, t in T],
-        f_ont[n,t] ≥ F_onmin[n])
-    @constraint(model,
-        h6[n in N, t in T],
-        0 ≤ f′_ont[n,t] ≤ H_n[n])
-    @constraint(model,
-        h7[n in N, t in T],
-        0 ≤ h′_nt[n,t] ≤ f′_int[n,t])
-    @constraint(model,
-        h8[n in N, t in T],
-        0 ≤ h′_nt[n,t] ≤ H′_n[n])
-    @constraint(model,
-        h9[n in N, t in T],
-        h_nt[n,t] == h′_nt[n,t] + f′_ont[n,t])
-    return model
+    if specs.hydro
+        # Hydro energy constraints
+
+        # Full reservoir policy
+        @constraint(model, 
+            h0[h in H, n in N],
+            w_hnt[h,n,1] == Wmax_hn[h,n])
+        # Maximum reservoir level
+        @constraint(model,
+            h1[h in H, n in N, t in T],
+            w_hnt[h,n,t] ≤ Wmax_hn[h,n])
+        # Reservoir balance
+        @constraint(model,
+            h2[n in N, t in T[T.>1]],
+            sum(w_hnt[h,n,t] for h in H) ≤ sum(w_hnt[h,n,t-1] for h in H) + (AH_nt[n,t-1] - sum(h_hnt[h,n,t-1] for h in H))*τ_t[t])
+        # Reservoir temporal continuity
+        @constraint(model,
+            h3[n in N, h in H],
+            w_hnt[h,n,1] == w_hnt[h,n,T[end]])
+
+        # Define the minimum hydro flow possible to be fulfilled
+        α_nt = zeros(length(N),length(T))
+        for n in N, t in T
+            α_nt[n,t] = minimum(hcat(1,(AH_nt[n,t]+AR_nt[n,t])/(Fmin_n[n]+10^-8)))
+        end
+        # Minimum hydro flow
+        @constraint(model,
+            h4[n in N, t in T],
+            sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] ≤ AH_nt[n,t] + AR_nt[n,t] - α_nt[n,t]*Fmin_n[n])
+        # Maximum hydro flow
+        @constraint(model,
+            h5[n in N, t in T],
+            sum(h_hnt[h,n,t] for h in H) ≤ AH_nt[n,t])
+        # Maximum hydro installed capacity
+        @constraint(model,
+            h6[h in H, n in N],
+            h̄_hn[h,n] ≤ Hmax_hn[h,n])
+        # Maximum RoR hydro generation
+        @constraint(model,
+            h7[n in N, t in T],
+            hr_nt[n,t] ≤ AR_nt[n,t])
+        # Maximum hydro generation
+        @constraint(model,
+            h8[n in N, t in T],
+            hr_nt[n,t] ≤ HRmax_n[n])
+        if specs.ramping
+            # Hydro ramping up
+            @constraint(model,
+                hr1[h in H, n in N, t in T[T.>1]],
+                h_hnt[h,n,t]-h_hnt[h,n,t-1] ≤ r⁺_h[h] * h̄_hn[h,n])
+            # Hydro ramping down
+            @constraint(model,
+                hr2[h in H, n in N, t in T[T.>1]],
+                h_hnt[h,n,t]-h_hnt[h,n,t-1] ≥ -r⁻_h[h] * h̄_hn[h,n])            
+        end
+    end
+
+    return model, VariablesDict, ObjectivesDict
 end
