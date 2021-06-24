@@ -1,6 +1,4 @@
 ## Project
-scratch/
-output/
 !docs/src/output
 .ipynb_checkpoints
 *.ipynb
