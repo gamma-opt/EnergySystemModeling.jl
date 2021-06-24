@@ -1,37 +1,18 @@
 
-using GlobalEnergyGIS, MAT, DelimitedFiles, JLD
+using MAT, DelimitedFiles, JLD
 
-create_scenario_datasets("SSP2", 2050)
-
-EuropeSmall = [
-    "Nordics"           GADM("Norway", "Sweden", "Finland", "Denmark")
-    "Mediterranian"     GADM("Spain", "Portugal", "Italy", "Croatia", "Greece", "Bosnia and Herzegovina", "Slowenia", "Serbia", "Kosovo", "Albania", "Macedonia")
-    "Western"           GADM("France", "Belgium", "Netherland", "Luxemburg")
-    "Central"           GADM("Germany", "Austria", "Switzerland")    
-    "Eastern"           GADM("Poland", "Czechia", "Slovakia", "Hungary")
-]
-
-saveregions("EuropeSmall", EuropeSmall)
-
-makedistances("EuropeSmall")
-
-createmaps("EuropeSmall")
-
-
-
-
+# path to your set output folder of GlobalEnergyGIS data
 inputdata = "D:\\Eigene Dateien\\Studium\\Master\\RA\\Copernicus\\output"
 
-SolarData =matread(joinpath(inputdata, "GISdata_solar2018_EuropeTest.mat"))
+SolarData =matread(joinpath(inputdata, "GISdata_solar2018_EuropeSmall.mat"))
 
-WindData = matread(joinpath(inputdata, "GISdata_wind2018_EuropeTest.mat"))
+WindData = matread(joinpath(inputdata, "GISdata_wind2018_EuropeSmall.mat"))
 
-HydroData = matread(joinpath(inputdata, "GISdata_hydro_EuropeTest.mat"))
+HydroData = matread(joinpath(inputdata, "GISdata_hydro_EuropeSmall.mat"))
 
 
 # Generating Solar Production Data for each node from the Matlab files
 # Node Number is not save
-
 
 SolarProductionA = typeof(SolarData["CFtime_pvplantA"]) == Float64 ? [SolarData["CFtime_pvplantA"]] : SolarData["CFtime_pvplantA"]
 SolarProductionB = typeof(SolarData["CFtime_pvplantB"]) == Float64 ? [SolarData["CFtime_pvplantB"]] : SolarData["CFtime_pvplantB"]
@@ -95,7 +76,6 @@ writedlm("WindProductionEas.csv", WindProductionEas, ',')
 WindProductionOff = typeof(WindData["CFtime_windoffshore"]) == Float64 ? [WindData["CFtime_windoffshore"]] : WindData["CFtime_windoffshore"]
 WindProductionOff[isnan.(WindProductionOff)].= 0
 
-
 # Nordics (node 1)
 WindProductionNordicsOff = WindProductionOff[:,1,1]
 writedlm("WindProductionNordicsOff.csv", WindProductionNordicsOff, ',')
@@ -124,7 +104,7 @@ WindProductionOff[isnan.(WindProductionOff)].= 0
 
 ## demand
 
-gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_EuropeTest_ssp2-34-2050_2018.jld"), "demand")
+gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_EuropeSmall_ssp2-26-2050_2018.jld"), "demand")
 DemandNordics = gisdemand[:,1]
 
 DemandMed = gisdemand[:,2]
