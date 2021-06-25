@@ -254,13 +254,27 @@ end
 
 """Plot objective value and individual objective values."""
 function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{String, Any}})
+    obj_names = [
+    "gen_inv",
+    "gen_oc",
+    "shed_oc",
+    "trans_inv",
+    "trans_oc",
+    "sto_inv",
+    "sto_oc",
+    "hyd_inv"
+    ]
+    ObjNames = Dict(collect(keys(sort(objectives))) .=> obj_names);
     fs = keys(objectives)
     vs = [objectives[i] for i in fs]
-    title = string("Objective value: ", round(sum(vs), digits = 2))
+    nms = [ObjNames[i] for i in fs]
+    title = string("Objective value: ", round(sum(vs), sigdigits = 2))
     bar(vs,
         xlabel="Objective function",
+        xticks = ([1:1:8;],nms),
         ylabel="EUR",
         title=title,
+        title = title,
         legend=false,
         size = (800,600))
 end

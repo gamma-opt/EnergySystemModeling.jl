@@ -162,6 +162,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     - `f5: Transmission operational cost
     - `f6: Storage investment cost
     - `f7: Storage operational cost
+    - `f8: Hydro investment
     """
     ObjectivesDict = Dict{String, Any}()
 
