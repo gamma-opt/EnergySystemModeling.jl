@@ -3,7 +3,7 @@ using GlobalEnergyGIS
 # set scenario and target year
 create_scenario_datasets("SSP2", 2050)
 
-# define regions and countries
+# define regions and countries and name the regionset
 EuropeTest = [
     "Nordics"           GADM("Norway", "Sweden", "Finland", "Denmark")
     "Mediterranian"     GADM("Spain", "Portugal", "Italy", "Croatia", "Greece", "Bosnia and Herzegovina", "Slovenia", "Serbia", "Kosovo", "Albania", "Mazedonia", "Montenegro")
@@ -12,7 +12,7 @@ EuropeTest = [
     "Eastern"           GADM("Poland", "Czech Republic", "Slovakia", "Hungary")
 ]
 
-saveregions("EuropeTest", EuropeSmall)
+saveregions("EuropeTest", EuropeTest)
 makedistances("EuropeTest")
 createmaps("EuropeTest")
 
@@ -27,7 +27,7 @@ predictdemand(gisregion="EuropeTest", sspscenario="ssp2-26", sspyear=2050, era_y
 # GIS options
 
 solaroptions() = Dict(
-    :gisregion => "EuropeSmall",            # "Europe8", "Eurasia38", "Scand3"
+    :gisregion => "EuropeTest",            # "Europe8", "Eurasia38", "Scand3"
     :filenamesuffix => "",              # e.g. "_landx2" to save high land availability data as "GISdata_solar2018_Europe8_landx2.mat" 
 
     :pv_density => 45,                  # Solar PV land use 45 Wp/m2 = 45 MWp/km2 (includes PV efficiency & module spacing, add latitude dependency later)

@@ -4,11 +4,14 @@ using MAT, DelimitedFiles, JLD
 # path to your set output folder of GlobalEnergyGIS data
 inputdata = "D:\\Eigene Dateien\\Studium\\Master\\RA\\Copernicus\\output"
 
-SolarData =matread(joinpath(inputdata, "GISdata_solar2018_EuropeSmall.mat"))
+# Name of the regionset you defined in Inputdata.jl
+regionset = "EuropeTest"
 
-WindData = matread(joinpath(inputdata, "GISdata_wind2018_EuropeSmall.mat"))
+SolarData =matread(joinpath(inputdata, "GISdata_solar2018_$regionset.mat"))
 
-HydroData = matread(joinpath(inputdata, "GISdata_hydro_EuropeSmall.mat"))
+WindData = matread(joinpath(inputdata, "GISdata_wind2018_$regionset.mat"))
+
+HydroData = matread(joinpath(inputdata, "GISdata_hydro_$regionset.mat"))
 
 
 # Generating Solar Production Data for each node from the Matlab files
@@ -39,18 +42,22 @@ WindProductionOff[isnan.(WindProductionOff)].= 0
 
 
 ## demand
-gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_EuropeSmall_ssp2-26-2050_2018.jld"), "demand")
+gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_$(regionset)_ssp2-26-2050_2018.jld"), "demand")
 
+# Get the different regions created in GlobalEnergyGIS
+TransmissionData = matread(joinpath(inputdata, "distances_$regionset.mat"))
+Regionlist = typeof(TransmissionData["regionlist"]) == Float64 ? [TransmissionData["regionlist"]] : TransmissionData["regionlist"]
 
-n = 5
+# number of nodes and technologies 
+n = length(Regionlist)
 t = 8
 
+# Create a Vector for every technology spanning all nodes (at 5 nodes: 43.800 columns)
 Demand = []
 WindProdOff = []
 WindProdOn = []
 SolarProd = []
 
-# create a vector with the capacity of each energy source per node
 for i in 1:n
     Demand$i = gisdemand[:,i]
     append!(Demand, Demand$i)
@@ -71,10 +78,9 @@ for i in 1:n
     append!(SolarProd, SolarProd$i)
 end
 
-
 All = hcat(Demand, SolarProd, WindProdOn, WindProdOff)
 
-
+# Generate CSV files for every single node (i.e. a new file every 8760 hours) 
 j = 8760
 x = 1
 
@@ -87,3 +93,10 @@ for m = 1:n
 end
 
 
+# create file for node_specs
+NodeNr = [1:n;]
+Max_Demand = repeat(1:1; outer=[length(Regionlist)])
+nodes_specs_body = hcat(NodeNr, Regionlist, Max_Demand)
+HeaderN = ["Node" "Name" "Max_Demand" ]
+nodes_specs = vcat(HeaderN, nodes_specs_body)
+writedlm("nodes_specs.csv", nodes_specs, ',')
