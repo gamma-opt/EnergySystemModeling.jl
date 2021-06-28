@@ -19,82 +19,18 @@ SolarProductionB = typeof(SolarData["CFtime_pvplantB"]) == Float64 ? [SolarData[
 SolarProductionTotal = SolarProductionA .+ SolarProductionB
 SolarProductionTotal[isnan.(SolarProductionTotal)].= 0
 
-#First row of every "block" / matrix
-
-# Nordics (node 1)
-SolarProductionNordics = SolarProductionTotal[:,1,1]
-writedlm("SolarProductionNordics.csv", SolarProductionNordics, ',')
-
-# Mediterranian (node 2)
-SolarProductionMed = SolarProductionTotal[:,1,2]
-writedlm("SolarProductionMed.csv", SolarProductionMed, ',')
-
-# Western (node 3)
-SolarProductionWest = SolarProductionTotal[:,1,3]
-writedlm("SolarProductionWest.csv", SolarProductionWest, ',')
-
-# Central (node 4)
-SolarProductionCen = SolarProductionTotal[:,1,4]
-writedlm("SolarProductionCen.csv", SolarProductionCen, ',')
-
-# Eastern (node 5)
-SolarProductionEas = SolarProductionTotal[:,1,5]
-writedlm("SolarProductionEas.csv", SolarProductionEas, ',')
-
-
 
 ## Wind Onshore
 WindProductionA = typeof(WindData["CFtime_windonshoreA"]) == Float64 ? [WindData["CFtime_windonshoreA"]] : WindData["CFtime_windonshoreA"]
 WindProductionB = typeof(WindData["CFtime_windonshoreB"]) == Float64 ? [WindData["CFtime_windonshoreB"]] : WindData["CFtime_windonshoreB"]
-WindProductionTotal = WindProductionA .+ WindProductionB
-WindProductionTotal[isnan.(WindProductionTotal)].= 0
-
-# Nordics (node 1)
-WindProductionNordics = WindProductionTotal[:,1,1]
-writedlm("WindProductionNordics.csv", WindProductionNordics, ',')
-
-# Mediterranian (node 2)
-WindProductionMed = WindProductionTotal[:,1,2]
-writedlm("WindProductionMed.csv", WindProductionMed, ',')
-
-# Western (node 3)
-WindProductionWest = WindProductionTotal[:,1,3]
-writedlm("WindProductionWest.csv", WindProductionWest, ',')
-
-# Central (node 4)
-WindProductionCen = WindProductionTotal[:,1,4]
-writedlm("WindProductionCen.csv", WindProductionCen, ',')
-
-# Eastern (node 5)
-WindProductionEas = WindProductionTotal[:,1,5]
-writedlm("WindProductionEas.csv", WindProductionEas, ',')
-
+WindProductionOn = WindProductionA .+ WindProductionB
+WindProductionOn[isnan.(WindProductionOn)].= 0
 
 
 ## Wind Offshore
 
 WindProductionOff = typeof(WindData["CFtime_windoffshore"]) == Float64 ? [WindData["CFtime_windoffshore"]] : WindData["CFtime_windoffshore"]
 WindProductionOff[isnan.(WindProductionOff)].= 0
-
-# Nordics (node 1)
-WindProductionNordicsOff = WindProductionOff[:,1,1]
-writedlm("WindProductionNordicsOff.csv", WindProductionNordicsOff, ',')
-
-# Mediterranian (node 2)
-WindProductionMedOff = WindProductionOff[:,1,2]
-writedlm("WindProductionMedOff.csv", WindProductionMedOff, ',')
-
-# Western (node 3)
-WindProductionWestOff = WindProductionOff[:,1,3]
-writedlm("WindProductionWestOff.csv", WindProductionWestOff, ',')
-
-# Central (node 4)
-WindProductionCenOff = WindProductionOff[:,1,4]
-writedlm("WindProductionCenOff.csv", WindProductionCenOff, ',')
-
-# Eastern (node 5)
-WindProductionEasOff = WindProductionOff[:,1,5]
-writedlm("WindProductionEasOff.csv", WindProductionEasOff, ',')
 
 
 ## Hydro
@@ -103,42 +39,51 @@ WindProductionOff[isnan.(WindProductionOff)].= 0
 
 
 ## demand
-
 gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_EuropeSmall_ssp2-26-2050_2018.jld"), "demand")
-DemandNordics = gisdemand[:,1]
-
-DemandMed = gisdemand[:,2]
-
-DemandWest = gisdemand[:,3]
-
-DemandCen = gisdemand[:,4]
-
-DemandEas = gisdemand[:,5]
 
 
-# Concatenate the data for each node
+n = 5
+t = 8
 
-N1_0 = hcat(DemandNordics, SolarProductionNordics, WindProductionNordics, WindProductionNordicsOff)
-Header = ["Demand" "Solar" "WindOn" "WindOff"]
-N1 = vcat(Header, N1_0)
-writedlm("N1.csv", N1, ',')
+Demand = []
+WindProdOff = []
+WindProdOn = []
+SolarProd = []
 
-N2_0 = hcat(DemandMed, SolarProductionMed, WindProductionMed, WindProductionMedOff)
-Header = ["Demand" "Solar" "WindOn" "WindOff"]
-N2 = vcat(Header, N2_0)
-writedlm("N2.csv", N2, ',')
+# create a vector with the capacity of each energy source per node
+for i in 1:n
+    Demand$i = gisdemand[:,i]
+    append!(Demand, Demand$i)
+end
 
-N3_0 = hcat(DemandWest, SolarProductionWest, WindProductionWest, WindProductionWestOff)
-Header = ["Demand" "Solar" "WindOn" "WindOff"]
-N3 = vcat(Header, N3_0)
-writedlm("N3.csv", N3, ',')
+for i in 1:n
+    WindProdOff$i = WindProductionOff[:,1,i]
+    append!(WindProdOff, WindProdOff$i)
+end
 
-N4_0 = hcat(DemandCen, SolarProductionCen, WindProductionCen, WindProductionCenOff)
-Header = ["Demand" "Solar" "WindOn" "WindOff"]
-N4 = vcat(Header, N4_0)
-writedlm("N4.csv", N4, ',')
+for i in 1:n
+    WindProdOn$i = WindProductionOn[:,1,i]
+    append!(WindProdOn, WindProdOn$i)
+end
 
-N5_0 = hcat(DemandEas, SolarProductionEas, WindProductionEas, WindProductionEasOff)
-Header = ["Demand" "Solar" "WindOn" "WindOff"]
-N5 = vcat(Header, N5_0)
-writedlm("N5.csv", N5, ',')
+for i in 1:n
+    SolarProd$i = SolarProductionTotal[:,1,i]
+    append!(SolarProd, SolarProd$i)
+end
+
+
+All = hcat(Demand, SolarProd, WindProdOn, WindProdOff)
+
+
+j = 8760
+x = 1
+
+for m = 1:n
+    NodeData = All[x:j*m,:]
+    x = x+8760
+    Header = ["Demand" "Solar" "WindOn" "WindOff"]
+    N_$m = vcat(Header, NodeData)
+    writedlm("N_$m.csv", NodeData, ',')
+end
+
+
