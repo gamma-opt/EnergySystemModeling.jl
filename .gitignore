@@ -37,3 +37,9 @@ Manifest.toml
 
 # Triton files
 .triton/
+
+# Directory with basic structure files
+.basic_specs/
+
+# Hide big files from Git
+.big_files/

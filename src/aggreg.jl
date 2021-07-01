@@ -195,7 +195,7 @@ Fields:
 # (third method)
 function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symbol = :mean) where {T<:Float64}
     #### Function to aggregate vectors under a representative value, normally used in hierarchical
-    #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever there's a marker
+    #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever they are equal
 
     @assert length(size(series)) <= 2 "Series to be aggregated need to be represented as a Matrix (2D)"
 
@@ -203,7 +203,6 @@ function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symb
     lseries = size(series,1)                      # Length of vectors
     nseries = size(series,2)                      # Number of vectors
     D = 1:nseries                                 # Range for the number of series
-    class = collect(1:lseries)                    # Vector to mark the new classes
     new_lseries = maximum(marker)                 # New vectors length
 
     # Error control
@@ -214,19 +213,19 @@ function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symb
     weights = [count(i->(i == j),marker) for j in class] .|> Int
 
     # Declaring the new VecOrMat object
-    new_v = zeros(length(class))                          # New vector to be formed after aggregation
+    new_v = zeros(length(class),nseries)                          # New vector to be formed after aggregation
 
     # Calculate the representative value and replace it in the new_v
     if representation == :mean
         for i in 1:length(class), d in D
-            new_v[i,d] .= mean(series[marker .== class[i],d])
+            new_v[i,d] = mean(series[marker .== class[i],d])
         end
     elseif representation == :medoid
         for i in 1:class[end], d in D
             dist = pairwise(Euclidean(),series[marker .== class[i],d])
             s_medoid = kmedoids(dist, 1)
             s_medoid = s_medoid.medoids[1]
-            new_v[i,d] .= series[marker .== class[i],d][s_medoid]
+            new_v[i,d] = series[marker .== class[i],d][s_medoid]
         end
     else
         @assert false "Representation method not defined."
@@ -513,3 +512,9 @@ function update_k!(_SeriesInstance, new_current_k::Int)
 
     @assert new_current_k >= stopping_k "Number of clusters $new_current_k is now < then $stopping_k"
 end
+
+"""
+update_k!(_SeriesInstance, new_current_k::Int)
+Updates number of clusters in the _SeriesInstance object.
+"""
+# function generate_instance(parameters::Params, ClustDict, SeriesDict, clustering_levels::Vecto{Int}, output_path)

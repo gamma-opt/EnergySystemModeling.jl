@@ -60,7 +60,7 @@ function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, tec
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
         title = "Generation capacity by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10,
-        color=permutedims(techcolors),
+        color=techcolors,
         alpha=0.7,
         legend=false)
 end
@@ -247,7 +247,7 @@ function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, te
         lw = 0,
         alpha=0.7,
         size = (800,600))
-    bar!(N, D_n, bar_width=0.03, fillcolor=repeat([:black], length(N)), label="demand")
+    bar!(N, D_n, bar_width=0.03, fillcolor = :black, label="demand")
 end
 
 # Overload functions for signature: parameters::Params, model::Model, ...
@@ -274,7 +274,6 @@ function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{Str
         xticks = ([1:1:8;],nms),
         ylabel="EUR",
         title=title,
-        title = title,
         legend=false,
         size = (800,600))
 end
