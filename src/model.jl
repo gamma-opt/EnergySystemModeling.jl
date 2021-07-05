@@ -365,9 +365,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     end
   
     # Shedding upper bound
-    @constraint(model,
-        g6[n in N, t in T],
-        σ_nt[n,t] ≤ C̄ * max_dem_n[n]*D_nt[n,t])
+    # @constraint(model,
+    #     g6[n in N, t in T],
+    #     σ_nt[n,t] ≤ C̄ * max_dem_n[n]*D_nt[n,t])
 
     if specs.transmission
         # Transmission capacity
