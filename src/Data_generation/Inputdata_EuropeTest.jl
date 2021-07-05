@@ -3,6 +3,7 @@ using GlobalEnergyGIS
 # set scenario and target year
 create_scenario_datasets("SSP2", 2050)
 
+ 
 # define regions and countries and name the regionset
 EuropeTest = [
     "Nordics"           GADM("Norway", "Sweden", "Finland", "Denmark")
@@ -12,15 +13,19 @@ EuropeTest = [
     "Eastern"           GADM("Poland", "Czech Republic", "Slovakia", "Hungary")
 ]
 
-saveregions("EuropeTest", EuropeTest)
+saveregions("EuropeTest", gisregionEuropeTest)
 makedistances("EuropeTest")
 createmaps("EuropeTest")
 
 # generate VRE data and demand
-GISsolar(gisregion="EuropeTest")
-GISwind(gisregion="EuropeTest")
-GIShydro(gisregion="EuropeTest")
+GISsolar(gisregionEuropeTest)
+GISwind(gisregionEuropeTest)
+GIShydro(gisregionEuropeTest)
 predictdemand(gisregion="EuropeTest", sspscenario="ssp2-26", sspyear=2050, era_year=2018)
+
+
+
+
 
 
 

@@ -395,6 +395,8 @@ function create_nodedata(DataInput_path::AbstractString, era_year::AbstractStrin
     end
 end
 
+
+
 """
 read_clusters(ClustersDataPath::AbstractString, k::Int)
 Read clusters from a julia dictionary (.jld2) with the structure ClustInstance.
