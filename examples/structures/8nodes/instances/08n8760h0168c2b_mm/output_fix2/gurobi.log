@@ -1,0 +1,22 @@
+
+Gurobi 9.1.2 (linux64) logging started Mon Jul  5 17:47:28 2021
+
+
+Gurobi 9.1.2 (linux64) logging started Mon Jul  5 17:47:36 2021
+
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (linux64)
+Thread count: 40 physical cores, 40 logical processors, using up to 32 threads
+Optimize a model with 3118529 rows, 1314095 columns and 9410550 nonzeros
+Model fingerprint: 0x3abac1bc
+Coefficient statistics:
+  Matrix range     [3e-04, 1e+00]
+  Objective range  [1e+01, 4e+05]
+  Bounds range     [1e+03, 8e+06]
+  RHS range        [1e-01, 3e+07]
+Presolve removed 84968 rows and 178685 columns
+Presolve time: 0.87s
+
+Barrier solved model in 0 iterations and 0.87 seconds
+Model is infeasible
+
+User-callback calls 16, time in user-callback 0.00 sec
