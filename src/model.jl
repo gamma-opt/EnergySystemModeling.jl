@@ -396,8 +396,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     if specs.storage
         # Full storage policy
         @constraint(model,
-            s0[s in S, n in N, t in T],
-            b_snt[s,n,1] == b̄_sn[s,n])
+            s0[s in S, n in N, t in [1]],
+            b_snt[s,n,t] == b̄_sn[s,n])
         # Storage capacity
         @constraint(model,
             s1[s in S, n in N, t in T],
