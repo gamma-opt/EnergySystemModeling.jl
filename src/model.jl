@@ -341,9 +341,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     @constraint(model,
         g1[g in G, n in N, t in T],
         p_gnt[g,n,t] ≤ A_gnt[g,n,t] * p̄_gn[g,n])
-    @constraint(model,
-        g2[g in G, n in N],
-        p̄_gn[g,n] ≤ Gmax_gn[g,n])
+    # @constraint(model,
+    #     g2[g in G, n in N],
+    #     p̄_gn[g,n] ≤ Gmax_gn[g,n])
 
     # Minimum renewables share
     if specs.renewable_target
@@ -388,9 +388,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             t4[l in L_ind, t in T],
             f_abs_lt[l,t] ≥ -f_lt[l,t])
 
-        @constraint(model,
-            t6[l in L_ind, t in T],
-            f̄_l[l] ≤ Tmax_l[l])
+        # @constraint(model,
+        #     t6[l in L_ind, t in T],
+        #     f̄_l[l] ≤ Tmax_l[l])
     end
 
     if specs.storage
@@ -423,9 +423,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             s6[s in S, n in N],
             b_snt[s,n,1] == b_snt[s,n,T[end]])
         # Storage capacity bounds
-        @constraint(model,
-            s7[s in S, n in N],
-            b̄_sn[s,n] ≤ Smax_sn[s,n])
+        # @constraint(model,
+        #     s7[s in S, n in N],
+        #     b̄_sn[s,n] ≤ Smax_sn[s,n])
     end
 
     if specs.ramping
@@ -479,9 +479,9 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             h5[n in N, t in T],
             sum(h_hnt[h,n,t] for h in H) ≤ AH_nt[n,t])
         # Maximum hydro installed capacity
-        @constraint(model,
-            h6[h in H, n in N],
-            h̄_hn[h,n] ≤ Hmax_hn[h,n])
+        # @constraint(model,
+        #     h6[h in H, n in N],
+        #     h̄_hn[h,n] ≤ Hmax_hn[h,n])
         # Maximum RoR hydro generation
         @constraint(model,
             h7[n in N, t in T],
