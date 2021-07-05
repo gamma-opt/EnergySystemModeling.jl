@@ -6,16 +6,71 @@ function replace_nans!(array::Array{Float64, N}) where N
     end
 end
 
+T = 8760
+n = length(Regionlist)
+t = 9   
 
 function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
 
     # Name of the regionset you defined in Inputdata.jl
-    SolarData = matread(joinpath(inputdata, "GISdata_solar2018_$regionset.mat"))
-    WindData = matread(joinpath(inputdata, "GISdata_wind2018_$regionset.mat"))
+    SolarData = matread(joinpath(inputdata, "GISdata_solar$(era_year)_$regionset.mat"))
+    WindData = matread(joinpath(inputdata, "GISdata_wind$(era_year)_$regionset.mat"))
     HydroData = matread(joinpath(inputdata, "GISdata_hydro_$regionset.mat"))
     TransmissionData = matread(joinpath(inputdata, "distances_$regionset.mat"))
 
-    # Get the different capacities per VRE source from GlobalEnergyGIS files
+    
+    # Solar
+
+    PVCapA = typeof(SolarData["capacity_pvplantA"]) == Float64 ? [SolarData["capacity_pvplantA"]] : SolarData["capacity_pvplantA"]
+    PVCapB = typeof(SolarData["capacity_pvplantB"]) == Float64 ? [SolarData["capacity_pvplantB"]] : SolarData["capacity_pvplantB"]
+    CSPCapA = typeof(SolarData["capacity_cspplantA"]) == Float64 ? [SolarData["capacity_cspplantA"]] : SolarData["capacity_cspplantA"]
+    CSPCapB = typeof(SolarData["capacity_cspplantB"]) == Float64 ? [SolarData["capacity_cspplantB"]] : SolarData["capacity_cspplantB"]
+    RooftopCap = typeof(SolarData["capacity_pvrooftop"]) == Float64 ? [SolarData["capacity_pvrooftop"]] : SolarData["capacity_pvrooftop"]
+    SolarCapTotal = PVCapA .+ PVCapB .+ CSPCapA .+ CSPCapB .+ RooftopCap
+    replace_nans!(PVCapA)
+    replace_nans!(PVCapB)
+    replace_nans!(CSPCapA)
+    replace_nans!(CSPCapB)
+    replace_nans!(RooftopCap)
+    replace_nans!(SolarCapTotal)
+
+    CFtime_PVA = typeof(SolarData["CFtime_pvplantA"]) == Float64 ? [SolarData["CFtime_pvplantA"]] : SolarData["CFtime_pvplantA"]
+    CFtime_PVB = typeof(SolarData["CFtime_pvplantB"]) == Float64 ? [SolarData["CFtime_pvplantB"]] : SolarData["CFtime_pvplantB"]
+    CFtime_CSPA = typeof(SolarData["CFtime_cspplantA"]) == Float64 ? [SolarData["CFtime_cspplantA"]] : SolarData["CFtime_cspplantA"]
+    CFtime_CSPB = typeof(SolarData["CFtime_cspplantB"]) == Float64 ? [SolarData["CFtime_cspplantB"]] : SolarData["CFtime_cspplantB"]
+    CFtime_PVrooftop = typeof(SolarData["CFtime_pvrooftop"]) == Float64 ? [SolarData["CFtime_pvrooftop"]] : SolarData["CFtime_pvrooftop"]
+    CFtime_solar = CFtime_PVA .+ CFtime_PVB .+ CFtime_CSPA .+ CFtime_CSPB .+ CFtime_PVrooftop
+    replace_nans!(CFtime_PVA)
+    replace_nans!(CFtime_PVB)
+    replace_nans!(CFtime_CSPA)
+    replace_nans!(CFtime_CSPB)
+    replace_nans!(CFtime_PVrooftop)
+    replace_nans!(CFtime_solar)
+
+    #Preallocate arrays for results
+    avail_sol_cspA = zeros(Float64, T, n)
+    avail_sol_cspB = zeros(Float64, T, n)
+    avail_sol_pvA = zeros(Float64, T, n)
+    avail_sol_pvB = zeros(Float64, T, n)
+    avail_sol_pvrooftop = zeros(Float64, T, n)
+
+    #Calculate absolute availability values and sum up the different classes for each solar power type
+    for i in 1:T
+        avail_sol_cspA[i,:,:] = permutedims(sum(CSPCapA .* CFtime_CSPA[i,:,:], dims=2))
+        avail_sol_cspB[i,:,:] = permutedims(sum(CSPCapB .* CFtime_CSPB[i,:,:], dims=2))
+        avail_sol_pvA[i,:,:] = permutedims(sum(PVCapA .* CFtime_PVA[i,:,:], dims=2))
+        avail_sol_pvB[i,:,:] = permutedims(sum(PVCapB .* CFtime_PVB[i,:,:], dims=2))
+        avail_sol_pvrooftop[i,:,:] = permutedims(sum(RooftopCap .* CFtime_PVrooftop[i,:,:], dims=2))
+    end
+    #Calculate total solar capacity
+    capacity_solar = permutedims(sum(CSPCapA, dims=2)) + permutedims(sum(CSPCapB, dims=2)) + permutedims(sum(PVCapA, dims=2)) +
+                    permutedims(sum(PVCapB, dims=2))  + permutedims(sum(RooftopCap, dims=2))
+    #Sum the different solar types and divide with total capacity to get relative availability values
+    avail_sol = (avail_sol_cspA + avail_sol_cspB + avail_sol_pvA + avail_sol_pvB + avail_sol_pvrooftop) ./ capacity_solar
+
+
+    # Wind
+
     WindCapA = typeof(WindData["capacity_onshoreA"]) == Float64 ? [WindData["capacity_onshoreA"]] : WindData["capacity_onshoreA"]
     WindCapB = typeof(WindData["capacity_onshoreB"]) == Float64 ? [WindData["capacity_onshoreB"]] : WindData["capacity_onshoreB"]
     WindCapTotal = WindCapA .+ WindCapB
@@ -24,40 +79,33 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     WindCapOff = typeof(WindData["capacity_offshore"]) == Float64 ? [WindData["capacity_offshore"]] : WindData["capacity_offshore"]
     replace_nans!(WindCapOff)
 
-    PVCapA = typeof(SolarData["capacity_pvplantA"]) == Float64 ? [SolarData["capacity_pvplantA"]] : SolarData["capacity_pvplantA"]
-    PVCapB = typeof(SolarData["capacity_pvplantB"]) == Float64 ? [SolarData["capacity_pvplantB"]] : SolarData["capacity_pvplantB"]
-    CSPCapA = typeof(SolarData["capacity_cspplantA"]) == Float64 ? [SolarData["capacity_cspplantA"]] : SolarData["capacity_cspplantA"]
-    CSPCapB = typeof(SolarData["capacity_cspplantB"]) == Float64 ? [SolarData["capacity_cspplantB"]] : SolarData["capacity_cspplantB"]
-    RooftopCap = typeof(SolarData["capacity_pvrooftop"]) == Float64 ? [SolarData["capacity_pvrooftop"]] : SolarData["capacity_pvrooftop"]
-    SolarCapTotal = PVCapA .+ PVCapB .+ CSPCapA .+ CSPCapB .+ RooftopCap
-    replace_nans!(SolarCapTotal)
-
-    HydroCap = typeof(HydroData["existingcapac"]) == Float64 ? [HydroData["existingcapac"]] : HydroData["existingcapac"]
-    replace_nans!(HydroCap)
-
-    # Get the Production data per VRE
-    
-    # Generating Solar Production Data for each node from the Matlab files
-    # Node Number is not save
-
-    PVProductionA = typeof(SolarData["CFtime_pvplantA"]) == Float64 ? [SolarData["CFtime_pvplantA"]] : SolarData["CFtime_pvplantA"]
-    PVProductionB = typeof(SolarData["CFtime_pvplantB"]) == Float64 ? [SolarData["CFtime_pvplantB"]] : SolarData["CFtime_pvplantB"]
-    CSPProductionA = typeof(SolarData["CFtime_cspplantA"]) == Float64 ? [SolarData["CFtime_cspplantA"]] : SolarData["CFtime_cspplantA"]
-    CSPProductionB = typeof(SolarData["CFtime_cspplantB"]) == Float64 ? [SolarData["CFtime_cspplantB"]] : SolarData["CFtime_cspplantB"]
-    PVrooftop = typeof(SolarData["CFtime_pvrooftop"]) == Float64 ? [SolarData["CFtime_pvrooftop"]] : SolarData["CFtime_pvrooftop"]
-    SolarProductionTotal = PVProductionA .+ PVProductionB .+ CSPProductionA .+ CSPProductionB .+ PVrooftop
-    replace_nans!(SolarProductionTotal)
-
     ## Wind Onshore
-    WindProductionA = typeof(WindData["CFtime_windonshoreA"]) == Float64 ? [WindData["CFtime_windonshoreA"]] : WindData["CFtime_windonshoreA"]
-    WindProductionB = typeof(WindData["CFtime_windonshoreB"]) == Float64 ? [WindData["CFtime_windonshoreB"]] : WindData["CFtime_windonshoreB"]
-    WindProductionOn = WindProductionA .+ WindProductionB
-    replace_nans!(WindProductionOn)
+    CFtime_windonshoreA = typeof(WindData["CFtime_windonshoreA"]) == Float64 ? [WindData["CFtime_windonshoreA"]] : WindData["CFtime_windonshoreA"]
+    CFtime_windonshoreB = typeof(WindData["CFtime_windonshoreB"]) == Float64 ? [WindData["CFtime_windonshoreB"]] : WindData["CFtime_windonshoreB"]
+    CFtime_windonshore = CFtime_windonshoreA .+ CFtime_windonshoreB
+    replace_nans!(CFtime_windonshore)
 
     ## Wind Offshore
-    WindProductionOff = typeof(WindData["CFtime_windoffshore"]) == Float64 ? [WindData["CFtime_windoffshore"]] : WindData["CFtime_windoffshore"]
-    replace_nans!(WindProductionOff)
-   
+    CFtime_windoffshore = typeof(WindData["CFtime_windoffshore"]) == Float64 ? [WindData["CFtime_windoffshore"]] : WindData["CFtime_windoffshore"]
+    replace_nans!(CFtime_windoffshore)
+
+      
+    #Preallocate arrays for results
+    avail_wind_offshore = zeros(Float64, T, n)
+    avail_wind_onshoreA = zeros(Float64, T, n)
+    avail_wind_onshoreB = zeros(Float64, T, n)
+
+    #Calculate absolute availability values and sum up the different classes for each wind power type
+    for i in 1:T
+        avail_wind_offshore[i,:,:] = permutedims(sum(WindCapOff .* CFtime_windoffshore[i,:,:], dims=2))
+        avail_wind_onshoreA[i,:,:] = permutedims(sum(WindCapA .* CFtime_windonshoreA[i,:,:], dims=2))
+        avail_wind_onshoreB[i,:,:] = permutedims(sum(WindCapB .* CFtime_windonshoreB[i,:,:], dims=2))
+    end
+
+    avail_wind_on = (avail_wind_onshoreA + avail_wind_onshoreB) ./ capacity_wind_on
+    avail_wind_off = avail_wind_offshore ./ capacity_wind_off
+    
+      
     # demand
     gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_$(regionset)_$(sspscenario)-$(sspyear)_$(era_year).jld"), "demand")
 
@@ -65,10 +113,10 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     Distances = typeof(TransmissionData["distances"]) == Float64 ? [TransmissionData["distances"]] : TransmissionData["distances"]
     Regionlist = typeof(TransmissionData["regionlist"]) == Float64 ? [TransmissionData["regionlist"]] : TransmissionData["regionlist"]
 
-    
     # Hydro
-    n = length(Regionlist)
-
+    HydroCap = typeof(HydroData["existingcapac"]) == Float64 ? [HydroData["existingcapac"]] : HydroData["existingcapac"]
+    replace_nans!(HydroCap)
+   
     existingcapac = permutedims(HydroData["existingcapac"]) .* 1000
     #Monthly inflow
     existinginflow = permutedims(HydroData["existinginflowcf"])
@@ -104,16 +152,11 @@ end
 
 
 function create_node_data()
-   
-    # number of nodes and technologies 
-    n = length(Regionlist)
-    t = 9                   # eventually try to find a way to not have it hard coded
-    
     # Create a Vector for every technology spanning all nodes (at 5 nodes: 43.800 columns)
     Demand = []
-    WindProdOff = []
-    WindProdOn = []
-    SolarProd = []
+    WindOff = []
+    WindOn = []
+    Solar = []
     hydro_in = []
     hydroRoR_in = []
     
@@ -122,41 +165,40 @@ function create_node_data()
         append!(Demand, Demand$i)
     end
     for i in 1:n
-        WindProdOff$i = sum(WindProductionOff[:,:,i], dims = 2)*1000
-        append!(WindProdOff, WindProdOff$i)
+        WindOff$i = sum(avail_wind_off[:,i], dims = 2)
+        append!(WindOff, WindOff$i)
     end
     for i in 1:n
-        WindProdOn$i = sum(WindProductionOn[:,:,i], dims = 2)*1000
-        append!(WindProdOn, WindProdOn$i)
+        WindOn$i = sum(avail_wind_on[:,i], dims = 2)
+        append!(WindOn, WindOn$i)
     end
     for i in 1:n
-        SolarProd$i = sum(SolarProductionTotal[:,:,i], dims = 2)*1000
-        append!(SolarProd, SolarProd$i)
+        Solar$i = sum(avail_sol[:,i], dims = 2)
+        append!(Solar, Solar$i)
     end
     for i in 1:n
-        hyd_in$i = sum(hyd_in[:,i], dims = 2)*1000
+        hyd_in$i = sum(hyd_in[:,i], dims = 2)
         append!(hydro_in, hyd_in$i)
     end
     for i in 1:n
-        hydRoR_in$i = sum(hydRoR_in[:,i], dims = 2)*1000
+        hydRoR_in$i = sum(hydRoR_in[:,i], dims = 2)
         append!(hydroRoR_in, hydRoR_in$i)
     end
     
-    
-    All = hcat(Demand, SolarProd, WindProdOn, WindProdOff, hydro_in, hydroRoR_in) # hydro_in, hydroRoR_in
+    All = hcat(Demand, Solar, WindOn, WindOff, hydro_in, hydroRoR_in) 
     
     # Generate CSV files for every single node (i.e. a new file every 8760 hours) 
-    j = 8760
+    
     x = 1
     
-    for m = 1:n
-        NodeData = All[x:j*m,:]
-        x = x+8760
+    for i = 1:n
+        NodeData = All[x:T*i,:]
+        x = x+T
         Header = ["Demand" "Avail_Sol" "Avail_Wind_On" "Avail_Wind_Off" "Hyd_In" "HydRoR_In"] #"Hyd_In" "HydRoR_In"
         N_m = vcat(Header, NodeData)
-        writedlm("N_$m.csv", N_m, ',')
+        writedlm("N_$i.csv", N_m, ',')
+       # CSV.write(joinpath(DataInput_path, "nodes", "$i.csv"), nodedata)
     end
-    
     
     # create file for node_specs
     NodeNr = [1:n;]
@@ -171,10 +213,6 @@ end
 function gen_capacity()
     # capacity of the remaining non-renewable energy sources fixed at 1000 GW (biomass, nuclear, coal, gas_cc, gas_oc)
     Capacity_else = 1000*1000
-    
-    # number of nodes and technologies 
-    n = length(Regionlist)
-    t = 9                   # eventually try to find a way to not have it hard coded
     
     Capacity = zeros(5,1)
     gcap_max = []
@@ -194,19 +232,16 @@ function gen_capacity()
     gen_tech = repeat([1:t;], n)
     # fill the whole column of gcap_min with 0
     gcap_min = fill(0, (n*t,1))
-    
         
     Gen_capac = hcat(node, gen_tech, gcap_min, gcap_max)
     Header = ["node" "gen_tech" "gcap_min" "gcap_max(GW)"]
     generation_capacity = vcat(Header, Gen_capac)
-    
     writedlm("gen_capacity.csv", generation_capacity, ',')
     
 end
 
 
 function sto_capacity()
-    n = length(Regionlist)
     st = 1          
     Max_capacity = 1000000000
         
@@ -217,16 +252,13 @@ function sto_capacity()
     sto_cap = hcat(s, node, scap_min, scap_max)
     Header = ["s" "node" "scap_min" "scap_max"]
     sto_capacity = vcat(Header, sto_cap)
-    
     writedlm("sto_capacity.csv", sto_capacity, ',')
 end
 
 
 function transmission()
     Dist = Distances[tril!(trues(size(Distances)), -1)]
-
-    n = length(Regionlist)
-    
+ 
     # get the combinations of the pair of nodes
     Nodes = [1:n;]
     Pairs = collect(combinations(Nodes, 2))
@@ -251,7 +283,6 @@ end
 
 
 function generate_tech_tables()
-
     techtable = [
         :name          :g       :investment_cost    :fixedOM    :varOM      :fuel_cost      :efficiency     :emissions      :lifetime       :r_minus    :r_plus
         :wind_on        1       1127                35          0           0               1               0               25              1           1
