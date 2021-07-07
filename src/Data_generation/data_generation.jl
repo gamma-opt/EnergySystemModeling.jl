@@ -7,18 +7,108 @@ function replace_nans!(array::Array{Float64, N}) where N
 end
 
 T = 8760
-n = length(Regionlist)
-t = 9   
 
-function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
+t = 8       # 8 since hydro is not included here   
 
+
+function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, Dataset)
+
+# Generate datasets for regions using GlobalEnergyGIS
+    # define regions and countries and name the regionset
+    
+    Dataset_Nordics = [
+        "Norway"           GADM("Norway")  
+        "Sweden"           GADM("Sweden")
+        "Finland"          GADM("Finland")
+        "Denmark"          GADM("Denmark") 
+    ]
+
+    Dataset_EU27 = [
+        "Austria"                   GADM("Austria") 
+        "Belgium"                   GADM("Belgium") 
+        "Bulgaria"                  GADM("Bulgaria") 
+        "Croatia"                   GADM("Croatia") 
+        "Cyprus"                    GADM("Cyprus") 
+        "Czech_Republic"            GADM("Czech Republic") 
+        "Denmark"                   GADM("Denmark") 
+        "Estonia"                   GADM("Estonia") 
+        "Finland"                   GADM("Finland") 
+        "France"                    GADM("France") 
+        "Germany"                   GADM("Germany") 
+        "Greece"                    GADM("Greece") 
+        "Hungary"                   GADM("Hungary") 
+        "Ireland"                   GADM("Ireland") 
+        "Italy"                     GADM("Italy") 
+        "Latvia"                    GADM("Latvia") 
+        "Lithuania"                 GADM("Lithuania") 
+        "Luxembourg"                GADM("Luxembourg") 
+        "Malta"                     GADM("Malta") 
+        "Netherlands"               GADM("Netherlands") 
+        "Poland"                    GADM("Poland") 
+        "Portugal"                  GADM("Portugal") 
+        "Romania"                   GADM("Romania") 
+        "Slovakia"                  GADM("Slovakia") 
+        "Slovenia"                  GADM("Slovenia") 
+        "Spain"                     GADM("Spain") 
+        "Sweden"                    GADM("Sweden") 
+    ]
+
+    Dataset_EU27_CH_NO_UK = [
+        "Austria"                   GADM("Austria") 
+        "Belgium"                   GADM("Belgium") 
+        "Bulgaria"                  GADM("Bulgaria") 
+        "Croatia"                   GADM("Croatia") 
+        "Cyprus"                    GADM("Cyprus") 
+        "Czech_Republic"            GADM("Czech Republic") 
+        "Denmark"                   GADM("Denmark") 
+        "Estonia"                   GADM("Estonia") 
+        "Finland"                   GADM("Finland") 
+        "France"                    GADM("France") 
+        "Germany"                   GADM("Germany") 
+        "Greece"                    GADM("Greece") 
+        "Hungary"                   GADM("Hungary") 
+        "Ireland"                   GADM("Ireland") 
+        "Italy"                     GADM("Italy") 
+        "Latvia"                    GADM("Latvia") 
+        "Lithuania"                 GADM("Lithuania") 
+        "Luxembourg"                GADM("Luxembourg") 
+        "Malta"                     GADM("Malta") 
+        "Netherlands"               GADM("Netherlands") 
+        "Norway"                    GADM("Norway")
+        "Poland"                    GADM("Poland") 
+        "Portugal"                  GADM("Portugal") 
+        "Romania"                   GADM("Romania") 
+        "Slovakia"                  GADM("Slovakia") 
+        "Slovenia"                  GADM("Slovenia") 
+        "Spain"                     GADM("Spain") 
+        "Sweden"                    GADM("Sweden") 
+        "Switzerland"               GADM("Switzerland")
+        "United_Kingdom"            GADM("United Kingdom")
+    ]
+
+    Dataset = Dataset_EU27                                       ## need to be changed as well
+
+    saveregions("EU27", Dataset)
+    makedistances("EU27")
+    createmaps("EU27")
+
+    # generate VRE data and demand
+    GISsolar(gisregion = "EU27")
+    GISwind(gisregion = "EU27")
+    GIShydro(gisregion = "EU27")
+    predictdemand(gisregion = "EU27", sspscenario="ssp2-26", sspyear=2050, era_year=2018)
+
+
+# fcuntion get data
     # Name of the regionset you defined in Inputdata.jl
     SolarData = matread(joinpath(inputdata, "GISdata_solar$(era_year)_$regionset.mat"))
     WindData = matread(joinpath(inputdata, "GISdata_wind$(era_year)_$regionset.mat"))
     HydroData = matread(joinpath(inputdata, "GISdata_hydro_$regionset.mat"))
     TransmissionData = matread(joinpath(inputdata, "distances_$regionset.mat"))
 
-    
+    Regionlist = typeof(TransmissionData["regionlist"]) == Float64 ? [TransmissionData["regionlist"]] : TransmissionData["regionlist"]
+    n = length(Regionlist)
+
     # Solar
 
     PVCapA = typeof(SolarData["capacity_pvplantA"]) == Float64 ? [SolarData["capacity_pvplantA"]] : SolarData["capacity_pvplantA"]
@@ -74,7 +164,10 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     WindCapA = typeof(WindData["capacity_onshoreA"]) == Float64 ? [WindData["capacity_onshoreA"]] : WindData["capacity_onshoreA"]
     WindCapB = typeof(WindData["capacity_onshoreB"]) == Float64 ? [WindData["capacity_onshoreB"]] : WindData["capacity_onshoreB"]
     WindCapTotal = WindCapA .+ WindCapB
+    replace_nans!(WindCapA)
+    replace_nans!(WindCapB)
     replace_nans!(WindCapTotal)
+
 
     WindCapOff = typeof(WindData["capacity_offshore"]) == Float64 ? [WindData["capacity_offshore"]] : WindData["capacity_offshore"]
     replace_nans!(WindCapOff)
@@ -83,6 +176,8 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     CFtime_windonshoreA = typeof(WindData["CFtime_windonshoreA"]) == Float64 ? [WindData["CFtime_windonshoreA"]] : WindData["CFtime_windonshoreA"]
     CFtime_windonshoreB = typeof(WindData["CFtime_windonshoreB"]) == Float64 ? [WindData["CFtime_windonshoreB"]] : WindData["CFtime_windonshoreB"]
     CFtime_windonshore = CFtime_windonshoreA .+ CFtime_windonshoreB
+    replace_nans!(CFtime_windonshoreA)
+    replace_nans!(CFtime_windonshoreB)
     replace_nans!(CFtime_windonshore)
 
     ## Wind Offshore
@@ -101,7 +196,8 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
         avail_wind_onshoreA[i,:,:] = permutedims(sum(WindCapA .* CFtime_windonshoreA[i,:,:], dims=2))
         avail_wind_onshoreB[i,:,:] = permutedims(sum(WindCapB .* CFtime_windonshoreB[i,:,:], dims=2))
     end
-
+    capacity_wind_on = permutedims(sum(WindCapA, dims=2)) + permutedims(sum(WindCapB, dims=2))
+    capacity_wind_off = permutedims(sum(WindCapOff, dims=2))
     avail_wind_on = (avail_wind_onshoreA + avail_wind_onshoreB) ./ capacity_wind_on
     avail_wind_off = avail_wind_offshore ./ capacity_wind_off
     
@@ -109,9 +205,10 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     # demand
     gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_$(regionset)_$(sspscenario)-$(sspyear)_$(era_year).jld"), "demand")
 
-    # Transmission distances
+    # Transmission distances and connected nodes
     Distances = typeof(TransmissionData["distances"]) == Float64 ? [TransmissionData["distances"]] : TransmissionData["distances"]
-    Regionlist = typeof(TransmissionData["regionlist"]) == Float64 ? [TransmissionData["regionlist"]] : TransmissionData["regionlist"]
+    connected = typeof(TransmissionData["connected"]) == Float64 ? [TransmissionData["connected"]] : TransmissionData["connected"]
+
 
     # Hydro
     HydroCap = typeof(HydroData["existingcapac"]) == Float64 ? [HydroData["existingcapac"]] : HydroData["existingcapac"]
@@ -137,10 +234,79 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     end
 
     #Percentage of inflow that is to reservoirs. TODO: Read from file
-    reservoirp = [0 0.953 1 0 0.433]                                    ## where does this come from?
+   #reservoirp = [0 0.953 1 0 0.433]                                    ## where does this come from?
+
+
+    # Use ENTSO-E data of PHS and RoR hydro power
+
+    # ENTSOE_file = CSV.read("D:\\Eigene Dateien\\Studium\\Master\\RA\\Copernicus\\output\\ENTSO-E data.csv", DataFrame)
+    # CSV.write("ENTSOE.csv", ENTSOE_file)
+    # ENTSOE = CSV.File("ENTSOE.csv") |> Tables.matrix
+    # ENTSOE_data = ENTSOE[:, setdiff(1:end, (7:14))]
+
+    # Installed Capacity of Hydropower Plants in EU split into PHS and RoR: https://www.vgb.org/hydropower_fact_sheets_2018-dfid-91827.html in MW
+
+    Hydro_PHS_RoR_data_EU = [
+    #:country              :RoR      :PHS
+    "Austria"              8120      5231
+    "Belgium"              112       1310
+    "Bulgaria"             2206      1013
+    "Croatia"              1915      293
+    "Cyprus"               0         0
+    "Czech_Republic"       1088      1172
+    "Denmark"              7         0
+    "Estonia"              6         0
+    "Finland"              3249      0
+    "France"               18163     7115
+    "Germany"              4577      6822
+    "Greece"               2693      699
+    "Hungary"              57        0
+    "Ireland"              237       292
+    "Italy"                14628     7592
+    "Latvia"               1589      0
+    "Lithuania"            117       760
+    "Luxembourg"           34        1296
+    "Malta"                0         0
+    "Netherlands"          37        0
+    "Norway"               29939     1397
+    "Poland"               588       1782
+    "Portugal"             4379      1789
+    "Romania"              6359      371
+    "Slovakia"             1606      916
+    "Slovenia"             1115      180
+    "Spain"                14086     5967
+    "Sweden"               16230     99
+    "Switzerland"          11850     1839
+    "United_Kingdom"       1759      2744
+    ]
+
+    # Calculating the percentage of Pumped Hydro Storage of total Hydro Power
+    reservoir = Hydro_PHS_RoR_data_EU[:,3]./(Hydro_PHS_RoR_data_EU[:,3] .+ Hydro_PHS_RoR_data_EU[:,2])
+
+    reservoir_table = hcat(Hydro_PHS_RoR_data_EU, reservoir)
+
+    # Check if and where the dataset countries (defined in run_data_generation) are in the Hydro_PHS_RoR_data_EU table 
+    # and allocate the corresponding percentage of PHS accordingly
+
+    Dataset_P = []
+    RP = []
+
+   # dsl = length(Dataset[:,1])
+    rtl = length(reservoir_table[:,1])
+
+    for i in 1:n
+        for j in 1:rtl
+            if occursin.(Regionlist[i,1], reservoir_table[j,1])
+                Dataset_P = [Dataset_P; permutedims(Regionlist[i,:])]
+                append!(RP, reservoir_table[j, 4])
+            end
+        end
+    end
+
+    reservoirp = hcat(Dataset_P[:,1], RP)[:,2]
 
     #Hydro capacities
-    hydroCap = existingcapac .* reservoirp
+    hydroCap = existingcapac .* permutedims(reservoirp)
     hydroRoRCap = existingcapac - hydroCap
     hydrocapacity = [hydroCap; hydroRoRCap]
     
@@ -148,10 +314,8 @@ function get_data(inputdata, regionset, sspscenario, sspyear, era_year)
     hyd_in = avail_inflow .* hydroCap
     hydRoR_in = avail_inflow .* hydroRoRCap
 
-end
 
-
-function create_node_data()
+# function create_node_data()
     # Create a Vector for every technology spanning all nodes (at 5 nodes: 43.800 columns)
     Demand = []
     WindOff = []
@@ -207,19 +371,21 @@ function create_node_data()
     HeaderN = ["Node" "Name" "Max_Demand" ]
     nodes_specs = vcat(HeaderN, nodes_specs_body)
     writedlm("nodes_specs.csv", nodes_specs, ',')
-end
+
     
 
-function gen_capacity()
+# function gen_capacity() 
     # capacity of the remaining non-renewable energy sources fixed at 1000 GW (biomass, nuclear, coal, gas_cc, gas_oc)
     Capacity_else = 1000*1000
     
     Capacity = zeros(5,1)
     gcap_max = []
             
+    ##### Hydro has to get an own csv file, must not be included here!
+
     # create a vector with the capacity of each energy source per node
     for i in 1:n
-        Capacity$i = [sum(WindCapTotal[i,:]), sum(WindCapOff[i,:]), sum(SolarCapTotal[i,:]),  Capacity_else, Capacity_else, Capacity_else, Capacity_else, Capacity_else, sum(hydrocapacity[:,i])].*1000
+        Capacity$i = [sum(WindCapTotal[i,:]), sum(WindCapOff[i,:]), sum(SolarCapTotal[i,:]),  Capacity_else, Capacity_else, Capacity_else, Capacity_else, Capacity_else].*1000
         append!(gcap_max, Capacity$i)
     end
      
@@ -237,11 +403,21 @@ function gen_capacity()
     Header = ["node" "gen_tech" "gcap_min" "gcap_max(GW)"]
     generation_capacity = vcat(Header, Gen_capac)
     writedlm("gen_capacity.csv", generation_capacity, ',')
-    
-end
 
 
-function sto_capacity()
+# function hydro()
+
+    nodehydro = repeat(1:n, inner = 1)
+    Hydro_cap_min = 
+    Hydro_cap_max =
+    HydroRoR =
+    Min_Hyd_Level =
+    Max_Hyd_Level =
+
+    Header = ["node" "Hydro_cap_min" "Hydro_cap_max" "HydroRoR" " Min_Hyd_Level" "Max_Hyd_Level"] 
+
+
+# function sto_capacity()
     st = 1          
     Max_capacity = 1000000000
         
@@ -253,17 +429,36 @@ function sto_capacity()
     Header = ["s" "node" "scap_min" "scap_max"]
     sto_capacity = vcat(Header, sto_cap)
     writedlm("sto_capacity.csv", sto_capacity, ',')
-end
 
 
-function transmission()
+
+# function transmission()
+
     Dist = Distances[tril!(trues(size(Distances)), -1)]
  
-    # get the combinations of the pair of nodes
-    Nodes = [1:n;]
-    Pairs = collect(combinations(Nodes, 2))
-    L_ind = [1:length(Pairs);]
-    
+    # Find distances for connected nodes only
+    Dist_Con = hcat(Dist, Con)
+    Dist_Con_df = DataFrame(Dist_Con, :auto)
+    Dist_con = Dist_Con_df[Dist_Con_df[!,:x2].!=0,:]
+    Distance_Connected = Matrix(Dist_con)[:,1]
+
+    # Connected nodes
+    Con = connected[tril!(trues(size(connected)), -1)]
+    # Ged rid of double nodes by only using lower triangular matrix
+    LinesLT = LowerTriangular(connected)
+    # Find connections by getting the CartesianIndex of the connected nodes
+    LinesCI = findall(x->x==1, LinesLT)
+    Lines = hcat(getindex.(LinesCI, 1), getindex.(LinesCI, 2))
+    LinesDoubledf = DataFrame(Lines, :auto)
+    # Delete entries of connections between only one node
+    Linesdf = LinesDoubledf[LinesDoubledf.x1 .!= LinesDoubledf.x2, :]
+    LinesMatrix = Matrix(Linesdf)
+
+    # Reshape into a 1d array
+    LinesSingle = collect(eachrow(LinesMatrix))
+
+    L_ind = [1:size(LinesMatrix)[1];]
+      
     # Create Matrix for remaining parameters of transmission
     
     TransData = [
@@ -272,17 +467,17 @@ function transmission()
     ]
     
     # Fill the matrix according to the number of pairs in the system
-    TransDatafull = repeat(TransData; outer=[length(Pairs)])
+    TransDatafull = repeat(TransData; outer=[size(LinesMatrix)[1]])
     
     # combine the tables, add header and create CSV file
-    TransmissionData = hcat(L_ind, Pairs, Dist, TransDatafull)
+    TransmissionData = hcat(L_ind, LinesSingle, Distance_Connected, TransDatafull)
     Header = ["L_ind" "line" "dist"  "cost" "converter_cost" "M" "C"  "B" "efficiency" "lifetime" "tcap_min" "tcap_max"]
     TransmissionTable = vcat(Header, TransmissionData)
     writedlm("transmission.csv", TransmissionTable, ',')
-end
 
 
-function generate_tech_tables()
+
+# function generate_tech_tables()
     techtable = [
         :name          :g       :investment_cost    :fixedOM    :varOM      :fuel_cost      :efficiency     :emissions      :lifetime       :r_minus    :r_plus
         :wind_on        1       1127                35          0           0               1               0               25              1           1
@@ -314,12 +509,3 @@ function generate_tech_tables()
    
 end
 
-
-function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year)
-    get_data(inputdata, regionset, sspscenario, sspyear, era_year)
-    create_node_data()
-    gen_capacity()
-    sto_capacity()
-    transmission()
-    generate_tech_tables()
-end

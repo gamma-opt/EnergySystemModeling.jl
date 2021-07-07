@@ -1,32 +1,90 @@
 using GlobalEnergyGIS
 
+function create_InputData()
 # set scenario and target year
-create_scenario_datasets("SSP2", 2050)
 
- 
 # define regions and countries and name the regionset
-EuropeTest = [
-    "Nordics"           GADM("Norway", "Sweden", "Finland", "Denmark")
-    "Mediterranian"     GADM("Spain", "Portugal", "Italy", "Croatia", "Greece", "Bosnia and Herzegovina", "Slovenia", "Serbia", "Kosovo", "Albania", "Mazedonia", "Montenegro")
-    "Western"           GADM("France", "Belgium", "Netherlands", "Luxembourg")
-    "Central"           GADM("Germany", "Austria", "Switzerland")    
-    "Eastern"           GADM("Poland", "Czech Republic", "Slovakia", "Hungary")
+Dataset_Nordics = [
+    "Norway"           GADM("Norway")  
+    "Sweden"           GADM("Sweden")
+    "Finland"          GADM("Finland")
+    "Denmark"          GADM("Denmark") 
 ]
 
-saveregions("EuropeTest", gisregionEuropeTest)
+Dataset_EU27 = [
+    "Austria"                   GADM("Austria") 
+    "Belgium"                   GADM("Belgium") 
+    "Bulgaria"                  GADM("Bulgaria") 
+    "Croatia"                   GADM("Croatia") 
+    "Cyprus"                    GADM("Cyprus") 
+    "Czech_Republic"            GADM("Czech Republic") 
+    "Denmark"                   GADM("Denmark") 
+    "Estonia"                   GADM("Estonia") 
+    "Finland"                   GADM("Finland") 
+    "France"                    GADM("France") 
+    "Germany"                   GADM("Germany") 
+    "Greece"                    GADM("Greece") 
+    "Hungary"                   GADM("Hungary") 
+    "Ireland"                   GADM("Ireland") 
+    "Italy"                     GADM("Italy") 
+    "Latvia"                    GADM("Latvia") 
+    "Lithuania"                 GADM("Lithuania") 
+    "Luxembourg"                GADM("Luxembourg") 
+    "Malta"                     GADM("Malta") 
+    "Netherlands"               GADM("Netherlands") 
+    "Poland"                    GADM("Poland") 
+    "Portugal"                  GADM("Portugal") 
+    "Romania"                   GADM("Romania") 
+    "Slovakia"                  GADM("Slovakia") 
+    "Slovenia"                  GADM("Slovenia") 
+    "Spain"                     GADM("Spain") 
+    "Sweden"                    GADM("Sweden") 
+]
+
+Dataset_EU27_CH_NO_UK = [
+    "Austria"                   GADM("Austria") 
+    "Belgium"                   GADM("Belgium") 
+    "Bulgaria"                  GADM("Bulgaria") 
+    "Croatia"                   GADM("Croatia") 
+    "Cyprus"                    GADM("Cyprus") 
+    "Czech_Republic"            GADM("Czech Republic") 
+    "Denmark"                   GADM("Denmark") 
+    "Estonia"                   GADM("Estonia") 
+    "Finland"                   GADM("Finland") 
+    "France"                    GADM("France") 
+    "Germany"                   GADM("Germany") 
+    "Greece"                    GADM("Greece") 
+    "Hungary"                   GADM("Hungary") 
+    "Ireland"                   GADM("Ireland") 
+    "Italy"                     GADM("Italy") 
+    "Latvia"                    GADM("Latvia") 
+    "Lithuania"                 GADM("Lithuania") 
+    "Luxembourg"                GADM("Luxembourg") 
+    "Malta"                     GADM("Malta") 
+    "Netherlands"               GADM("Netherlands") 
+    "Norway"                    GADM("Norway")
+    "Poland"                    GADM("Poland") 
+    "Portugal"                  GADM("Portugal") 
+    "Romania"                   GADM("Romania") 
+    "Slovakia"                  GADM("Slovakia") 
+    "Slovenia"                  GADM("Slovenia") 
+    "Spain"                     GADM("Spain") 
+    "Sweden"                    GADM("Sweden") 
+    "Switzerland"               GADM("Switzerland")
+    "United_Kingdom"            GADM("United Kingdom")
+]
+
+saveregions("EuropeTest", Dataset_EU27_CH_NO_UK)
 makedistances("EuropeTest")
 createmaps("EuropeTest")
 
 # generate VRE data and demand
-GISsolar(gisregionEuropeTest)
-GISwind(gisregionEuropeTest)
-GIShydro(gisregionEuropeTest)
-predictdemand(gisregion="EuropeTest", sspscenario="ssp2-26", sspyear=2050, era_year=2018)
+GISsolar(gisregion = "EuropeTest")
+GISwind(gisregion = "EuropeTest")
+GIShydro(gisregion = "EuropeTest")
+predictdemand(gisregion = "EuropeTest", sspscenario="ssp2-26", sspyear=2050, era_year=2018)
 
-
-
-
-
+end
 
 
 # GIS options
@@ -55,8 +113,8 @@ solaroptions() = Dict(
     :res => 0.01,                       # resolution of auxiliary datasets [degrees per pixel]
     :erares => 0.28125,                 # resolution of ERA5 datasets [degrees per pixel]
 
-    :pvclasses_min => [0.08],   # lower bound on annual PV capacity factor for class X    [0:0.01:0.49;]
-    :pvclasses_max => [0.14],   # upper bound on annual PV capacity factor for class X    [0.01:0.01:0.50;]
+    :pvclasses_min => [0.08,0.14,0.18,0.22,0.26],   # lower bound on annual PV capacity factor for class X    [0:0.01:0.49;]
+    :pvclasses_max => [0.14,0.18,0.22,0.26,1.00],   # upper bound on annual PV capacity factor for class X    [0.01:0.01:0.50;]
     :cspclasses_min => [0.10,0.18,0.24,0.28,0.32],  # lower bound on annual CSP capacity factor for class X
     :cspclasses_max => [0.18,0.24,0.28,0.32,1.00]  # upper bound on annual CSP capacity factor for class X
 )
@@ -87,10 +145,10 @@ windoptions() = Dict(
     :res => 0.01,                       # resolution of auxiliary datasets [degrees per pixel]
     :erares => 0.28125,                 # resolution of ERA5 datasets [degrees per pixel]
 
-    :onshoreclasses_min => [2],     # lower bound on annual onshore wind speeds for class X    [0:0.25:12.25;]
-    :onshoreclasses_max => [12],    # upper bound on annual onshore wind speeds for class X    [0.25:0.25:12.5;]
-    :offshoreclasses_min => [4],    # lower bound on annual offshore wind speeds for class X
-    :offshoreclasses_max => [15]    # upper bound on annual offshore wind speeds for class X
+    :onshoreclasses_min => [2,5,6,7,8],     # lower bound on annual onshore wind speeds for class X    [0:0.25:12.25;]
+    :onshoreclasses_max => [5,6,7,8,99],    # upper bound on annual onshore wind speeds for class X    [0.25:0.25:12.5;]
+    :offshoreclasses_min => [3,6,7,8,9],    # lower bound on annual offshore wind speeds for class X
+    :offshoreclasses_max => [6,7,8,9,99]    # upper bound on annual offshore wind speeds for class X
 )
 
 hydrooptions() = Dict(
