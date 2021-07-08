@@ -97,3 +97,82 @@ Solved in 26565 iterations and 240.84 seconds
 Optimal objective  4.890725613e+10
 
 User-callback calls 2209, time in user-callback 0.01 sec
+
+Gurobi 9.1.2 (linux64) logging started Thu Jul  8 18:24:08 2021
+
+
+Gurobi 9.1.2 (linux64) logging started Thu Jul  8 18:24:10 2021
+
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (linux64)
+Thread count: 40 physical cores, 40 logical processors, using up to 32 threads
+Optimize a model with 59682 rows, 25295 columns and 179855 nonzeros
+Model fingerprint: 0x9e8b328a
+Coefficient statistics:
+  Matrix range     [1e-06, 3e-03]
+  Objective range  [1e+01, 4e+05]
+  Bounds range     [1e+03, 8e+06]
+  RHS range        [6e-03, 8e+05]
+
+Concurrent LP optimizer: primal simplex, dual simplex, and barrier
+Showing barrier log only...
+
+Presolve removed 18356 rows and 6321 columns
+Presolve removed 7541 rows and 15612 columns
+Presolve time: 0.47s
+Presolved: 17754 rows, 44070 columns, 152146 nonzeros
+
+Ordering time: 2.39s
+
+Barrier statistics:
+ Dense cols : 2
+ Free vars  : 584
+ AA' NZ     : 1.908e+05
+ Factor NZ  : 1.476e+06 (roughly 40 MBytes of memory)
+ Factor Ops : 2.195e+08 (less than 1 second per iteration)
+ Threads    : 30
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -2.80010581e+14 -1.05440040e+12  2.62e+10 3.14e+02  1.62e+12     4s
+   1  -1.56554847e+14  7.29875221e+14  1.12e+10 4.58e+03  6.81e+11     8s
+   2  -8.59970064e+13  9.21925311e+14  3.83e+09 2.30e+03  2.61e+11    14s
+   3  -8.03991112e+13  7.82048107e+14  1.09e+09 8.69e+02  8.74e+10    21s
+   4  -7.58995114e+13  4.68881071e+14  1.30e+08 2.79e+02  2.04e+10    26s
+   5  -3.17040256e+13  1.26470231e+14  1.28e+07 3.71e+01  3.60e+09    29s
+   6  -4.35399286e+12  2.15242101e+13  1.27e+06 5.33e+00  5.24e+08    32s
+   7  -1.08829481e+12  1.28442042e+13  3.73e+05 2.94e+00  2.76e+08    35s
+   8  -7.30042715e+11  6.50488841e+12  3.01e+05 1.20e+00  1.40e+08    38s
+   9  -1.05553189e+12  5.29615455e+12  2.51e+05 9.18e-01  1.21e+08    41s
+  10  -2.41121595e+11  1.98054350e+12  2.49e+04 1.66e-01  4.01e+07    46s
+  11  -6.00677587e+10  3.88403175e+11  3.12e+03 8.84e-03  7.98e+06    49s
+  12  -1.16528393e+10  1.56986838e+11  1.07e+03 2.72e-03  2.98e+06    55s
+  13   6.41803098e+09  1.18979102e+11  6.98e+02 1.75e-03  1.98e+06    60s
+  14   2.48350314e+10  8.65146796e+10  3.96e+02 9.55e-04  1.08e+06    67s
+  15   3.51769415e+10  7.21713958e+10  2.36e+02 5.37e-04  6.50e+05    72s
+  16   4.10429594e+10  6.52690493e+10  1.43e+02 3.57e-04  4.26e+05    80s
+  17   4.27820337e+10  6.15566630e+10  1.11e+02 2.74e-04  3.30e+05    86s
+  18   4.34912474e+10  5.90054119e+10  9.77e+01 2.18e-04  2.72e+05    96s
+  19   4.47689796e+10  5.53868521e+10  7.53e+01 1.24e-04  1.86e+05   103s
+  20   4.66314524e+10  5.35632652e+10  4.18e+01 8.42e-05  1.22e+05   114s
+  21   4.67922138e+10  5.27983975e+10  3.87e+01 7.03e-05  1.05e+05   128s
+  22   4.71925752e+10  5.19642274e+10  3.12e+01 5.51e-05  8.36e+04   138s
+  23   4.74736577e+10  5.11552946e+10  2.61e+01 3.90e-05  6.44e+04   150s
+  24   4.78900499e+10  5.04216616e+10  1.85e+01 2.54e-05  4.43e+04   170s
+  25   4.81770452e+10  5.00891139e+10  1.32e+01 1.93e-05  3.35e+04   191s
+  26   4.82596451e+10  4.98168028e+10  1.18e+01 1.45e-05  2.72e+04   214s
+  27   4.84239065e+10  4.95790087e+10  9.00e+00 1.03e-05  2.02e+04   238s
+  28   4.85882394e+10  4.93853167e+10  6.05e+00 6.98e-06  1.39e+04   262s
+  29   4.86736027e+10  4.92496129e+10  4.41e+00 4.81e-06  1.01e+04   295s
+  30   4.87362518e+10  4.91485691e+10  3.24e+00 1.64e-05  7.20e+03   317s
+  31   4.87600352e+10  4.90962145e+10  2.80e+00 1.16e-05  5.86e+03   336s
+  32   4.87981619e+10  4.90651554e+10  2.08e+00 1.01e-04  4.66e+03   351s
+
+Barrier performed 32 iterations in 350.98 seconds
+Barrier solve interrupted - model solved by another algorithm
+
+
+Solved with primal simplex
+Solved in 30748 iterations and 351.12 seconds
+Optimal objective  4.890671338e+10
+
+User-callback calls 983, time in user-callback 0.01 sec

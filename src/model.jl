@@ -293,57 +293,57 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
         sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t])/1000 
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif specs.transmission && specs.storage && !(specs.hydro)            # Trans/Stor
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
         sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S))/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif specs.transmission && !(specs.storage) && specs.hydro            # Trans/Hydro
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] )/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif specs.transmission && !(specs.storage) && !(specs.hydro)         # Trans
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)))/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif !(specs.transmission) && !(specs.storage) && !(specs.hydro)      # -
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t])/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif !(specs.transmission) && specs.storage && !(specs.hydro)         # Stor
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S))/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif !(specs.transmission) && !(specs.storage) && specs.hydro         # Hydro
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] )/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     elseif !(specs.transmission) && specs.storage && specs.hydro            # Stor/Hydro
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] )/1000
-        == max_dem_n[n]*D_nt[n,t])/1000
+        == max_dem_n[n]*D_nt[n,t]/1000)
     end
 
     # Generation capacity
     @constraint(model,
         g1[g in G, n in N, t in T],
-        p_gnt[g,n,t]/1000 ≤ A_gnt[g,n,t] * p̄_gn[g,n])/1000
+        p_gnt[g,n,t]/1000 ≤ A_gnt[g,n,t] * p̄_gn[g,n]/1000)
     # @constraint(model,
     #     g2[g in G, n in N],
     #     p̄_gn[g,n] ≤ Gmax_gn[g,n])
@@ -376,20 +376,20 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Transmission capacity
         @constraint(model,
             t1[l in L_ind, t in T],
-            f_lt[l,t]/1000 ≤ f̄_l[l])/1000
+            f_lt[l,t]/1000 ≤ f̄_l[l]/1000)
 
         @constraint(model,
             t2[l in L_ind, t in T],
-            f_lt[l,t]/1000 ≥ -f̄_l[l])/1000
+            f_lt[l,t]/1000 ≥ -f̄_l[l]/1000)
 
         # Absolute value of f_lt
         @constraint(model,
             t3[l in L_ind, t in T],
-            f_abs_lt[l,t]/1000 ≥ f_lt[l,t])/1000
+            f_abs_lt[l,t]/1000 ≥ f_lt[l,t]/1000)
 
         @constraint(model,
             t4[l in L_ind, t in T],
-            f_abs_lt[l,t]/1000 ≥ -f_lt[l,t])/1000
+            f_abs_lt[l,t]/1000 ≥ -f_lt[l,t]/1000)
 
         # @constraint(model,
         #     t6[l in L_ind, t in T],
