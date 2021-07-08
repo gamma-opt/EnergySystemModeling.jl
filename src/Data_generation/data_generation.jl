@@ -11,98 +11,26 @@ T = 8760
 t = 8       # 8 since hydro is not included here   
 
 
-function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, Dataset)
+function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input, era_year_input, Dataset)
 
 # Generate datasets for regions using GlobalEnergyGIS
     # define regions and countries and name the regionset
-    
-    Dataset_Nordics = [
-        "Norway"           GADM("Norway")  
-        "Sweden"           GADM("Sweden")
-        "Finland"          GADM("Finland")
-        "Denmark"          GADM("Denmark") 
-    ]
-
-    Dataset_EU27 = [
-        "Austria"                   GADM("Austria") 
-        "Belgium"                   GADM("Belgium") 
-        "Bulgaria"                  GADM("Bulgaria") 
-        "Croatia"                   GADM("Croatia") 
-        "Cyprus"                    GADM("Cyprus") 
-        "Czech_Republic"            GADM("Czech Republic") 
-        "Denmark"                   GADM("Denmark") 
-        "Estonia"                   GADM("Estonia") 
-        "Finland"                   GADM("Finland") 
-        "France"                    GADM("France") 
-        "Germany"                   GADM("Germany") 
-        "Greece"                    GADM("Greece") 
-        "Hungary"                   GADM("Hungary") 
-        "Ireland"                   GADM("Ireland") 
-        "Italy"                     GADM("Italy") 
-        "Latvia"                    GADM("Latvia") 
-        "Lithuania"                 GADM("Lithuania") 
-        "Luxembourg"                GADM("Luxembourg") 
-        "Malta"                     GADM("Malta") 
-        "Netherlands"               GADM("Netherlands") 
-        "Poland"                    GADM("Poland") 
-        "Portugal"                  GADM("Portugal") 
-        "Romania"                   GADM("Romania") 
-        "Slovakia"                  GADM("Slovakia") 
-        "Slovenia"                  GADM("Slovenia") 
-        "Spain"                     GADM("Spain") 
-        "Sweden"                    GADM("Sweden") 
-    ]
-
-    Dataset_EU27_CH_NO_UK = [
-        "Austria"                   GADM("Austria") 
-        "Belgium"                   GADM("Belgium") 
-        "Bulgaria"                  GADM("Bulgaria") 
-        "Croatia"                   GADM("Croatia") 
-        "Cyprus"                    GADM("Cyprus") 
-        "Czech_Republic"            GADM("Czech Republic") 
-        "Denmark"                   GADM("Denmark") 
-        "Estonia"                   GADM("Estonia") 
-        "Finland"                   GADM("Finland") 
-        "France"                    GADM("France") 
-        "Germany"                   GADM("Germany") 
-        "Greece"                    GADM("Greece") 
-        "Hungary"                   GADM("Hungary") 
-        "Ireland"                   GADM("Ireland") 
-        "Italy"                     GADM("Italy") 
-        "Latvia"                    GADM("Latvia") 
-        "Lithuania"                 GADM("Lithuania") 
-        "Luxembourg"                GADM("Luxembourg") 
-        "Malta"                     GADM("Malta") 
-        "Netherlands"               GADM("Netherlands") 
-        "Norway"                    GADM("Norway")
-        "Poland"                    GADM("Poland") 
-        "Portugal"                  GADM("Portugal") 
-        "Romania"                   GADM("Romania") 
-        "Slovakia"                  GADM("Slovakia") 
-        "Slovenia"                  GADM("Slovenia") 
-        "Spain"                     GADM("Spain") 
-        "Sweden"                    GADM("Sweden") 
-        "Switzerland"               GADM("Switzerland")
-        "United_Kingdom"            GADM("United Kingdom")
-    ]
-
-    Dataset = Dataset_EU27                                       ## need to be changed as well
-
-    saveregions("EU27", Dataset)
-    makedistances("EU27")
-    createmaps("EU27")
+ 
+    saveregions(regionset, Dataset)
+    makedistances(regionset)
+    createmaps(regionset)
 
     # generate VRE data and demand
-    GISsolar(gisregion = "EU27")
-    GISwind(gisregion = "EU27")
-    GIShydro(gisregion = "EU27")
-    predictdemand(gisregion = "EU27", sspscenario="ssp2-26", sspyear=2050, era_year=2018)
+    GISsolar(gisregion = regionset)
+    GISwind(gisregion = regionset)
+    GIShydro(gisregion = regionset)
+    predictdemand(gisregion = regionset, sspscenario=sspscenario_input, sspyear=sspyear_input, era_year=era_year_input)
 
 
-# fcuntion get data
+# function get data
     # Name of the regionset you defined in Inputdata.jl
-    SolarData = matread(joinpath(inputdata, "GISdata_solar$(era_year)_$regionset.mat"))
-    WindData = matread(joinpath(inputdata, "GISdata_wind$(era_year)_$regionset.mat"))
+    SolarData = matread(joinpath(inputdata, "GISdata_solar$(era_year_input)_$regionset.mat"))
+    WindData = matread(joinpath(inputdata, "GISdata_wind$(era_year_input)_$regionset.mat"))
     HydroData = matread(joinpath(inputdata, "GISdata_hydro_$regionset.mat"))
     TransmissionData = matread(joinpath(inputdata, "distances_$regionset.mat"))
 
@@ -203,7 +131,7 @@ function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, 
     
       
     # demand
-    gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_$(regionset)_$(sspscenario)-$(sspyear)_$(era_year).jld"), "demand")
+    gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_$(regionset)_$(sspscenario_input)-$(sspyear_input)_$(era_year_input).jld"), "demand")
 
     # Transmission distances and connected nodes
     Distances = typeof(TransmissionData["distances"]) == Float64 ? [TransmissionData["distances"]] : TransmissionData["distances"]
@@ -232,19 +160,10 @@ function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, 
             avail_inflow[i,:] = existinginflow[m,:]
         end
     end
-
-    #Percentage of inflow that is to reservoirs. TODO: Read from file
-   #reservoirp = [0 0.953 1 0 0.433]                                    ## where does this come from?
-
-
-    # Use ENTSO-E data of PHS and RoR hydro power
-
-    # ENTSOE_file = CSV.read("D:\\Eigene Dateien\\Studium\\Master\\RA\\Copernicus\\output\\ENTSO-E data.csv", DataFrame)
-    # CSV.write("ENTSOE.csv", ENTSOE_file)
-    # ENTSOE = CSV.File("ENTSOE.csv") |> Tables.matrix
-    # ENTSOE_data = ENTSOE[:, setdiff(1:end, (7:14))]
-
+      
     # Installed Capacity of Hydropower Plants in EU split into PHS and RoR: https://www.vgb.org/hydropower_fact_sheets_2018-dfid-91827.html in MW
+
+    # reservoirs =/= PHS, put in CSV for later use
 
     Hydro_PHS_RoR_data_EU = [
     #:country              :RoR      :PHS
@@ -290,8 +209,6 @@ function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, 
 
     Dataset_P = []
     RP = []
-
-   # dsl = length(Dataset[:,1])
     rtl = length(reservoir_table[:,1])
 
     for i in 1:n
@@ -311,7 +228,7 @@ function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, 
     hydrocapacity = [hydroCap; hydroRoRCap]
     
     #Reservoir and RoR inflow
-    hyd_in = avail_inflow .* hydroCap
+    hyd_in = avail_inflow .* hydroCap           ## availability is not what is installed, but the amount of water available
     hydRoR_in = avail_inflow .* hydroRoRCap
 
 
@@ -435,15 +352,15 @@ function create_data_sets(inputdata, regionset, sspscenario, sspyear, era_year, 
 # function transmission()
 
     Dist = Distances[tril!(trues(size(Distances)), -1)]
- 
+    
+    # Connected nodes
+    Con = connected[tril!(trues(size(connected)), -1)]
     # Find distances for connected nodes only
     Dist_Con = hcat(Dist, Con)
     Dist_Con_df = DataFrame(Dist_Con, :auto)
     Dist_con = Dist_Con_df[Dist_Con_df[!,:x2].!=0,:]
     Distance_Connected = Matrix(Dist_con)[:,1]
 
-    # Connected nodes
-    Con = connected[tril!(trues(size(connected)), -1)]
     # Ged rid of double nodes by only using lower triangular matrix
     LinesLT = LowerTriangular(connected)
     # Find connections by getting the CartesianIndex of the connected nodes
