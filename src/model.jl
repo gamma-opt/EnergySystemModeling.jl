@@ -129,7 +129,7 @@ function Expressions(parameters::Params, variables::Dict{String, Array{Float64}}
          (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T))
     μ′ = sum(p_gnt[5,n,t] for n in N, t in T) /
         (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T))
-    C′_E = 1 - ((sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / R_E)
+    C′_E = 1 - ((sum(E_g[g] * sum(p_gnt[g,n,t]*τ_t[t] for n in N, t in T) / e_g[g] for g in G)) / R_E)
 
     ExpressionsDict = Dict("κ′" => κ′, "μ′" => μ′, "C′_E" => C′_E)
 
@@ -351,8 +351,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         @constraint(model, g3,
-            ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000) ≥
-            κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) / 1000)
+            ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T)) / 1000) ≥
+            κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T)) / 1000)
     end
 
     # Maximum nuclear share
@@ -364,7 +364,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     #Carbon cap
     if specs.carbon_cap
         @constraint(model, g5,
-            (sum(E_g[g] * sum(p_gnt[g,n,t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * R_E / 1000)
+            (sum(E_g[g] * sum(p_gnt[g,n,t]*τ_t[t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * R_E / 1000)
     end
   
     # Shedding upper bound
