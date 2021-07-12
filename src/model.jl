@@ -275,7 +275,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     end
 
-    @objective(model, Min, sum(sum(flatten(ObjectivesDict[i])) for i in keys(ObjectivesDict)))
+    @objective(model, Min, sum(sum(flatten(ObjectivesDict[i])) for i in keys(ObjectivesDict))/10^3)
 
     ## -- Constraints --
     # Transmission lines to node n
