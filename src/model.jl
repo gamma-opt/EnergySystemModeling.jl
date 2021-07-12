@@ -114,7 +114,7 @@ end
 - `variables::Variables`
 """
 function Expressions(parameters::Params, variables::Dict{String, Array{Float64}})
-    @unpack G, G_r, N, T, H, R_E, e_g, E_g = parameters
+    @unpack G, G_r, N, T, H, R_E, e_g, E_g, τ_t = parameters
 
     """Expression values:
     # Attributes
