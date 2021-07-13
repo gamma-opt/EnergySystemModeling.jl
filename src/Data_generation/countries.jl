@@ -1,57 +1,103 @@
 using MAT, DelimitedFiles, JLD, JSON, CSV, LinearAlgebra, Combinatorics, GlobalEnergyGIS, DataFrames
 
-Dataset_EU27_CH_NO_UK = [
-  # "Country"                   "GADM"                      "RoR_data"       "PHS_data"
-    "Austria"                   GADM("Austria")             8120             5231
-    "Belgium"                   GADM("Belgium")             112              1310
-    "Bulgaria"                  GADM("Bulgaria")            2206             1013
-    "Croatia"                   GADM("Croatia")             1915             293
-    "Cyprus"                    GADM("Cyprus")              0                0
-    "Czech_Republic"            GADM("Czech Republic")      1088             1172
-    "Denmark"                   GADM("Denmark")             7                0
-    "Estonia"                   GADM("Estonia")             6                0
-    "Finland"                   GADM("Finland")             3249             0
-    "France"                    GADM("France")              18163            7115
-    "Germany"                   GADM("Germany")             4577             6822
-    "Greece"                    GADM("Greece")              2693             699
-    "Hungary"                   GADM("Hungary")             57               0
-    "Ireland"                   GADM("Ireland")             237              292
-    "Italy"                     GADM("Italy")               14628            7592
-    "Latvia"                    GADM("Latvia")              1589             0
-    "Lithuania"                 GADM("Lithuania")           117              760
-    "Luxembourg"                GADM("Luxembourg")          34               1296
-    "Malta"                     GADM("Malta")               0                0
-    "Netherlands"               GADM("Netherlands")         37               0
-    "Norway"                    GADM("Norway")              29939            1397
-    "Poland"                    GADM("Poland")              588              1782
-    "Portugal"                  GADM("Portugal")            4379             1789
-    "Romania"                   GADM("Romania")             6359             371
-    "Slovakia"                  GADM("Slovakia")            1606             916
-    "Slovenia"                  GADM("Slovenia")            1115             180
-    "Spain"                     GADM("Spain")               14086            5967
-    "Sweden"                    GADM("Sweden")              16230            99
-    "Switzerland"               GADM("Switzerland")         11850            1839
-    "United_Kingdom"            GADM("United Kingdom")      1759             2744
-]
-writedlm("Countries_EU_CH_NO.CSV", Dataset_EU27_CH_NO_UK)
+Europe = [
+    # "Country"                   "GADM"    
+      "Albania"                   GADM("Albania") 
+      "Armenia"                   GADM("Armenia") 
+      "Austria"                   GADM("Austria") 
+      "Azerbaijan"                GADM("Azerbaijan") 
+      "Belarus"                   GADM("Belarus")                
+      "Belgium"                   GADM("Belgium") 
+      "Bosnia and Herzegovina"    GADM("Bosnia and Herzegovina")            
+      "Bulgaria"                  GADM("Bulgaria")           
+      "Croatia"                   GADM("Croatia")        
+      "Cyprus"                    GADM("Cyprus")             
+      "Czech Republic"            GADM("Czech Republic")     
+      "Denmark"                   GADM("Denmark")          
+      "Estonia"                   GADM("Estonia")           
+      "Finland"                   GADM("Finland")         
+      "France"                    GADM("France")              
+      "Germany"                   GADM("Germany")         
+      "Greece"                    GADM("Greece")           
+      "Hungary"                   GADM("Hungary")     
+      "Iceland"                   GADM("Iceland")             
+      "Ireland"                   GADM("Ireland")           
+      "Italy"                     GADM("Italy")  
+      "Kosovo"                    GADM("Kosovo")                        
+      "Latvia"                    GADM("Latvia")           
+      "Lithuania"                 GADM("Lithuania")        
+      "Luxembourg"                GADM("Luxembourg")        
+      "Malta"                     GADM("Malta")     
+      "Moldova"                   GADM("Moldova") 
+      "Montenegro"                GADM("Montenegro")                              
+      "Netherlands"               GADM("Netherlands")   
+      "North_Macedonia"           GADM("Macedonia")    
+      "Norway"                    GADM("Norway")          
+      "Poland"                    GADM("Poland")             
+      "Portugal"                  GADM("Portugal")           
+      "Romania"                   GADM("Romania") 
+      "Russia"                    GADM("Russia")
+      "Serbia"                    GADM("Serbia")              
+      "Slovakia"                  GADM("Slovakia")           
+      "Slovenia"                  GADM("Slovenia")          
+      "Spain"                     GADM("Spain")              
+      "Sweden"                    GADM("Sweden")            
+      "Switzerland"               GADM("Switzerland")  
+      "Turkey"                    GADM("Turkey")
+      "Ukraine"                   GADM("Ukraine")         
+      "United Kingdom"            GADM("United Kingdom")     
+  ]  
 
+Regions_dict = Dict( "Nordics" => (["Finland", "Sweden", "Norway", "Denmark"]),
+  "Central" => (["Germany", "Austria",  "Switzerland", "Czech Republic"]),
+  "Western" => (["France", "United Kingdom", "Ireland", "Netherlands", "Belgium", "Luxembourg"]),
+  "Mediterranian" => (["Spain", "Portugal", "Italy", "Greece", "Croatia", "Malta", "Albania", "Bosnia and Herzegovina"]),
+  "Eastern" => (["Poland", "Slowakia", "Hungary", "Lithuania", "Latvia", "Estonia"]))
 
+# function if one wants specific countries
+# Check if the regions specified in run_data_generation.jl are in Europe or in Regions_dict
+# Get corresponding values
+function get_countries(Regions)
+    if sum(occursin.(Regions[1,1], Europe[:,1]))>0
+        n = length(Europe[:,1])
+        m = length(Regions)
+        Dataset_Countries = []
+        GADM_Name = []
 
-function receive_countries(Country_names)
-
-    Country_List = Dataset_EU27_CH_NO_UK[:,1:2]
-    n = length(Country_List[:,1])
-    m = length(Country_names)
-    Dataset_Countries = []
-    GADM_Name = []
-
-    for j in 1:m
-        for i in 1:n
-                if occursin.(Country_names[j,1], Country_List[i,1])
-                    Dataset_Countries = [Dataset_Countries; permutedims(Country_names[j,:])]
-                    GADM_Name = [GADM_Name; Country_List[i,2]]
-                end
+        for j in 1:m
+            for i in 1:n
+                    if occursin.(Regions[j,1], Europe[i,1])
+                        Dataset_Countries = [Dataset_Countries; permutedims(Regions[j,:])]
+                        GADM_Name = [GADM_Name; GADM(Europe[i])]
+                    end
+            end
         end
+        Countries = hcat(Dataset_Countries, GADM_Name)
+
+    elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
+        Keys = []
+        Values = []
+        m = length(Regions)
+        R = getindex.(Ref(Regions_dict),(Regions))
+
+        for i in 1:m
+            RVal = getindex.(Ref(Regions_dict),(Regions))[i]
+            Keys = [Keys; Regions[i]]
+            Values = [Values; GADM(RVal)]
+        end
+        GADM_List = hcat(Keys, Values)
     end
-    Countries = hcat(Dataset_Countries, GADM_Name)
 end
+
+
+
+# function if one wants to create whole regions
+
+
+# if you want all countries in Europe
+function get_countries()
+   Europe
+end
+
+
+

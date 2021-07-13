@@ -1,30 +1,30 @@
-Austria	GADM{String}(String[], ("Austria",))	8120	5231
-Belgium	GADM{String}(String[], ("Belgium",))	112	1310
-Bulgaria	GADM{String}(String[], ("Bulgaria",))	2206	1013
-Croatia	GADM{String}(String[], ("Croatia",))	1915	293
-Cyprus	GADM{String}(String[], ("Cyprus",))	0	0
-Czech_Republic	GADM{String}(String[], ("Czech Republic",))	1088	1172
-Denmark	GADM{String}(String[], ("Denmark",))	7	0
-Estonia	GADM{String}(String[], ("Estonia",))	6	0
-Finland	GADM{String}(String[], ("Finland",))	3249	0
-France	GADM{String}(String[], ("France",))	18163	7115
-Germany	GADM{String}(String[], ("Germany",))	4577	6822
-Greece	GADM{String}(String[], ("Greece",))	2693	699
-Hungary	GADM{String}(String[], ("Hungary",))	57	0
-Ireland	GADM{String}(String[], ("Ireland",))	237	292
-Italy	GADM{String}(String[], ("Italy",))	14628	7592
-Latvia	GADM{String}(String[], ("Latvia",))	1589	0
-Lithuania	GADM{String}(String[], ("Lithuania",))	117	760
-Luxembourg	GADM{String}(String[], ("Luxembourg",))	34	1296
-Malta	GADM{String}(String[], ("Malta",))	0	0
-Netherlands	GADM{String}(String[], ("Netherlands",))	37	0
-Norway	GADM{String}(String[], ("Norway",))	29939	1397
-Poland	GADM{String}(String[], ("Poland",))	588	1782
-Portugal	GADM{String}(String[], ("Portugal",))	4379	1789
-Romania	GADM{String}(String[], ("Romania",))	6359	371
-Slovakia	GADM{String}(String[], ("Slovakia",))	1606	916
-Slovenia	GADM{String}(String[], ("Slovenia",))	1115	180
-Spain	GADM{String}(String[], ("Spain",))	14086	5967
-Sweden	GADM{String}(String[], ("Sweden",))	16230	99
-Switzerland	GADM{String}(String[], ("Switzerland",))	11850	1839
-United_Kingdom	GADM{String}(String[], ("United Kingdom",))	1759	2744
+Austria	GADM{String}(String[], ("Austria",))
+Belgium	GADM{String}(String[], ("Belgium",))
+Bulgaria	GADM{String}(String[], ("Bulgaria",))
+Croatia	GADM{String}(String[], ("Croatia",))
+Cyprus	GADM{String}(String[], ("Cyprus",))
+Czech_Republic	GADM{String}(String[], ("Czech Republic",))
+Denmark	GADM{String}(String[], ("Denmark",))
+Estonia	GADM{String}(String[], ("Estonia",))
+Finland	GADM{String}(String[], ("Finland",))
+France	GADM{String}(String[], ("France",))
+Germany	GADM{String}(String[], ("Germany",))
+Greece	GADM{String}(String[], ("Greece",))
+Hungary	GADM{String}(String[], ("Hungary",))
+Ireland	GADM{String}(String[], ("Ireland",))
+Italy	GADM{String}(String[], ("Italy",))
+Latvia	GADM{String}(String[], ("Latvia",))
+Lithuania	GADM{String}(String[], ("Lithuania",))
+Luxembourg	GADM{String}(String[], ("Luxembourg",))
+Malta	GADM{String}(String[], ("Malta",))
+Netherlands	GADM{String}(String[], ("Netherlands",))
+Norway	GADM{String}(String[], ("Norway",))
+Poland	GADM{String}(String[], ("Poland",))
+Portugal	GADM{String}(String[], ("Portugal",))
+Romania	GADM{String}(String[], ("Romania",))
+Slovakia	GADM{String}(String[], ("Slovakia",))
+Slovenia	GADM{String}(String[], ("Slovenia",))
+Spain	GADM{String}(String[], ("Spain",))
+Sweden	GADM{String}(String[], ("Sweden",))
+Switzerland	GADM{String}(String[], ("Switzerland",))
+United_Kingdom	GADM{String}(String[], ("United Kingdom",))
