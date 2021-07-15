@@ -48,11 +48,12 @@ Europe = [
   ]  
 
 
-Regions_dict = Dict( "Nordics" => (["Finland, Sweden, Norway, Denmark"]),
-  "Central" => (["Germany, Austria, Switzerland, Czech Republic"]),
-  "Western" => (["France, United Kingdom, Ireland, Netherlands, Belgium, Luxembourg"]),
-  "Mediterranian" => (["Spain, Portugal, Italy, Greece, Croatia, Malta, Albania, Bosnia and Herzegovina"]),
-  "Eastern" => (["Poland, Slowakia, Hungary, Lithuania, Latvia, Estonia"]))
+
+Regions_dict = Dict( "Nordics" => (["Finland", "Sweden", "Norway", "Denmark"]),
+  "Central" => (["Germany", "Austria", "Switzerland", "Czech Republic"]),
+  "Western" => (["France", "United Kingdom", "Ireland", "Netherlands", "Belgium", "Luxembourg"]),
+  "Mediterranian" => (["Spain", "Portugal", "Italy", "Greece", "Croatia", "Malta", "Albania", "Bosnia and Herzegovina"]),
+  "Eastern" => (["Poland", "Slovakia", "Hungary", "Lithuania", "Latvia", "Estonia"]))
 
 # function if one wants specific countries
 # Check if the regions specified in run_data_generation.jl are in Europe or in Regions_dict
@@ -79,11 +80,11 @@ function get_countries(Regions)
         Values = []
         m = length(Regions)
         R = getindex.(Ref(Regions_dict),(Regions))
-
+    
         for i in 1:m
             RVal = getindex.(Ref(Regions_dict),(Regions))[i]
             Keys = [Keys; Regions[i]]
-            Values = [Values; GADM(RVal)]
+            Values = [Values; GADM(RVal...)]
         end
         GADM_List = hcat(Keys, Values)
     end
@@ -261,32 +262,84 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
         end
     end
       
-    # Installed Capacity of Hydropower Plants in EU split into PHS and RoR: https://www.vgb.org/hydropower_fact_sheets_2018-dfid-91827.html in MW
-
+  
     # reservoirs =/= PHS, put in CSV for later use
     # Get the installed capacity of Run of river and Hydro reservoir plants from ENTSO-E datasets: https://transparency.entsoe.eu/generation/r2/installedGenerationCapacityAggregation/show
    
     data_path = "ENTSO-E_data"
-    Countries = Regions[:,1]
-    Hydro_Matrix = Array{Any}(undef, 0, 2)
-    for i in 1:length(Countries)
-        Country = Regions[:,1][i]
-        Country_ENTSOE = joinpath(data_path, "$(Country).csv") |> CSV.File |> DataFrame
-        RoR_Res_data = Country_ENTSOE[in(["Hydro Run-of-river and poundage", "Hydro Water Reservoir"]).(Country_ENTSOE."Production Type"), 2]
-        if typeof(RoR_Res_data)==(Vector{String})
-           RoR_Res_data = parse.(Int64, RoR_Res_data)
+    if sum(occursin.(Regions[1,1], Europe[:,1]))>0
+        Countries = Regions[:,1]
+        Hydro_Matrix = Array{Any}(undef, 0, 2)
+        for i in 1:length(Countries)
+            Country = Regions[:,1][i]
+            Country_ENTSOE = joinpath(data_path, "$(Country).csv") |> CSV.File |> DataFrame
+            RoR_Res_data = Country_ENTSOE[in(["Hydro Run-of-river and poundage", "Hydro Water Reservoir"]).(Country_ENTSOE."Production Type"), 2]
+            replace!(RoR_Res_data, "n/e"=>0)
+            if typeof(RoR_Res_data)==(Vector{String})
+            RoR_Res_data = parse.(Int64, RoR_Res_data) ## change to Float64
+            end
+            Water = RoR_Res_data
+            Hydro_Matrix = vcat(Hydro_Matrix, permutedims(Water))
         end
-        Water = RoR_Res_data
-        Hydro_Matrix = vcat(Hydro_Matrix, permutedims(Water))
+        Hydro = hcat(Countries, Hydro_Matrix)
+        Header = ["Country" "Run of River" "Reservoir"]
+        RoR_Res = vcat(Header, Hydro)
+        replace!(RoR_Res, "N/A"=>0)
+        reservoir = RoR_Res[2:end,3]./(RoR_Res[2:end,3] .+ RoR_Res[2:end,2])
+        replace_nans!(reservoir)
+    elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
+        Hydro_Matrix = Array{Any}(undef, 0, 2)
+        Countries = []
+        for i in 1:length(Regions)
+        R = getindex.(Ref(Regions_dict),(Regions))[i]
+        Countries = [Countries; R]
+        end
+        Hydro_Matrix = Array{Any}(undef, 0, 2)
+        for i in 1:length(Countries)
+            Country = Countries[:,1][i]
+            Country_ENTSOE = joinpath(data_path, "$(Country).csv") |> CSV.File |> DataFrame
+            RoR_Res_data = Country_ENTSOE[in(["Hydro Run-of-river and poundage", "Hydro Water Reservoir"]).(Country_ENTSOE."Production Type"), 2]
+            replace!(RoR_Res_data, "n/e"=>"0")
+            replace!(RoR_Res_data, "N/A"=>"0")
+            if typeof(RoR_Res_data)==(Vector{String})
+                RoR_Res_data = parse.(Int64, RoR_Res_data)
+            end
+            Water = RoR_Res_data
+            Hydro_Matrix = vcat(Hydro_Matrix, permutedims(Water))
+        end
+        Hydro = hcat(Countries, Hydro_Matrix)
+        Header = ["Country" "Run of River" "Reservoir"]
+        RoR_Res = vcat(Header, Hydro)
+        replace!(RoR_Res, "n/e"=>0)
+        replace!(RoR_Res, "N/A"=>0)
+        RoR_Res[2:end,2:3] = parse.(Float64, string.(RoR_Res[2:end,2:3]))           
     end
-    Hydro = hcat(Countries, Hydro_Matrix)
-    Header = ["Country" "Run of River" "Reservoir"]
-    RoR_Res = vcat(Header, Hydro)
 
-    # Calculating the percentage of Pumped Hydro Storage of total Hydro Power
-    reservoir = RoR_Res[2:end,3]./(RoR_Res[2:end,3] .+ RoR_Res[2:end,2])
+    
+    # Calculating the percentage of Reservoir of total Hydro Power
+    # If you work with Regions, get the Hydro Data for the countries in this region, then average the reseroir availability over all countries of this region
 
-    reservoir_table = hcat(Regions, reservoir)
+    if sum(occursin.(Regions[1,1], Europe[:,1]))>0
+        reservoir_table = hcat(Regions, reservoir)
+    elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
+        Countries = []
+        for i in 1:length(Regions)
+            R = getindex.(Ref(Regions_dict),(Regions))[i]
+            Countries = [Countries; R]
+        end
+       # reservoirs = hcat(Countries, RoR_Res[2:end,2:3])
+        res_table = []
+        for i in 1:length(Regions)
+            R = getindex.(Ref(Regions_dict),(Regions))[i]
+            Key = [k for (k,v) in Regions_dict if v==R]
+            Key_List = repeat(Key, inner=length(R))
+            res_table = [res_table; Key_List]
+        end
+        List_full = DataFrame(hcat(res_table, RoR_Res[2:end,2:3]), :auto)
+        Hydro_summed = combine(groupby(List_full, :x1), names(List_full, Not(:x1)) .=> sum, renamecols=false)
+        reservoir = Hydro_summed[!,:x3]./(Hydro_summed[!,:x2] .+ Hydro_summed[!,:x3])
+        reservoir_table = hcat(Regions, reservoir)
+    end
 
     reservoirp =  permutedims(reservoir_table[:,2])
 
@@ -389,20 +442,7 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
     generation_capacity = vcat(Header, Gen_capac)
     writedlm("gen_capacity.csv", generation_capacity, ',')
 
-
-# function hydro()
-
-    nodehydro = repeat(1:n, inner = 1)
-    Hydro_cap_min = 
-    Hydro_cap_max =
-    HydroRoR =
-    Min_Hyd_Level =
-    Max_Hyd_Level =
-
-    Header = ["node" "Hydro_cap_min" "Hydro_cap_max" "HydroRoR" " Min_Hyd_Level" "Max_Hyd_Level"] 
-
-
-# function sto_capacity()
+# sto_capacity()
     st = 1          
     Max_capacity = 1000000000
         
@@ -415,9 +455,7 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
     sto_capacity = vcat(Header, sto_cap)
     writedlm("sto_capacity.csv", sto_capacity, ',')
 
-
-
-# function transmission()
+# transmission()
 
     Dist = Distances[tril!(trues(size(Distances)), -1)]
     
