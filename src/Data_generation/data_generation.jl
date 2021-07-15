@@ -115,7 +115,7 @@ T = 8760
 t = 8       # 8 since hydro is not included here   
 
 
-function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input, era_year_input, Dataset)
+function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance_name)
 
     # create path for the instance
     structure_path = joinpath(folder,subfolder)
