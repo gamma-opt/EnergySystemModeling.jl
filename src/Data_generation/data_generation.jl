@@ -282,10 +282,8 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
             Country = Regions[:,1][i]
             Country_ENTSOE = joinpath(data_path, "$(Country).csv") |> CSV.File |> DataFrame
             RoR_Res_data = Country_ENTSOE[in(["Hydro Run-of-river and poundage", "Hydro Water Reservoir"]).(Country_ENTSOE."Production Type"), 2]
-            replace!(RoR_Res_data, "n/e"=>0)
-            if typeof(RoR_Res_data)==(Vector{String})
-            RoR_Res_data = parse.(Int64, RoR_Res_data) ## change to Float64
-            end
+            replace!(RoR_Res_data, "n/e"=>"0")
+            RoR_Res_data = parse.(Float64, string.(RoR_Res_data))
             Water = RoR_Res_data
             Hydro_Matrix = vcat(Hydro_Matrix, permutedims(Water))
         end
@@ -309,9 +307,7 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
             RoR_Res_data = Country_ENTSOE[in(["Hydro Run-of-river and poundage", "Hydro Water Reservoir"]).(Country_ENTSOE."Production Type"), 2]
             replace!(RoR_Res_data, "n/e"=>"0")
             replace!(RoR_Res_data, "N/A"=>"0")
-            if typeof(RoR_Res_data)==(Vector{String})
-                RoR_Res_data = parse.(Int64, RoR_Res_data)
-            end
+            RoR_Res_data = parse.(Float64, string.(RoR_Res_data))
             Water = RoR_Res_data
             Hydro_Matrix = vcat(Hydro_Matrix, permutedims(Water))
         end
