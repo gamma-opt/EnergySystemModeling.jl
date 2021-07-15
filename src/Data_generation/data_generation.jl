@@ -107,12 +107,20 @@ function replace_nans!(array::Array{Float64, N}) where N
     end
 end
 
+
+
+
 T = 8760
 
 t = 8       # 8 since hydro is not included here   
 
 
 function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input, era_year_input, Dataset)
+
+    # create path for the instance
+    structure_path = joinpath(folder,subfolder)
+    instance_path = mkpath(joinpath(structure_path, instance_name))
+    nodes_path =  mkpath(joinpath(instance_path, "nodes"))
 
 # Generate datasets for regions using GlobalEnergyGIS
     # define regions and countries and name the regionset
@@ -396,19 +404,17 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
     for i = 1:n
         NodeData = All[x:T*i,:]
         x = x+T
-        Header = ["Demand" "Avail_Sol" "Avail_Wind_On" "Avail_Wind_Off" "Hyd_In" "HydRoR_In"] #"Hyd_In" "HydRoR_In"
-        N_m = vcat(Header, NodeData)
-        writedlm("N_$i.csv", N_m, ',')
-       # CSV.write(joinpath(DataInput_path, "nodes", "$i.csv"), nodedata)
+        N_m = DataFrame(NodeData, :auto)
+        rename!(N_m, ["Demand", "Avail_Sol", "Avail_Wind_On" ,"Avail_Wind_Off", "Hyd_In" ,"HydRoR_In"])
+        CSV.write(joinpath(nodes_path, "N_$i.csv"), N_m)
     end
     
     # create file for node_specs
     NodeNr = [1:n;]
     Max_Demand = repeat(1:1; outer=[length(Regionlist)])
-    nodes_specs_body = hcat(NodeNr, Regionlist, Max_Demand)
-    HeaderN = ["Node" "Name" "Max_Demand" ]
-    nodes_specs = vcat(HeaderN, nodes_specs_body)
-    writedlm("nodes_specs.csv", nodes_specs, ',')
+    nodes_specs = DataFrame(hcat(NodeNr, Regionlist, Max_Demand), :auto)
+    rename!(nodes_specs, ["Node", "Name", "Max_Demand" ])
+    CSV.write(joinpath(instance_path, "nodes_specs.csv"), nodes_specs)
 
     
 
@@ -438,9 +444,9 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
     gcap_min = fill(0, (n*t,1))
         
     Gen_capac = hcat(node, gen_tech, gcap_min, gcap_max)
-    Header = ["node" "gen_tech" "gcap_min" "gcap_max(GW)"]
-    generation_capacity = vcat(Header, Gen_capac)
-    writedlm("gen_capacity.csv", generation_capacity, ',')
+    gen_capacity = DataFrame(Gen_capac, :auto)                                                  
+    rename!(gen_capacity, ["node", "gen_tech", "gcap_min" ,"gcap_max(GW)"])
+    CSV.write(joinpath(instance_path, "gen_capacity.csv"), gen_capacity)
 
 # sto_capacity()
     st = 1          
@@ -450,10 +456,9 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
     node = repeat(1:n, inner=st)
     scap_min = zeros(n)
     scap_max = fill(Max_capacity, (n*st, 1))
-    sto_cap = hcat(s, node, scap_min, scap_max)
-    Header = ["s" "node" "scap_min" "scap_max"]
-    sto_capacity = vcat(Header, sto_cap)
-    writedlm("sto_capacity.csv", sto_capacity, ',')
+    sto_cap = DataFrame(hcat(s, node, scap_min, scap_max), :auto)
+    rename!(sto_cap, ["s", "node", "scap_min", "scap_max"])
+    CSV.write(joinpath(instance_path, "sto_capacity.csv"), sto_cap)
 
 # transmission()
 
@@ -493,10 +498,9 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
     TransDatafull = repeat(TransData; outer=[size(LinesMatrix)[1]])
     
     # combine the tables, add header and create CSV file
-    TransmissionData = hcat(L_ind, LinesSingle, Distance_Connected, TransDatafull)
-    Header = ["L_ind" "line" "dist"  "cost" "converter_cost" "M" "C"  "B" "efficiency" "lifetime" "tcap_min" "tcap_max"]
-    TransmissionTable = vcat(Header, TransmissionData)
-    writedlm("transmission.csv", TransmissionTable, ',')
+    TransmissionData = DataFrame(hcat(L_ind, LinesSingle, Distance_Connected, TransDatafull), :auto)
+    rename!(TransmissionData, ["L_ind" ,"line" ,"dist" , "cost", "converter_cost", "M" ,"C" , "B", "efficiency", "lifetime" ,"tcap_min" ,"tcap_max"])
+    CSV.write(joinpath(instance_path, "transmission.csv"), TransmissionData)
 
 
 
@@ -512,23 +516,22 @@ function create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input
         :gas_cc         7       800                 20          4           22              0.615           0.20            30              0.3         0.3
         :gas_oc         8       400                 15          3           22              0.395           0.20            30              1           1
     ]
-    
-    writedlm("gen_technology.csv", techtable, ',')
+    CSV.write(joinpath(instance_path, "gen_technology.csv"), Tables.table(techtable), writeheader=false)
         
     # Hydro
     hydro_tech = [
         :name          :hydro_tech       :investment_cost    :fixedOM    :varOM      :fuel_cost      :efficiency     :emissions      :lifetime       :r_minus    :r_plus
         :hydropower     1                 4000                200          0           0               1               0               60              1           1
     ]
-    
-    writedlm("hydro_technology.csv", hydro_tech, ',')
+    CSV.write(joinpath(instance_path, "hydro_technology.csv"), Tables.table(hydro_tech), writeheader=false)
         
     # Storage
     storage = [
         :s          :xi      :c    :cost    :lifetime        
         1           0.86     15     185     20
     ]
-    writedlm("storage.csv", storage, ',')
+    CSV.write(joinpath(instance_path, "storage.csv"), Tables.table(storage), writeheader=false)
+
    
 end
 
