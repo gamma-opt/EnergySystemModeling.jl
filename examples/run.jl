@@ -1,14 +1,14 @@
 using Logging
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
-cd("/scratch/work/condeil1/EnergySystemModeling.jl/examples")
+cd("D:\\Eigene Dateien\\Documents\\GitHub\\EnergySystemModeling.jl\\examples")
 
 @info "Loading parameters"
 constants_path = "constants"
-structure = "8nodes"
+structure = "5_countries"
 structures_path = joinpath("structures",structure)
-instance = "small"
-instances_path = joinpath(structures_path,"instances",instance)
+instance = "5_countries"
+instances_path = joinpath("structures",structure)
 
 @info "Creating output directory"
 output_dir = joinpath(instances_path,"output")
