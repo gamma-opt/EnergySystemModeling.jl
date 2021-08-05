@@ -77,8 +77,8 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         A_gnt[2, n, :] = nodes.Avail_Wind_Off[T]
         A_gnt[3, n, :] = nodes.Avail_Sol[T]
         A_gnt[A_gnt .< 0.001] .= 0
-        AH_nt[n,:] = nodes.Hyd_In[T]
-        AR_nt[n,:] = nodes.HydRoR_In[T]
+        AH_nt[n,:] = trunc.(nodes.Hyd_In[T]; digits = 0)
+        AR_nt[n,:] = trunc.(nodes.HydRoR_In[T]; digits = 0)
     end
 
     # Nodes specifications
