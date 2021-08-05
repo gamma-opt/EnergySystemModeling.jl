@@ -468,23 +468,23 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
             h3[n in N, h in H],
             w_hnt[h,n,1]/1000 == w_hnt[h,n,T[end]]/1000)
-        # Define the minimum hydro flow possible to be fulfilled
+        # Define the minimum hydro flow possible to be used
         α_nt = zeros(length(N),length(T))
         for n in N, t in T
-            α_nt[n,t] = minimum(hcat(1,(AH_nt[n,t]+AR_nt[n,t])/(Fmin_n[n]+10^-8)))
+            AH_nt[n,t] + AR_nt[n,t] ≤ Fmin_n[n] ? α_nt[n,t] = 0 : α_nt[n,t] = AH_nt[n,t] + AR_nt[n,t] - Fmin_n[n]
         end
-        # Minimum hydro flow
+        # Minimum hydro flow constraint
         @constraint(model,
-            h4[n in N, t in T],
-            (sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t])/1000 ≤ (AH_nt[n,t] + AR_nt[n,t] - α_nt[n,t]*Fmin_n[n])/1000)
-        # Maximum hydro flow
+        h4[n in N, t in T],
+            (sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t])/1000 ≤ α_nt[n,t]/1000)
+        # Maximum hydro flow (availability)
         @constraint(model,
             h5[n in N, t in T],
             sum(h_hnt[h,n,t] for h in H)/1000 ≤ AH_nt[n,t]/1000)
-        # Maximum hydro installed capacity
-        # @constraint(model,
-        #     h6[h in H, n in N],
-        #     h̄_hn[h,n] ≤ Hmax_hn[h,n])
+        # Maximum hydro flow (capacity)
+        @constraint(model,
+            h6[h in H, n in N, t in T],
+            h_hnt[h,n,t]/1000 ≤ h̄_hn[h,n]/1000)
         # Maximum RoR hydro generation
         @constraint(model,
             h7[n in N, t in T],
@@ -493,6 +493,10 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
             h8[n in N, t in T],
             hr_nt[n,t]/1000 ≤ HRmax_n[n]/1000)
+        # Maximum hydro installed capacity
+        # @constraint(model,
+        #     h9[h in H, n in N],
+        #     h̄_hn[h,n] ≤ Hmax_hn[h,n])
         if specs.ramping
             # Hydro ramping up
             @constraint(model,
