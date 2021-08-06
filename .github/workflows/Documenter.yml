@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - model_GIS_data
     tags: '*'
   pull_request:
 jobs:
