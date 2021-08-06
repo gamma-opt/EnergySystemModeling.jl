@@ -5,9 +5,9 @@ cd("D:\\Eigene Dateien\\Documents\\GitHub\\EnergySystemModeling.jl\\examples")
 
 @info "Loading parameters"
 constants_path = "constants"
-structure = "5_regions"
+structure = "2_countries"
 structures_path = joinpath("structures",structure)
-instance = "5_regions"
+instance = "2_countries"
 instances_path = joinpath("structures",instance)
 
 @info "Creating output directory"

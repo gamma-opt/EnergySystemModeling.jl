@@ -12,6 +12,7 @@ makedocs(
         "Home" => "index.md",
         "plotting.md",
         "api.md",
+        "datageneration.md"
     ]
 )
 

@@ -103,7 +103,6 @@ function get_countries()
 end
 
 
-
 function replace_nans!(array::Array{Float64, N}) where N
     for i in eachindex(array)
         if isnan(array[i])
@@ -111,7 +110,6 @@ function replace_nans!(array::Array{Float64, N}) where N
         end
     end
 end
-  
 
 """Uses wind, solar and hydro data produced by the GlobalEnergyGIS package to generate CSV files with the data used in the model.
 # Arguments
@@ -137,16 +135,15 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
 # Generate datasets for regions using GlobalEnergyGIS
     # define regions and countries and name the instance
  
-  # saveregions(instance, Dataset)
-  # makedistances(instance)
-  # createmaps(instance)
+   saveregions(instance, Dataset)
+   makedistances(instance)
+   createmaps(instance)
 
     # generate VRE data and demand
-  # GISsolar(gisregion = instance)
-  # GISwind(gisregion = instance)
-  # GIShydro(gisregion = instance)
-  # predictdemand(gisregion = instance, sspscenario=sspscenario_input, sspyear=sspyear_input, era_year=era_year_input)
-
+   GISsolar(gisregion = instance)
+   GISwind(gisregion = instance)
+   GIShydro(gisregion = instance)
+   predictdemand(gisregion = instance, sspscenario=sspscenario_input, sspyear=sspyear_input, era_year=era_year_input)
 
 # function get data
     # Name of the instance you defined in Inputdata.jl
@@ -302,7 +299,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     end
       
   
-    # reservoirs =/= PHS, put in CSV for later use
     # Get the installed capacity of Run of river and Hydro reservoir plants from ENTSO-E datasets: https://transparency.entsoe.eu/generation/r2/installedGenerationCapacityAggregation/show
    
     data_path = "ENTSO-E_data"
@@ -328,8 +324,8 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         Hydro_Matrix = Array{Any}(undef, 0, 3)
         Countries = []
         for i in 1:length(Regions)
-        R = getindex.(Ref(Regions_dict),(Regions))[i]
-        Countries = [Countries; R]
+            R = getindex.(Ref(Regions_dict),(Regions))[i]
+            Countries = [Countries; R]
         end
         Hydro_Matrix = Array{Any}(undef, 0, 3)
         for i in 1:length(Countries)
@@ -593,10 +589,13 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     ]
     CSV.write(joinpath(instance_path, "storage.csv"), Tables.table(storage), writeheader=false)
 
-    weights = repeat([1:1;], 8760)
-    df = DataFrame(col1 = weights)
-    rename!(df, ["Weights"])
-    CSV.write(joinpath(instance_path, "weights.csv"), df)
+    # create weights.csv if hours = 8760
+    if T == 8760
+        weights = repeat([1:1;], 8760)
+        df = DataFrame(col1 = weights)
+        rename!(df, ["Weights"])
+        CSV.write(joinpath(instance_path, "weights.csv"), df)
+    end
    
     # indices.json
 
