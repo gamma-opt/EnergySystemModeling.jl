@@ -5,6 +5,7 @@ include("io.jl")
 export EnergySystemModel,
     Specs,
     Params,
+    perform_Params,
     JuMPObj,
     JuMPVar,
     retrieve_data,
@@ -48,5 +49,6 @@ export SeriesInstance,
     replace_lines,
     update_clust!,
     update_k!,
-    find_clusters!
+    find_clusters!,
+    write_clust_instance!
 end # module
