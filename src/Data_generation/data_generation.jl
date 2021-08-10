@@ -300,11 +300,12 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
       
   
     # Get the installed capacity of Run of river and Hydro reservoir plants from ENTSO-E datasets: https://transparency.entsoe.eu/generation/r2/installedGenerationCapacityAggregation/show
-   
-    data_path = "ENTSO-E_data"
+    # Create a table (RoR_Res) with values from ENTSOE for Pumped Storage, Run of River and Reservoir for each values
+    data_path = joinpath("ENTSO-E_data", "Capacities")
     if sum(occursin.(Regions[1,1], Europe[:,1]))>0
         Countries = Regions[:,1]
         Hydro_Matrix = Array{Any}(undef, 0, 3)
+        # take the values from the ENTSO-E CSV files, put them into a matrix
         for i in 1:length(Countries)
             Country = Regions[:,1][i]
             Country_ENTSOE = joinpath(data_path, "$(Country).csv") |> CSV.File |> DataFrame
@@ -318,16 +319,20 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         Header = ["Country" "Pumped Storage" "Run of River" "Reservoir"]
         RoR_Res = vcat(Header, Hydro)
         replace!(RoR_Res, "N/A"=>0)
-        reservoir = RoR_Res[2:end,3]./(RoR_Res[2:end,3] .+ RoR_Res[2:end,2])
+        # Reservoir percentage is the reservoir value devided by the sum of all three hydro power generation capacities
+        reservoir = RoR_Res[2:end,4]./(RoR_Res[2:end,2] .+ RoR_Res[2:end,3] .+ RoR_Res[2:end,4])
         replace_nans!(reservoir)
+        reservoir_table = hcat(Regions, reservoir)
     elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
         Hydro_Matrix = Array{Any}(undef, 0, 3)
+        ## get the countries, that are in the regions
         Countries = []
         for i in 1:length(Regions)
             R = getindex.(Ref(Regions_dict),(Regions))[i]
             Countries = [Countries; R]
         end
         Hydro_Matrix = Array{Any}(undef, 0, 3)
+        ## get ENTSO-E values for the countries in the regions
         for i in 1:length(Countries)
             Country = Countries[:,1][i]
             Country_ENTSOE = joinpath(data_path, "$(Country).csv") |> CSV.File |> DataFrame
@@ -343,34 +348,22 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         RoR_Res = vcat(Header, Hydro)
         replace!(RoR_Res, "n/e"=>0)
         replace!(RoR_Res, "N/A"=>0)
-        RoR_Res[2:end,2:3] = parse.(Float64, string.(RoR_Res[2:end,2:3]))           
-    end
-
-    
-    # Calculating the percentage of Reservoir of total Hydro Power
-    # If you work with Regions, get the Hydro Data for the countries in this region, then average the reseroir availability over all countries of this region
-
-    if sum(occursin.(Regions[1,1], Europe[:,1]))>0
-        reservoir_table = hcat(Regions, reservoir)
-    elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
-        Countries = []
-        for i in 1:length(Regions)
-            R = getindex.(Ref(Regions_dict),(Regions))[i]
-            Countries = [Countries; R]
-        end
-       # reservoirs = hcat(Countries, RoR_Res[2:end,2:3])
+        RoR_Res[2:end,2:end] = parse.(Float64, string.(RoR_Res[2:end,2:end]))   
         res_table = []
+        ## get the region of each country
         for i in 1:length(Regions)
             R = getindex.(Ref(Regions_dict),(Regions))[i]
             Key = [k for (k,v) in Regions_dict if v==R]
             Key_List = repeat(Key, inner=length(R))
             res_table = [res_table; Key_List]
         end
-        List_full = DataFrame(hcat(res_table, RoR_Res[2:end,2:3]), :auto)
+        # List all countries with their region
+        List_full = DataFrame(hcat(res_table, RoR_Res[2:end,2:end]), :auto)
+        # sum the different regions, so you get one value per region
         Hydro_summed = combine(groupby(List_full, :x1), names(List_full, Not(:x1)) .=> sum, renamecols=false)
-        reservoir = Hydro_summed[!,:x3]./(Hydro_summed[!,:x2] .+ Hydro_summed[!,:x3])
-        reservoir_table = hcat(Regions, reservoir)
-    end
+        reservoir = Hydro_summed[!,:x4]./(Hydro_summed[!,:x2] .+ Hydro_summed[!,:x3] .+ Hydro_summed[!,:x4])
+        reservoir_table = hcat(Regions, reservoir)        
+    end   
 
     reservoirp =  permutedims(reservoir_table[:,2])
 
@@ -385,12 +378,69 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
 
 
 # Hydro_capacity.csv file
+
+    ## get the reservoir levels from ENTSO-E, base year 2018: https://transparency.entsoe.eu/generation/r2/waterReservoirsAndHydroStoragePlants/show
+    ## Wmax is the maximum value of year 2018 for each country
+    ## Wmin is the minimum value of year 2018 for each country
+    data_path_reslvl = joinpath("ENTSO-E_data", "Reservoir_level")
+    if sum(occursin.(Regions[1,1], Europe[:,1]))>0
+        Countries = Regions[:,1]
+        Hydro_Matrix = Array{Any}(undef, 0, 3)
+        W_Min = Array{Any}(undef, 0, 1)
+        W_Max = Array{Any}(undef, 0, 1)
+        # take the values from the ENTSO-E CSV files, put them into a matrix
+        for i in 1:length(Countries)
+            Country = Regions[:,1][i]
+            Country_ENTSOE = joinpath(data_path_reslvl, "$(Country).csv") |> CSV.File |> DataFrame
+            W_data_total = Matrix(Country_ENTSOE[!, Not("Week")])
+            replace!(W_data_total, "n/e"=>"0")
+            replace!(W_data_total, "N/A"=>"0")
+            W_data_total = parse.(Float64, string.(W_data_total))
+            W_Min = vcat(W_Min, minimum(W_data_total, dims=1))
+            W_Max = vcat(W_Max, maximum(W_data_total, dims=1))
+        end   
+        Wmin_summed = W_min_total = hcat(Countries, W_Min)
+        Wmax_summed = W_max_total = hcat(Countries, W_Max) 
+    elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
+        ## get the countries, that are in the regions
+        Countries = []
+        for i in 1:length(Regions)
+            R = getindex.(Ref(Regions_dict),(Regions))[i]
+            Countries = [Countries; R]
+        end
+        W_Min = Array{Any}(undef, 0, 1)
+        W_Max = Array{Any}(undef, 0, 1)
+        for i in 1:length(Countries)
+            Country = Countries[:,1][i]
+            Country_ENTSOE = joinpath(data_path_reslvl, "$(Country).csv") |> CSV.File |> DataFrame
+            W_data_total = Matrix(Country_ENTSOE[!, Not("Week")])
+            replace!(W_data_total, "n/e"=>"0")
+            replace!(W_data_total, "N/A"=>"0")
+            W_data_total = parse.(Float64, string.(W_data_total))
+            W_Min = vcat(W_Min, minimum(W_data_total, dims=1))
+            W_Max = vcat(W_Max, maximum(W_data_total, dims=1))
+        end
+        W_min_total = hcat(Countries, W_Min)
+        W_max_total = hcat(Countries, W_Max)
+        W_table = []
+        for i in 1:length(Regions)
+            R = getindex.(Ref(Regions_dict),(Regions))[i]
+            Key = [k for (k,v) in Regions_dict if v==R]
+            Key_List = repeat(Key, inner=length(R))
+            W_table = [W_table; Key_List]
+        end
+        Wmin_full = DataFrame(hcat(W_table, W_min_total[:,2]), :auto)
+        Wmin_summed = combine(groupby(Wmin_full, :x1), names(Wmin_full, Not(:x1)) .=> sum, renamecols=false)
+        Wmax_full = DataFrame(hcat(W_table, W_max_total[:,2]), :auto)
+        Wmax_summed = combine(groupby(Wmax_full, :x1), names(Wmax_full, Not(:x1)) .=> sum, renamecols=false)
+    end    
+
     H_max = potentialcapac .* permutedims(reservoirp) # reservoir production capacity per node [MWh]
     NodeNr = [1:n;]
     H_min = permutedims(hydroCap)      # existing reservoir capacity per node (percentage)
     HR_max = permutedims(hydroRoRCap)        # RoR counterpart of existing capacity 
-    W_max = H_max 
-    W_min = H_min 
+    W_max = Wmax_summed[:,2]
+    W_min = Wmin_summed[:,2]
     hydro_tech = repeat(1:1, inner=n)
     Hydro_cap = DataFrame(hcat(NodeNr, hydro_tech, H_min, H_max, W_min, W_max), :auto)
     rename!(Hydro_cap, ["node", "hydro_tech", "hcap_min", "hcap_max", "wcap_min" ,"wcap_max"])
