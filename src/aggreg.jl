@@ -517,7 +517,7 @@ end
 update_k!(_SeriesInstance, new_current_k::Int)
 Updates number of clusters in the _SeriesInstance object.
 """
-function write_clust_instance!(dm::String,instances_path::AbstractString, ParamsDict, ClustDict, SeriesDict, ClustersRange::Vector{Int}, num_nodes::Int)
+function write_clust_instance!(steps_per_block::Int,num_hours::Int,rep::String,dm::String,instances_path::AbstractString, ParamsDict, ClustDict, SeriesDict, ClustersRange::Vector{Int}, num_nodes::Int)
     for i in ClustersRange
         num_clusters = i
         # Declaring the instance
