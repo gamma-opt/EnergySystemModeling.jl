@@ -3,7 +3,7 @@
 ## Run_data_generation.jl
 
 Users set the framework for their desired regionsets and generate the regionset.
-The instance is then generated using the previously defined framework and dataset by: 
+The instance is then created using the previously defined framework and dataset by: 
 ```@example create_data_sets
 create_data_sets(inputdata, regionset, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance_name)
 ```
@@ -24,7 +24,6 @@ If the user does not specify any set of countries or regions, he will get an ins
 ### Generate datasets and CSV files
 ```@example create_data_sets
 create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance, T, t)
-
 ```
 
-Uses GlobalEnergyGIS to generate renewable energy input data. It then reads the generated data, converts it and generates different CSV files with data used by the model.
+Uses GlobalEnergyGIS to generate renewable energy input data based on the sspscenario, sspyear and base year defined by the user. It then reads the generated data, converts it and generates different CSV files with data that can be used by EnergySystemModeling.jl.

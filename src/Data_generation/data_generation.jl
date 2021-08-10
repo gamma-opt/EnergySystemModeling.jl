@@ -30,7 +30,7 @@ Europe = [
       "Moldova"                   GADM("Moldova") 
       "Montenegro"                GADM("Montenegro")                              
       "Netherlands"               GADM("Netherlands")   
-      "North_Macedonia"           GADM("Macedonia")    
+      "North Macedonia"           GADM("Macedonia")    
       "Norway"                    GADM("Norway")          
       "Poland"                    GADM("Poland")             
       "Portugal"                  GADM("Portugal")           
@@ -268,10 +268,10 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     replace_nans!(HydroCap)
    
     existingcapac = permutedims(HydroData["existingcapac"]) .* 1000
-    potentialcapacities = HydroData["potentialcapac"].* 1000
+    potentialcapacities = HydroData["potentialcapac"]
     potentialcapac = []
     for i in 1:n
-        potentialcapac = vcat(potentialcapac, sum(potentialcapacities[i,:,:])*1000)
+        potentialcapac = vcat(potentialcapac, sum(potentialcapacities[i,:,:])*1000 + existingcapac[1,i])
     end
     #Monthly inflow
     existinginflow = permutedims(HydroData["existinginflowcf"])
@@ -389,8 +389,8 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     NodeNr = [1:n;]
     H_min = permutedims(hydroCap)      # existing reservoir capacity per node (percentage)
     HR_max = permutedims(hydroRoRCap)        # RoR counterpart of existing capacity 
-    W_max = H_max #[768075, 28798331, 15371950, 1304625, 3973850]
-    W_min = H_min #[202125, 7578508, 4045250, 343325, 1045850]
+    W_max = H_max 
+    W_min = H_min 
     hydro_tech = repeat(1:1, inner=n)
     Hydro_cap = DataFrame(hcat(NodeNr, hydro_tech, H_min, H_max, W_min, W_max), :auto)
     rename!(Hydro_cap, ["node", "hydro_tech", "hcap_min", "hcap_max", "wcap_min" ,"wcap_max"])
@@ -613,7 +613,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     open(joinpath(instance_path, "indices.json"), "w") do f
         JSON.print(f, indices)
     end
-
-    
+ 
 end
 
