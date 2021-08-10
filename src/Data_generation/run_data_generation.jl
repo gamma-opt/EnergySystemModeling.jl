@@ -12,13 +12,13 @@ era_year_input = 2018
 # select the folder in which you want to write the files, "folder" and "subfolder" should not change
 folder = "examples"
 subfolder = "structures"
-instance = "8_countries"
+instance = "5_regions"
 
 # Path to the output folder of GlobalEnergyGIS
 inputdata = "D:\\Eigene Dateien\\Studium\\Master\\RA\\Copernicus\\output"
 
 # Write the countries/regions for which you want to create the dataset. Use either country Names or predifined regions: Nordics, Eastern, Western, Central, Mediterranian
-Regions = ["Finland", "Norway", "Sweden", "Denmark", "France", "Germany", "United Kingdom"]
+Regions = ["Nordics", "Eastern", "Western", "Central", "Mediterranian"]
 
 # Desired time period in hours
 T = 8760
