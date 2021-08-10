@@ -11,8 +11,8 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "plotting.md",
+        "datageneration.md",
         "api.md",
-        "datageneration.md"
     ]
 )
 
