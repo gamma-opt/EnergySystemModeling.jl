@@ -363,6 +363,8 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         Hydro_summed = combine(groupby(List_full, :x1), names(List_full, Not(:x1)) .=> sum, renamecols=false)
         reservoir = Hydro_summed[!,:x4]./(Hydro_summed[!,:x2] .+ Hydro_summed[!,:x3] .+ Hydro_summed[!,:x4])
         reservoir_table = hcat(Regions, reservoir)        
+        ## Percentage between PHS and reservoir for later calculation of Wmin and Wmax
+        reservoir_PHS = Hydro_summed[!,:x4]./(Hydro_summed[!,:x2] .+ Hydro_summed[!,:x4])
     end   
 
     reservoirp =  permutedims(reservoir_table[:,2])
@@ -439,8 +441,9 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     NodeNr = [1:n;]
     H_min = permutedims(hydroCap)      # existing reservoir capacity per node (percentage)
     HR_max = permutedims(hydroRoRCap)        # RoR counterpart of existing capacity 
-    W_max = Wmax_summed[:,2]
-    W_min = Wmin_summed[:,2]
+    ## ENTSO-E data includes both PHS and reservoir, so we need the reservoir percentage to calculate acutal Wmin and Wmax for reservoir only
+    W_max = Wmax_summed[:,2].*reservoir_PHS
+    W_min = Wmin_summed[:,2].*reservoir_PHS
     hydro_tech = repeat(1:1, inner=n)
     Hydro_cap = DataFrame(hcat(NodeNr, hydro_tech, H_min, H_max, W_min, W_max), :auto)
     rename!(Hydro_cap, ["node", "hydro_tech", "hcap_min", "hcap_max", "wcap_min" ,"wcap_max"])
