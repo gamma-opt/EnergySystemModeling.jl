@@ -125,7 +125,7 @@ end
 - `t`: number of technologies used in the model
 """
 
-function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance, T, t)
+function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance, T, t, Fmin)
 
     # create path for the instance
     structure_path = joinpath(folder,subfolder)
@@ -452,8 +452,7 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
 # hydro.csv file
     node = [1:n;]
     HydroRoR = permutedims(hydroRoRCap)
-    Fmin = 0.05
-    Fmin_mat = fill(0.05, n)
+    Fmin_mat = fill(Fmin, n)
     hyd_in_avg = []
     for i in 1:n
         hyd_in_avg = vcat(hyd_in_avg, mean(hyd_in[:,i]))
@@ -518,10 +517,18 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         rename!(N_m, ["Demand", "Avail_Sol", "Avail_Wind_On" ,"Avail_Wind_Off", "Hyd_In" ,"HydRoR_In"])
         CSV.write(joinpath(nodes_path, "$i.csv"), N_m)
     end
-    
+
+    x = 1
     # create file for node_specs
+    NodeDemand = []
+    for i = 1:n
+        Max_Node_Demand = maximum(Demand[x:T*i], dims=1)
+        x = x+T 
+        NodeDemand = append!(NodeDemand, Max_Node_Demand)
+    end
+
     NodeNr = [1:n;]
-    Max_Demand = repeat(1:1; outer=[length(Regionlist)])
+    Max_Demand = NodeDemand
     nodes_specs = DataFrame(hcat(NodeNr, Regionlist, Max_Demand), :auto)
     rename!(nodes_specs, ["Node", "Name", "Max_Demand" ])
     CSV.write(joinpath(instance_path, "nodes_specs.csv"), nodes_specs)

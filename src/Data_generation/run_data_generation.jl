@@ -24,10 +24,12 @@ Regions = ["Nordics", "Eastern", "Western", "Central", "Mediterranian"]
 T = 8760
 # number of technologies
 t = 8       # 8 since hydro is not included here 
+## Value of Fmin
+Fmin = 0.05
 
 Dataset = get_countries(Regions)
 
-create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance, T, t)
+create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_input, Dataset, folder, subfolder, instance, T, t, Fmin)
 
 
 
