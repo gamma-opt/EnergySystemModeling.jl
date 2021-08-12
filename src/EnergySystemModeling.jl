@@ -17,7 +17,8 @@ export EnergySystemModel,
     replace_nans,
     getdispatch,
     read_clusters,
-    unpack_clusters_features
+    unpack_clusters_features,
+    change_time_parameters
 
 include("plotting.jl")
 export plot_objective_values,
@@ -32,7 +33,8 @@ export plot_objective_values,
     plot_loss_of_load,
     plot_box,
     plot_box_all,
-    plot_dispatch_bars
+    plot_dispatch_bars,
+    perform_plotting
 
 include("aggreg.jl")
 export SeriesInstance,

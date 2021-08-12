@@ -125,10 +125,10 @@ function Expressions(parameters::Params, variables::Dict{String, Array{Float64}}
     p_gnt = variables["p_gnt"]
     h_hnt = variables["h_hnt"]
 
-    κ′ = (sum(p_gnt[g,n,t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T)) /
-         (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T))
-    μ′ = sum(p_gnt[5,n,t] for n in N, t in T) /
-        (sum(p_gnt[g,n,t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t] for h in H, n in N, t in T))
+    κ′ = (sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T)) /
+         (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T))
+    μ′ = sum(p_gnt[5,n,t]*τ_t[t] for n in N, t in T) /
+        (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T))
     C′_E = 1 - ((sum(E_g[g] * (sum(p_gnt[g,n,t]*τ_t[t] for n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T)) / e_g[g] for g in G)) / R_E)
 
     ExpressionsDict = Dict("κ′" => κ′, "μ′" => μ′, "C′_E" => C′_E)
@@ -175,46 +175,46 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     model = EnergySystemModel()
 
     # -- Main variables --
-    @variable(model, p_gnt[g in G, n in N, t in T]≥0)
+    @variable(model, p_gnt[g in G, n in N, t in T] ≥ 0)
     VariablesDict["p_gnt"] = p_gnt
-    @variable(model, p̄_gn[g in G, n in N]≥Gmin_gn[g,n])
+    @variable(model, Gmax_gn[g,n] ≥ p̄_gn[g in G, n in N] ≥ Gmin_gn[g,n])
     VariablesDict["p̄_gn"] = p̄_gn
-    @variable(model, σ_nt[n in N, t in T]≥0)
+    @variable(model, σ_nt[n in N, t in T] ≥ 0)
     VariablesDict["σ_nt"] = σ_nt
 
     # Transmission variables
     if specs.transmission
         @variable(model, f_lt[l in L_ind, t in T])
         VariablesDict["f_lt"] = f_lt
-        @variable(model, f_abs_lt[l in L_ind, t in T]≥0)
+        @variable(model, f_abs_lt[l in L_ind, t in T] ≥ 0)
         VariablesDict["f_abs_lt"] = f_abs_lt
-        @variable(model, f̄_l[l in L_ind]≥Tmin_l[l])
+        @variable(model, Tmax_l[l] ≥ f̄_l[l in L_ind] ≥ Tmin_l[l])
         VariablesDict["f̄_l"] = f̄_l
     end
 
     if specs.storage
         # Storage variables
-        @variable(model, b_snt[s in S, n in N, t in T]≥0)
+        @variable(model, b_snt[s in S, n in N, t in T] ≥ 0)
         VariablesDict["b_snt"] = b_snt
-        @variable(model, b̄_sn[s in S, n in N]≥Smin_sn[s,n])
+        @variable(model, Smax_sn[s,n] ≥ b̄_sn[s in S, n in N] ≥ Smin_sn[s,n])
         VariablesDict["b̄_sn"] = b̄_sn
-        @variable(model, b⁺_snt[s in S, n in N, t in T]≥0)
+        @variable(model, b⁺_snt[s in S, n in N, t in T] ≥ 0)
         VariablesDict["b⁺_snt"] = b⁺_snt
-        @variable(model, b⁻_snt[s in S, n in N, t in T]≥0)
+        @variable(model, b⁻_snt[s in S, n in N, t in T] ≥ 0)
         VariablesDict["b⁻_snt"] = b⁻_snt
     end
 
     if specs.voltage_angles
         # Voltage variables
-        @variable(model, θ_nt[n in N, t in T]≥0)
+        @variable(model, θ_nt[n in N, t in T] ≥ 0)
         VariablesDict["θ_nt"] = θ_nt
-        @variable(model, θ′_nt[n in N, t in T]≥0)
+        @variable(model, θ′_nt[n in N, t in T] ≥ 0)
         VariablesDict["θ′_nt"] = θ′_nt
     end
 
     if specs.hydro
         # Hydro energy variables
-        @variable(model, w_hnt[h in H, n in N, t in T]≥Wmin_hn[h,n])
+        @variable(model, w_hnt[h in H, n in N, t in T] ≥ Wmin_hn[h,n])
         VariablesDict["w_hnt"] = w_hnt
         @variable(model, h_hnt[h in H, n in N, t in T]≥0)
         VariablesDict["h_hnt"] = h_hnt
@@ -475,7 +475,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         end
         # Minimum hydro flow constraint
         @constraint(model,
-        h4[n in N, t in T],
+            h4[n in N, t in T],
             (sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t])/1000 ≤ α_nt[n,t]/1000)
         # Maximum hydro flow (availability)
         @constraint(model,
