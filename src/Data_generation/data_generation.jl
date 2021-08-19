@@ -69,7 +69,6 @@ function get_countries(Regions)
         m = length(Regions)
         Dataset_Countries = []
         GADM_Name = []
-
         for j in 1:m
             for i in 1:n
                     if occursin.(Regions[j,1], Europe[i,1])
@@ -79,13 +78,11 @@ function get_countries(Regions)
             end
         end
         Countries = hcat(Dataset_Countries, GADM_Name)
-
     elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
         Keys = []
         Values = []
         m = length(Regions)
         R = getindex.(Ref(Regions_dict),(Regions))
-    
         for i in 1:m
             RVal = getindex.(Ref(Regions_dict),(Regions))[i]
             Keys = [Keys; Regions[i]]
@@ -204,16 +201,13 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     #Sum the different solar types and divide with total capacity to get relative availability values
     avail_sol = (avail_sol_cspA + avail_sol_cspB + avail_sol_pvA + avail_sol_pvB + avail_sol_pvrooftop) ./ capacity_solar
 
-
     # Wind
-
     WindCapA = typeof(WindData["capacity_onshoreA"]) == Float64 ? [WindData["capacity_onshoreA"]] : WindData["capacity_onshoreA"]
     WindCapB = typeof(WindData["capacity_onshoreB"]) == Float64 ? [WindData["capacity_onshoreB"]] : WindData["capacity_onshoreB"]
     WindCapTotal = WindCapA .+ WindCapB
     replace_nans!(WindCapA)
     replace_nans!(WindCapB)
     replace_nans!(WindCapTotal)
-
 
     WindCapOff = typeof(WindData["capacity_offshore"]) == Float64 ? [WindData["capacity_offshore"]] : WindData["capacity_offshore"]
     replace_nans!(WindCapOff)
@@ -229,8 +223,7 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     ## Wind Offshore
     CFtime_windoffshore = typeof(WindData["CFtime_windoffshore"]) == Float64 ? [WindData["CFtime_windoffshore"]] : WindData["CFtime_windoffshore"]
     replace_nans!(CFtime_windoffshore)
-
-      
+ 
     #Preallocate arrays for results
     avail_wind_offshore = zeros(Float64, T, n)
     avail_wind_onshoreA = zeros(Float64, T, n)
@@ -253,7 +246,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     gisdemand = JLD.load(joinpath(inputdata, "SyntheticDemand_$(instance)_$(sspscenario_input)-$(sspyear_input)_$(era_year_input).jld"), "demand")
 
     demand = zeros(Float64, T, n)
-    
     for i in 1:T
         demand[i,:] = gisdemand[i,:]
     end
@@ -261,7 +253,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     # Transmission distances and connected nodes
     Distances = typeof(TransmissionData["distances"]) == Float64 ? [TransmissionData["distances"]] : TransmissionData["distances"]
     connected = typeof(TransmissionData["connected"]) == Float64 ? [TransmissionData["connected"]] : TransmissionData["connected"]
-
 
     # Hydro
     HydroCap = typeof(HydroData["existingcapac"]) == Float64 ? [HydroData["existingcapac"]] : HydroData["existingcapac"]
@@ -281,7 +272,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     avail_inflow = zeros(Float64, T, n)           ## Make it variable
 
     #Turn monthly inflow data into hourly data
-   
     days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     lasthours = 24 * cumsum(days)
     firsthours = [1; 1 .+ lasthours[1:end-1]]
@@ -298,7 +288,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         end
     end
       
-  
     # Get the installed capacity of Run of river and Hydro reservoir plants from ENTSO-E datasets: https://transparency.entsoe.eu/generation/r2/installedGenerationCapacityAggregation/show
     # Create a table (RoR_Res) with values from ENTSOE for Pumped Storage, Run of River and Reservoir for each values
     data_path = joinpath("ENTSO-E_data", "Capacities")
@@ -323,6 +312,9 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         reservoir = RoR_Res[2:end,4]./(RoR_Res[2:end,2] .+ RoR_Res[2:end,3] .+ RoR_Res[2:end,4])
         replace_nans!(reservoir)
         reservoir_table = hcat(Regions, reservoir)
+        ## Percentage between PHS and reservoir for later calculation of Wmin and Wmax
+        reservoir_PHS = RoR_Res[2:end,4]./(RoR_Res[2:end,2] .+ RoR_Res[2:end,4])
+        replace_nans!(reservoir_PHS)
     elseif sum(occursin.(Regions[1,1], collect(keys(Regions_dict))))>0
         Hydro_Matrix = Array{Any}(undef, 0, 3)
         ## get the countries, that are in the regions
@@ -365,6 +357,7 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         reservoir_table = hcat(Regions, reservoir)        
         ## Percentage between PHS and reservoir for later calculation of Wmin and Wmax
         reservoir_PHS = Hydro_summed[!,:x4]./(Hydro_summed[!,:x2] .+ Hydro_summed[!,:x4])
+        replace_nans!(reservoir_PHS)
     end   
 
     reservoirp =  permutedims(reservoir_table[:,2])
@@ -469,7 +462,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     rename!(Hydro, ["node", "HydroRoR", "Fmin", "hyd_in_avg", "hydror_avg" ,"hyd_flow_min"])
     CSV.write(joinpath(instance_path, "hydro.csv"), Hydro)    
 
-
 # function create_node_data()
     # Create a Vector for every technology spanning all nodes (at 5 nodes: 43.800 columns)
     Demand = []
@@ -503,13 +495,10 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
         hydRoR_in$i = sum(hydRoR_in[:,i], dims = 2)
         append!(hydroRoR_in, hydRoR_in$i)
     end
-    
     All = hcat(Demand, Solar, WindOn, WindOff, hydro_in, hydroRoR_in) 
     
     # Generate CSV files for every single node
-    
     x = 1
-    
     for i = 1:n
         NodeData = All[x:T*i,:]
         x = x+T
@@ -533,17 +522,12 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     rename!(nodes_specs, ["Node", "Name", "Max_Demand" ])
     CSV.write(joinpath(instance_path, "nodes_specs.csv"), nodes_specs)
 
-    
-
 # function gen_capacity() 
     # capacity of the remaining non-renewable energy sources fixed at 1000 GW (biomass, nuclear, coal, gas_cc, gas_oc)
     Capacity_else = 1000*1000
-    
     Capacity = zeros(5,1)
     gcap_max = []
             
-    ##### Hydro has to get an own csv file, must not be included here!
-
     # create a vector with the capacity of each energy source per node
     for i in 1:n
         Capacity$i = [sum(WindCapTotal[i,:]), sum(WindCapOff[i,:]), sum(SolarCapTotal[i,:]),  Capacity_else, Capacity_else, Capacity_else, Capacity_else, Capacity_else].*1000
@@ -558,8 +542,7 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     # repeating the technologies 1 - 8 for every node
     gen_tech = repeat([1:t;], n)
     # fill the whole column of gcap_min with 0
-    gcap_min = fill(0, (n*t,1))
-        
+    gcap_min = fill(0, (n*t,1))  
     Gen_capac = hcat(node, gen_tech, gcap_min, gcap_max)
     gen_capacity = DataFrame(Gen_capac, :auto)                                                  
     rename!(gen_capacity, ["node", "gen_tech", "gcap_min" ,"gcap_max"])
@@ -568,7 +551,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
 # sto_capacity()
     st = 1          
     Max_capacity = 1000000000
-        
     s = repeat([1:st;], n)
     node = repeat(1:n, inner=st)
     scap_min = zeros(n)
@@ -578,9 +560,7 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     CSV.write(joinpath(instance_path, "sto_capacity.csv"), sto_cap)
 
 # transmission()
-
     Dist = Distances[tril!(trues(size(Distances)), -1)]
-    
     # Connected nodes
     Con = connected[tril!(trues(size(connected)), -1)]
     # Find distances for connected nodes only
@@ -588,7 +568,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     Dist_Con_df = DataFrame(Dist_Con, :auto)
     Dist_con = Dist_Con_df[Dist_Con_df[!,:x2].!=0,:]
     Distance_Connected = Matrix(Dist_con)[:,1]
-
     # Ged rid of double nodes by only using lower triangular matrix
     LinesLT = LowerTriangular(connected)
     # Find connections by getting the CartesianIndex of the connected nodes
@@ -598,14 +577,11 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     # Delete entries of connections between only one node
     Linesdf = LinesDoubledf[LinesDoubledf.x1 .!= LinesDoubledf.x2, :]
     LinesMatrix = Matrix(Linesdf)
-
     # Reshape into a 1d array
     LinesSingle = collect(eachrow(LinesMatrix))
-
     L_ind = [1:size(LinesMatrix)[1];]
       
     # Create Matrix for remaining parameters of transmission
-    
     TransData = [
        # :cost       :converter_cost         :M      :C      :B      :efficiency         :lifetime       :tcap_min       :tcap_max
         400          150000                  0.02    0       1       0.95                40              0               1000000000
@@ -613,34 +589,41 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     
     # Fill the matrix according to the number of pairs in the system
     TransDatafull = repeat(TransData; outer=[size(LinesMatrix)[1]])
-    
     # combine the tables, add header and create CSV file
     TransmissionData = DataFrame(hcat(L_ind, LinesSingle, Distance_Connected, TransDatafull), :auto)
     rename!(TransmissionData, ["L_ind" ,"line" ,"dist" , "cost", "converter_cost", "M" ,"C" , "B", "efficiency", "lifetime" ,"tcap_min" ,"tcap_max"])
     CSV.write(joinpath(instance_path, "transmission.csv"), TransmissionData)
 
-
-
 # function generate_tech_tables()
     techtable = [
         :name          :g       :investment_cost    :fixedOM    :varOM      :fuel_cost      :efficiency     :emissions      :lifetime       :r_minus    :r_plus
-        :wind_on        1       1127                35          0           0               1               0               25              1           1
-        :wind_off       2       2290                80          0           0               1               0               25              1           1
-        :solar          3       480                 26          0           0               1               0               25              1           1
-        :biomass        4       2076                100         0           7               0.448           0.39            30              1           1
+        :wind_on        1       1473                35          0           0               1               0               25              1           1
+        :wind_off       2       3800                80          0           0               1               0               25              1           1
+        :solar          3       995                 26          0           0               1               0               25              1           1
+        :biomass        4       2141                100         0           7               0.448           0.39            30              1           1
         :nuclear        5       5000                150         3           3               0.34            0               60              0.05        0.05
-        :coal           6       1300                25          6           8               0.466           0.34            40              0.15        0.15
+        :coal           6       1800                25          6           8               0.466           0.34            40              0.15        0.15
         :gas_cc         7       800                 20          4           22              0.615           0.20            30              0.3         0.3
         :gas_oc         8       400                 15          3           22              0.395           0.20            30              1           1
     ]
     CSV.write(joinpath(instance_path, "gen_technology.csv"), Tables.table(techtable), writeheader=false)
         
+    ## sources investment cost
+    # Wind onshore, Wind offshore, Solar, Biomass: https://www.irena.org/publications/2020/Jun/Renewable-Power-Costs-in-2019 
+    # Nuclear, coal, gas_cc: https://www.econstor.eu/bitstream/10419/80348/1/757528015.pdf (rough average of the different estimations)
+    # 
+
+
+
     # Hydro
     hydro_tech = [
         :name          :hydro_tech       :investment_cost    :fixedOM    :varOM      :fuel_cost      :efficiency     :emissions      :lifetime       :r_minus    :r_plus
-        :hydropower     1                 4000                200          0           0               1               0               60              1           1
+        :hydropower     1                 1704                200          0           0               1               0               60              1           1
     ]
     CSV.write(joinpath(instance_path, "hydro_technology.csv"), Tables.table(hydro_tech), writeheader=false)
+    ## sources investment cost
+    # https://www.irena.org/publications/2020/Jun/Renewable-Power-Costs-in-2019 
+
         
     # Storage
     storage = [
@@ -658,7 +641,6 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     end
    
     # indices.json
-
     G = [1:t;]
     G_r = [1:4;]
     N = [1:n;]
@@ -667,9 +649,7 @@ function create_data_sets(inputdata, sspscenario_input, sspyear_input, era_year_
     S = [1]
     H = [1]
     T = T
-
     indices = Dict("G" => G, "G_r" => G_r, "N" => N, "L" => L, "L_ind" => L_ind, "S" => S, "H" => H, "T" => T)
-
     open(joinpath(instance_path, "indices.json"), "w") do f
         JSON.print(f, indices)
     end

@@ -54,16 +54,16 @@ The CSV files include every main aspect of data needed for the model to run.
 
 *  node: Node number
 *  HydroRoR: Existing capacity of Run-of-River power plants
-*  Fmin: 
+*  Fmin: minimum water flow for node $n$
 *  hyd_in_avg: Average inflow of Hydro power per node
 *  hydror_avg: Average inflow of Run-of-River hydro power plants per node
 *  hyd_flow_min: minimum inflow of Hydro power per node
 
 ### Nodes_specs
 
-*  $node$: Node number
-*  $Name$: Country or region name of the node
-*  $Max_{Demand}$: Maximum demand of the node in percentage
+*  node: Node number
+*  Name: Country or region name of the node
+*  Max_Demand: Maximum demand of the node in percentage
 
 ### Sto_capacity
 
@@ -111,5 +111,5 @@ The CSV files include every main aspect of data needed for the model to run.
 * L_ind: Transmission lines in given instance
 * N: Nodes in the instance
 * L: Nodes connected by line $l$  
-* H: 
+* H: Hydro technology
 
