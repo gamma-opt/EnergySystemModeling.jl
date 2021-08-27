@@ -25,11 +25,9 @@ end
 # Arguments
 - `DataInput_path::AbstractString`: Path to the instance directory.
 """
-## Params for small instance
+function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
 
-function Params(DataInput_path::AbstractString, instances_path::AbstractString)
-   
-    # Load indexes and constant parameters
+  # Load indexes and constant parameters
     indices = JSON.parsefile(joinpath(instances_path, "indices.json"))
 
     # TODO: implement time period clustering: T, τ_t
