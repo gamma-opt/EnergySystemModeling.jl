@@ -218,7 +218,12 @@ function change_time_parameters(params_path_ftr::AbstractString, instance_path_c
     # Declare representative periods
     rep_periods = JSON.parsefile(joinpath(instance_path_clust,"rep_periods.json"))
     T = 1:rep_periods["T"]
-    ParamsDict["T"] = 1:rep_periods["T"]
+    ParamsDict["T"] = T
+
+    # Load weights
+    clust_weights = CSV.File(joinpath(instance_path_clust, "weights.csv")) |> DataFrame
+    τ_t = clust_weights.Weights[T]
+    ParamsDict["τ_t"] = τ_t
 
     # Read time-dependent parameters
     D_nt = zeros(length(ParamsDict["N"]), length(T))

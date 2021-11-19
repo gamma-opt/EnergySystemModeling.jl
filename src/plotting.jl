@@ -3,7 +3,7 @@ using Plots, StatsPlots, LaTeXStrings
 techcolors = [:lightblue :cyan :yellow :darkgreen :lime :gray :orange :brown :blue]
 
 function perform_plotting(Plots_specs::Dict{String, Bool}, parameters::Params, variables::Dict{String, Array{Float64}}, 
-    objectives::Dict{String, Array{Float64}}, expressions::Dict{String, Array{Float64}}, plots_output_path::AbstractString)
+    objectives::Dict{String, Float64}, expressions::Dict{String, Float64}, plots_output_path::AbstractString)
     
     @info "Plotting"
     ENV["GKSwstype"]="nul"                      # Prevent opening plots windows
@@ -193,7 +193,8 @@ function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, tec
         titlefontsize = 10,
         color=techcolors,
         alpha=0.7,
-        legend=false)
+        legend=false,
+        size = (800,600))
 end
 
 function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, region_n, technology_g, κ, C_E, κ′, C′_E)
@@ -210,7 +211,9 @@ function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, regio
         color=techcolors,
         labels=permutedims([technology_g;"hydro"]),
         lw = 0,
-        alpha=0.7)
+        alpha=0.7,
+        legend = :outertopright,
+        size = (800,600))
 end
 
 function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, C′_E)
@@ -237,8 +240,8 @@ function plot_transmission_bars(f_lt, L, L_ind, T, region_n, κ, C_E, κ′, C�
              ylabel=L"\sum_t f_{l,t}\,\mathrm{[MWh]}",
              title = "Transmission flow by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
              titlefontsize = 10,
+             xtickfontsize = 5,
              xticks=(L_ind, lines),
-             xrotation = 90,
              legend=false,
              )
     bar!(L_ind, [f_l[l] for l in L_ind], alpha = 0.7, lw = 0)
@@ -253,8 +256,8 @@ function plot_transmission_capacities(f̄_l, L, L_ind, region_n, κ, C_E, κ′,
     StatsPlots.bar(L_ind, [f̄_l[l] for l in L_ind],
         title = "Transmission capacity by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10,
+        xtickfontsize = 5,
         xticks=(L_ind, lines),
-        xrotation = 90,
         ylabel=L"\bar{f}_l\,\mathrm{[MW]}",
         legend=false,
         alpha = 0.7,
@@ -291,7 +294,9 @@ function plot_storage_capacities(b̄_sn, N, region_n, κ, C_E, κ′, C′_E)
         title = "Storage capacity by region\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",  
         titlefontsize = 10,   
         lw = 0,
-        alpha=0.7)
+        alpha=0.7,
+        size=(800, 600),
+        legend = :outertopright)
 end
 
 function plot_loss_of_load(σ_nt, N, T, region_n, κ, C_E, κ′, C′_E)
@@ -377,7 +382,8 @@ function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, te
         labels=permutedims([technology_g;"hydro"]),
         lw = 0,
         alpha=0.7,
-        size = (800,600))
+        size = (800,600),
+        legend = :outertopright)
     bar!(N, D_n, bar_width=0.03, fillcolor = :black, label="demand")
 end
 
