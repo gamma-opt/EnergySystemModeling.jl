@@ -2,6 +2,137 @@ using Plots, StatsPlots, LaTeXStrings
 
 techcolors = [:lightblue :cyan :yellow :darkgreen :lime :gray :orange :brown :blue]
 
+function perform_plotting(Plots_specs::Dict{String, Bool}, parameters::Params, variables::Dict{String, Array{Float64}}, 
+    objectives::Dict{String, Float64}, expressions::Dict{String, Float64}, plots_output_path::AbstractString)
+    
+    @info "Plotting"
+    ENV["GKSwstype"]="nul"                      # Prevent opening plots windows
+    gr()
+
+    if Plots_specs["p1"]
+        ## Plotting part 1: Objective function values
+        @info "Plotting OF"
+        savefig(plot_objective_values(objectives),
+                joinpath(plots_output_path, "pdf", "objectives.pdf"))
+        savefig(plot_objective_values(objectives),
+                joinpath(plots_output_path, "png", "objectives.png"))
+    end
+
+    if Plots_specs["p2"]
+        ## Plotting part 2: Dispatch and storage
+        @info "Plotting dispatch and storage levels"
+
+        for n in parameters.N
+            savefig(plot_generation_dispatch(parameters, variables, expressions, n),
+                    joinpath(plots_output_path,"pdf","generation_dispatch_n$n.pdf"))
+            savefig(plot_generation_capacities(parameters, variables, expressions, n),
+                    joinpath(plots_output_path,"pdf","generation_capacities_n$n.pdf"))
+            savefig(plot_storage_level(parameters, variables, expressions, n),
+                    joinpath(plots_output_path,"pdf","storage_n$n.pdf"))
+            savefig(plot_box(parameters, variables, expressions, n),
+                joinpath(plots_output_path,"pdf","boxplot$n.pdf"))
+            savefig(plot_generation_dispatch(parameters, variables, expressions, n),
+                joinpath(plots_output_path,"png","generation_dispatch_n$n.png"))
+            savefig(plot_generation_capacities(parameters, variables, expressions, n),
+                joinpath(plots_output_path,"png","generation_capacities_n$n.png"))
+            savefig(plot_storage_level(parameters, variables, expressions, n),
+                joinpath(plots_output_path,"png","storage_n$n.png"))
+            savefig(plot_box(parameters, variables, expressions, n),
+                joinpath(plots_output_path,"png","boxplot$n.png"))
+        end
+    end
+
+    if Plots_specs["p3"]
+        ## Plotting part 3: Storage capacity
+        @info "Plotting storage capacities"
+
+        savefig(plot_storage_capacities(parameters, variables, expressions),
+                joinpath(plots_output_path,"pdf","storage_capacities.pdf")
+                )
+        savefig(plot_storage_capacities(parameters, variables, expressions),
+                joinpath(plots_output_path,"png","storage_capacities.png")
+                )
+    end
+
+    if Plots_specs["p4"]
+        ## Plotting part 4: Generation technologies dispatch levels
+        @info "Plotting dispatch all"
+
+        savefig(plot_box_all(parameters, variables, expressions),
+                joinpath(plots_output_path,"pdf","boxplotall.pdf"))
+        savefig(plot_box_all(parameters, variables, expressions),
+                joinpath(plots_output_path,"png","boxplotall.png"))
+    end
+
+    if Plots_specs["p5"]
+        ## Plotting part 5: Generation capacities (including hydro)
+        @info "Plotting capacities stacked"
+
+        savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
+                    joinpath(plots_output_path,"pdf","generation_capacities_stacked.pdf"))
+                savefig(plot_generation_capacities_stacked(parameters, variables, expressions),
+                    joinpath(plots_output_path,"png","generation_capacities_stacked.png"))
+    end
+
+    if Plots_specs["p6"]
+        ## Plotting part 6: Consolidated dispatch vs demand
+        @info "Plotting dispatch all (boxplot)"
+
+        savefig(plot_dispatch_bars(parameters, variables, expressions),
+                joinpath(plots_output_path,"pdf","dispatchbars.pdf"))
+        savefig(plot_dispatch_bars(parameters, variables, expressions),
+                joinpath(plots_output_path,"png","dispatchbars.png"))
+    end
+
+    if Plots_specs["p7"]
+        ## Plotting part 7: Transmission flow (per line)
+        @info "Plotting transmission flow"
+
+        for l in 1:length(parameters.L_ind)
+            savefig(plot_transmission_flow(parameters, variables, expressions, l),
+                    joinpath(plots_output_path,"pdf","transmission_flow_L$l.pdf"))
+            savefig(plot_transmission_flow(parameters, variables, expressions, l),
+                    joinpath(plots_output_path,"png","transmission_flow_L$l.png"))
+
+        end
+    end
+
+    if Plots_specs["p8"]
+        ## Plotting part 8: Transmission capacities
+        @info "Plotting transmission capacities"
+
+        savefig(plot_transmission_capacities(parameters, variables, expressions),
+                joinpath(plots_output_path,"pdf","transmission_capacities.pdf"))
+        savefig(plot_transmission_capacities(parameters, variables, expressions),
+                joinpath(plots_output_path,"png","transmission_capacities.png"))
+    end
+
+    if Plots_specs["p9"]
+        ## Plotting part 9: Consolidated transmission flow
+        @info "Plotting transmission flow"
+
+        savefig(plot_transmission_bars(parameters, variables, expressions),
+                joinpath(plots_output_path,"pdf","transmission_bars.pdf"))
+        savefig(plot_transmission_bars(parameters, variables, expressions),
+                joinpath(plots_output_path,"png","transmission_bars.png"))
+    end
+
+    if Plots_specs["p10"]
+        ## Plotting part 10: Lost of load
+        @info "Plotting LoL"
+
+        savefig(plot_loss_of_load(parameters, variables, expressions),
+                joinpath(plots_output_path,"pdf","loss_of_load.pdf"))
+        savefig(plot_loss_of_load(parameters, variables, expressions),
+                joinpath(plots_output_path,"png","loss_of_load.png"))
+    end
+
+    if Plots_specs["p11"]
+        ## Plotting in development
+        @info "Plotting stacked dispatch (not ready)"
+    end
+end
+
 function plot_generation_dispatch(p_gnt, h_hnt, G, n, T, region_n, technology_g, κ, C_E, κ′, C′_E)
     colors = techcolors
     p = Plots.plot(
@@ -62,7 +193,8 @@ function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, tec
         titlefontsize = 10,
         color=techcolors,
         alpha=0.7,
-        legend=false)
+        legend=false,
+        size = (800,600))
 end
 
 function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, region_n, technology_g, κ, C_E, κ′, C′_E)
@@ -79,7 +211,9 @@ function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, regio
         color=techcolors,
         labels=permutedims([technology_g;"hydro"]),
         lw = 0,
-        alpha=0.7)
+        alpha=0.7,
+        legend = :outertopright,
+        size = (800,600))
 end
 
 function plot_transmission_flow(f_lt, f̄_l, l, L, T, region_n, κ, C_E, κ′, C′_E)
@@ -106,8 +240,8 @@ function plot_transmission_bars(f_lt, L, L_ind, T, region_n, κ, C_E, κ′, C�
              ylabel=L"\sum_t f_{l,t}\,\mathrm{[MWh]}",
              title = "Transmission flow by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
              titlefontsize = 10,
+             xtickfontsize = 5,
              xticks=(L_ind, lines),
-             xrotation = 90,
              legend=false,
              )
     bar!(L_ind, [f_l[l] for l in L_ind], alpha = 0.7, lw = 0)
@@ -122,8 +256,8 @@ function plot_transmission_capacities(f̄_l, L, L_ind, region_n, κ, C_E, κ′,
     StatsPlots.bar(L_ind, [f̄_l[l] for l in L_ind],
         title = "Transmission capacity by line\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
         titlefontsize = 10,
+        xtickfontsize = 5,
         xticks=(L_ind, lines),
-        xrotation = 90,
         ylabel=L"\bar{f}_l\,\mathrm{[MW]}",
         legend=false,
         alpha = 0.7,
@@ -160,7 +294,9 @@ function plot_storage_capacities(b̄_sn, N, region_n, κ, C_E, κ′, C′_E)
         title = "Storage capacity by region\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",  
         titlefontsize = 10,   
         lw = 0,
-        alpha=0.7)
+        alpha=0.7,
+        size=(800, 600),
+        legend = :outertopright)
 end
 
 function plot_loss_of_load(σ_nt, N, T, region_n, κ, C_E, κ′, C′_E)
@@ -246,7 +382,8 @@ function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, te
         labels=permutedims([technology_g;"hydro"]),
         lw = 0,
         alpha=0.7,
-        size = (800,600))
+        size = (800,600),
+        legend = :outertopright)
     bar!(N, D_n, bar_width=0.03, fillcolor = :black, label="demand")
 end
 
