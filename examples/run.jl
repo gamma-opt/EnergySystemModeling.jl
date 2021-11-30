@@ -1,7 +1,7 @@
 using Logging
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
-cd("/scratch/work/condeil1/EnergySystemModeling.jl/examples")
+cd("D:\\Eigene Dateien\\Documents\\GitHub\\EnergySystemModeling.jl\\examples")
 
 @info "Loading parameters"
 constants_path = "constants"

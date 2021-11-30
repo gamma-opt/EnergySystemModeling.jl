@@ -12,7 +12,7 @@ function equivalent_annual_cost(cost::Real, n::Integer, r::Real)
     return cost / factor
 end
 
-"""Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instance_path`.
+"""Loads parameter values for an instance from CSV and JSON files. Reads the following files from `instances_path`.
 - `indices.json` with fields `G`, `G_r`, `N`, `L`, `T`, `S`
 - `constants.json` with fields `kappa`, `C`, `C_bar`, `r`
 - `nodes/` -- Time clustered data from the nodes with fields `Dem_Inc`, `Load_mod`, `Max_Load`, `Avail_Win`, `Avail_Sol`
@@ -118,7 +118,7 @@ function Params(DataInput_path::AbstractString, Instances_path_ftr::AbstractStri
     transmission = joinpath(Instances_path_ftr, "transmission.csv") |>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
-                                  transmission.lifetime[1], interest_rate) |> Array{AbstractFloat, 1}
+                                  transmission.lifetime[1]|>Int64, interest_rate) |> Array{AbstractFloat, 1}
     M_l = transmission.M .* I_l |> Array{AbstractFloat, 1}
     C_l = transmission.C |> Array{AbstractFloat, 1}
     B_l = transmission.B |> Array{AbstractFloat, 1}

@@ -10,7 +10,9 @@ makedocs(
     authors = "Lucas Condeixa, Fabricio Oliveira, Jaan Tollander de Balsch",
     pages = [
         "Home" => "index.md",
+        "aggreg.md",
         "plotting.md",
+        "datageneration.md",
         "api.md",
     ]
 )
