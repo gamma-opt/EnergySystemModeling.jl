@@ -25,10 +25,9 @@ end
 # Arguments
 - `DataInput_path::AbstractString`: Path to the instance directory.
 """
-function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
-
-  # Load indexes and constant parameters
-    indices = JSON.parsefile(joinpath(instances_path, "indices.json"))
+function Params(DataInput_path::AbstractString, Instances_path_ftr::AbstractString)
+    # Load indexes and constant parameters
+    indices = JSON.parsefile(joinpath(Instances_path_ftr, "indices.json"))
 
     # TODO: implement time period clustering: T, τ_t
 
@@ -38,9 +37,9 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     N = indices["N"] |> Array{Int}
     L = indices["L"] |> Array{Array{Int}}
     L_ind = indices["L_ind"] |> Array{Int}
-    T = 1:indices["T"]
     S = indices["S"] |> Array{Int}
     H = indices["H"] |> Array{Int}
+    T = 1:indices["T"] |> Array{Int}
 
     # Load constant parameters
     constants = JSON.parsefile(joinpath(DataInput_path, "constants.json"))
@@ -61,30 +60,30 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     # Load generation parameters (per node / per generation technology)
     Gmin_gn = zeros(length(G), length(N))
     Gmax_gn = zeros(length(G), length(N))
-    gen_capacity = CSV.File(joinpath(instances_path, "gen_capacity.csv")) |> DataFrame
+    gen_capacity = CSV.File(joinpath(Instances_path_ftr, "gen_capacity.csv")) |> DataFrame
 
     for n in N
         # Load node values from CSV files.
-        nodes = CSV.File(joinpath(instances_path, "nodes", "$n.csv")) |> DataFrame
+        nodes = CSV.File(joinpath(Instances_path_ftr, "nodes", "$n.csv")) |> DataFrame
         for g in G
             line_search = findfirst((gen_capacity.gen_tech .== g) .& (gen_capacity.node .== n))
             Gmin_gn[g,n] = gen_capacity.gcap_min[line_search]
             Gmax_gn[g,n] = gen_capacity.gcap_max[line_search]
         end
-        D_nt[n, :] = nodes.Demand[T]
-        A_gnt[1, n, :] = nodes.Avail_Wind_On[T]
-        A_gnt[2, n, :] = nodes.Avail_Wind_Off[T]
-        A_gnt[3, n, :] = nodes.Avail_Sol[T]
+        D_nt[n, :] = round.(nodes.Demand[T]; digits = 5)
+        A_gnt[1, n, :] = round.(nodes.Avail_Wind_On[T]; digits = 5)
+        A_gnt[2, n, :] = round.(nodes.Avail_Wind_Off[T]; digits = 5)
+        A_gnt[3, n, :] = round.(nodes.Avail_Sol[T]; digits = 5)
         A_gnt[A_gnt .< 0.001] .= 0
-        AH_nt[n,:] = nodes.Hyd_In[T]
-        AR_nt[n,:] = nodes.HydRoR_In[T]
+        AH_nt[n,:] = round.(nodes.Hyd_In[T]; digits = 0)
+        AR_nt[n,:] = round.(nodes.HydRoR_In[T]; digits = 0)
     end
 
     # Nodes specifications
     region_n = Array{AbstractString, 1}(undef, length(N))    
     max_dem_n = Array{Float64, 1}(undef, length(N))    
 
-    nodes_specs = CSV.File(joinpath(instances_path, "nodes_specs.csv")) |> DataFrame
+    nodes_specs = CSV.File(joinpath(Instances_path_ftr, "nodes_specs.csv")) |> DataFrame
 
     for n in N
         region_n[n] =  nodes_specs.Name[n]
@@ -92,11 +91,11 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     end
 
     # Load weights
-    clust_weights = CSV.File(joinpath(instances_path, "weights.csv")) |> DataFrame
+    clust_weights = CSV.File(joinpath(Instances_path_ftr, "weights.csv")) |> DataFrame
     τ_t = clust_weights.Weights[T]
 
     # Load technology parameters
-    gen_technology = joinpath(instances_path, "gen_technology.csv") |>
+    gen_technology = joinpath(Instances_path_ftr, "gen_technology.csv") |>
         CSV.File |> DataFrame
     I_g = equivalent_annual_cost.(gen_technology.investment_cost .* 1000, gen_technology.lifetime,
                                   interest_rate) |> Array{AbstractFloat, 1}
@@ -116,7 +115,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     e_l = zeros(length(L_ind))
     Tmin_l = zeros(length(L_ind))
     Tmax_l = zeros(length(L_ind))
-    transmission = joinpath(instances_path, "transmission.csv") |>
+    transmission = joinpath(Instances_path_ftr, "transmission.csv") |>
         CSV.File |> DataFrame
     I_l = equivalent_annual_cost.(transmission.cost[1] .* transmission.dist .+ transmission.converter_cost[1],
                                   transmission.lifetime[1]|>Int64, interest_rate) |> Array{AbstractFloat, 1}
@@ -133,9 +132,9 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     C_s = zeros(length(S))
     Smin_sn = zeros(length(S),length(N))
     Smax_sn = zeros(length(S),length(N))
-    storage = joinpath(instances_path, "storage.csv") |>
+    storage = joinpath(Instances_path_ftr, "storage.csv") |>
         CSV.File |> DataFrame
-    sto_capacity = joinpath(instances_path, "sto_capacity.csv") |>
+    sto_capacity = joinpath(Instances_path_ftr, "sto_capacity.csv") |>
         CSV.File |> DataFrame
     for s in S
         ξ_s = storage.xi |> Array{AbstractFloat, 1}
@@ -158,7 +157,7 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
     Fmin_n = zeros(length(N))
     HRmax_n = zeros(length(N))
 
-    hydro_capacity = joinpath(instances_path, "hydro_capacity.csv") |> CSV.File |> DataFrame   
+    hydro_capacity = joinpath(Instances_path_ftr, "hydro_capacity.csv") |> CSV.File |> DataFrame   
     for h in H, n in N
         line_search = findfirst((hydro_capacity.hydro_tech .== h) .& (hydro_capacity.node .== n))
         Hmin_hn[h,n] = hydro_capacity.hcap_min[line_search]
@@ -167,11 +166,11 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         Wmax_hn[h,n] = hydro_capacity.wcap_max[line_search]
     end
 
-    hydro = joinpath(instances_path, "hydro.csv") |> CSV.File |> DataFrame   
+    hydro = joinpath(Instances_path_ftr, "hydro.csv") |> CSV.File |> DataFrame   
     HRmax_n[1:length(N)] = hydro.HydroRoR[1:length(N)] |> Array{AbstractFloat, 1}
     Fmin_n[1:length(N)] = hydro.hyd_flow_min[1:length(N)] |> Array{AbstractFloat, 1}
 
-    hydro_technology = joinpath(instances_path, "hydro_technology.csv") |> CSV.File |> DataFrame;   
+    hydro_technology = joinpath(Instances_path_ftr, "hydro_technology.csv") |> CSV.File |> DataFrame;   
     I_h = equivalent_annual_cost.(hydro_technology.investment_cost .* 1000, hydro_technology.lifetime,
                                     interest_rate) |> Vector{Float64}
     M_h = hydro_technology.fixedOM .* 1000 |> Vector{Float64}
@@ -187,6 +186,79 @@ function Params(DataInput_path::AbstractString, Instances_path::AbstractString)
         e_g, E_g, r⁻_g, r⁺_g, I_l, M_l, C_l, B_l, e_l, Tmin_l, Tmax_l, ξ_s, I_s, C_s, Smin_sn, Smax_sn,
         Wmax_hn, Wmin_hn, Hmax_hn, Hmin_hn, HRmax_n, Fmin_n, AH_nt, AR_nt,
         I_h, M_h, C_h, e_h, E_h, r⁻_h, r⁺_h)
+end
+
+"""Perform function Params() and save objects (i.e., A_gnt, AH_nt, etc.) as a dictionary.
+# Arguments
+- `constants_path::AbstractString`: Path to the constants JSON file
+- `Instances_path_ftr::AbstractString`: Path to the instance directory
+- `output_path::AbstractString`: Path where the dictionary with the parameters is saved.
+"""
+function perform_Params(constants_path::AbstractString, Instances_path_ftr::AbstractString, output_path::AbstractString)
+    # Create parameters object
+    parameters = Params(constants_path, Instances_path_ftr)
+
+    # Create parameters dictionary folder
+    mkpath(output_path)
+
+    # Saving parameters into a dictionary
+    parameters_dict = Dict(fieldnames(typeof(parameters)) .|> String .=> [getfield(parameters,i) for i in fieldnames(typeof(parameters))])
+    JLD2.save(joinpath(output_path, "parameters.jld2"), parameters_dict)
+end 
+
+"""Read time-dependent parameters (i.e., T, D_nt, A_gnt, AH_nt, AR_nt) and create a new parameters struct.
+# Arguments
+- `params_path_ftr::AbstractString`: Path to the FTR parameters
+- `instance_path_clust::AbstractString`: Path to the instance folder.
+"""
+function change_time_parameters(params_path_ftr::AbstractString, instance_path_clust::AbstractString)
+    # Reading FTR parameters (assuming perform_Params was ran and the dictionary is available)
+    ParamsDict = load(joinpath(params_path_ftr,"parameters.jld2"))
+
+    # Declare representative periods
+    rep_periods = JSON.parsefile(joinpath(instance_path_clust,"rep_periods.json"))
+    T = 1:rep_periods["T"]
+    ParamsDict["T"] = T
+
+    # Load weights
+    clust_weights = CSV.File(joinpath(instance_path_clust, "weights.csv")) |> DataFrame
+    τ_t = clust_weights.Weights[T]
+    ParamsDict["τ_t"] = τ_t
+
+    # Read time-dependent parameters
+    D_nt = zeros(length(ParamsDict["N"]), length(T))
+    A_gnt = ones(length(ParamsDict["G"]), length(ParamsDict["N"]), length(T))
+    AH_nt = zeros(length(ParamsDict["N"]), length(T))
+    AR_nt = zeros(length(ParamsDict["N"]), length(T))
+
+    for n in ParamsDict["N"]
+            # Load node values from CSV files.
+            nodes = CSV.File(joinpath(instance_path_clust,"nodes","$n.csv")) |> DataFrame
+            D_nt[n, :] = round.(nodes.Demand[T]; digits = 5)
+            A_gnt[1, n, :] = round.(nodes.Avail_Wind_On[T]; digits = 5)
+            A_gnt[2, n, :] = round.(nodes.Avail_Wind_Off[T]; digits = 5)
+            A_gnt[3, n, :] = round.(nodes.Avail_Sol[T]; digits = 5)
+            A_gnt[A_gnt .< 0.001] .= 0
+            AH_nt[n,:] = round.(nodes.Hyd_In[T]; digits = 0)
+            AR_nt[n,:] = round.(nodes.HydRoR_In[T]; digits = 0)
+    end
+
+    ParamsDict["A_gnt"] = A_gnt
+    ParamsDict["D_nt"] = D_nt
+    ParamsDict["AH_nt"] = AH_nt
+    ParamsDict["AR_nt"] = AR_nt
+
+    # Forming parameters struct
+    parameters = Params(
+        ParamsDict["region_n"], ParamsDict["max_dem_n"], ParamsDict["technology_g"], ParamsDict["G"], ParamsDict["G_r"], ParamsDict["N"], ParamsDict["L"], ParamsDict["L_ind"], 
+        ParamsDict["T"], ParamsDict["S"], ParamsDict["H"], ParamsDict["κ"], ParamsDict["μ"], ParamsDict["C"], ParamsDict["C̄"], ParamsDict["C_E"], ParamsDict["R_E"], ParamsDict["τ_t"],
+        ParamsDict["Gmin_gn"], ParamsDict["Gmax_gn"], ParamsDict["A_gnt"], ParamsDict["D_nt"], ParamsDict["I_g"], ParamsDict["M_g"], ParamsDict["C_g"], ParamsDict["e_g"], ParamsDict["E_g"],
+        ParamsDict["r⁻_g"], ParamsDict["r⁺_g"], ParamsDict["I_l"], ParamsDict["M_l"], ParamsDict["C_l"], ParamsDict["B_l"], ParamsDict["e_l"], ParamsDict["Tmin_l"], ParamsDict["Tmax_l"],
+        ParamsDict["ξ_s"], ParamsDict["I_s"], ParamsDict["C_s"], ParamsDict["Smin_sn"], ParamsDict["Smax_sn"], ParamsDict["Wmax_hn"], ParamsDict["Wmin_hn"], ParamsDict["Hmax_hn"],
+        ParamsDict["Hmin_hn"], ParamsDict["HRmax_n"], ParamsDict["Fmin_n"], ParamsDict["AH_nt"], ParamsDict["AR_nt"], ParamsDict["I_h"], ParamsDict["M_h"], ParamsDict["C_h"],
+        ParamsDict["e_h"], ParamsDict["E_h"], ParamsDict["r⁻_h"], ParamsDict["r⁺_h"]
+    );
+    return parameters
 end
 
 """Save object into JSON file.
@@ -245,6 +317,14 @@ function load_json(type, filepath::AbstractString)
     type(fields...)
 end
 
+#Replace NaN's with 0
+function replace_nans!(array::Array{Float64, N}) where N
+    for i in eachindex(array)
+        if isnan(array[i])
+            array[i] = zero(1)
+        end
+    end
+end
 
 """
 read_clusters(ClustersDataPath::AbstractString, k::Int)

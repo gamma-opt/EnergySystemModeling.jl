@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
 {
-    "python.pythonPath": "C:\\Users\\ludic\\miniconda3\\python.exe"
+    "python.pythonPath": "C:\\Users\\ludic\\miniconda3\\python.exe",
+    "julia.environmentPath": "\\\\data.triton.aalto.fi\\scratch\\work\\condeil1\\EnergySystemModeling.jl"
 }
-=======
-{}
->>>>>>> Stashed changes

@@ -195,7 +195,7 @@ Fields:
 # (third method)
 function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symbol = :mean) where {T<:Float64}
     #### Function to aggregate vectors under a representative value, normally used in hierarchical
-    #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever there's a marker
+    #### clustering. It merges a set of vectors (series) merging the state (i) with (i + 1) whenever they are equal
 
     @assert length(size(series)) <= 2 "Series to be aggregated need to be represented as a Matrix (2D)"
 
@@ -203,7 +203,6 @@ function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symb
     lseries = size(series,1)                      # Length of vectors
     nseries = size(series,2)                      # Number of vectors
     D = 1:nseries                                 # Range for the number of series
-    class = collect(1:lseries)                    # Vector to mark the new classes
     new_lseries = maximum(marker)                 # New vectors length
 
     # Error control
@@ -214,19 +213,19 @@ function aggreg1D(series::VecOrMat{T}, marker::Vector{Int}, representation::Symb
     weights = [count(i->(i == j),marker) for j in class] .|> Int
 
     # Declaring the new VecOrMat object
-    new_v = zeros(length(class))                          # New vector to be formed after aggregation
+    new_v = zeros(length(class),nseries)                          # New vector to be formed after aggregation
 
     # Calculate the representative value and replace it in the new_v
     if representation == :mean
         for i in 1:length(class), d in D
-            new_v[i,d] .= mean(series[marker .== class[i],d])
+            new_v[i,d] = mean(series[marker .== class[i],d])
         end
     elseif representation == :medoid
         for i in 1:class[end], d in D
             dist = pairwise(Euclidean(),series[marker .== class[i],d])
             s_medoid = kmedoids(dist, 1)
             s_medoid = s_medoid.medoids[1]
-            new_v[i,d] .= series[marker .== class[i],d][s_medoid]
+            new_v[i,d] = series[marker .== class[i],d][s_medoid]
         end
     else
         @assert false "Representation method not defined."
@@ -512,4 +511,60 @@ function update_k!(_SeriesInstance, new_current_k::Int)
     stopping_k = _SeriesInstance.stopping_k
 
     @assert new_current_k >= stopping_k "Number of clusters $new_current_k is now < then $stopping_k"
+end
+
+"""
+update_k!(_SeriesInstance, new_current_k::Int)
+Updates number of clusters in the _SeriesInstance object.
+"""
+function write_clust_instance!(steps_per_block::Int,num_hours::Int,rep::String,dm::String,instances_path::AbstractString, ParamsDict, ClustDict, SeriesDict, ClustersRange::Vector{Int}, num_nodes::Int)
+    for i in ClustersRange
+        num_clusters = i
+        # Declaring the instance
+        if dm == "ward"
+            if rep == "mean"
+                instance = string(lpad(num_nodes,2,"0"),"n",num_hours,"h",lpad(num_clusters,4,"0"),"c",steps_per_block,"b_","m","m")
+            elseif rep == "medoid"
+                instance = string(lpad(num_nodes,2,"0"),"n",num_hours,"h",lpad(num_clusters,4,"0"),"c",steps_per_block,"b_","m","d")
+            end
+        elseif dm == "wd"
+            if rep == "mean"
+                instance = string(lpad(num_nodes,2,"0"),"n",num_hours,"h",lpad(num_clusters,4,"0"),"c",steps_per_block,"b_","w","m")
+            elseif rep == "medoid"
+                instance = string(lpad(num_nodes,2,"0"),"n",num_hours,"h",lpad(num_clusters,4,"0"),"c",steps_per_block,"b_","w","d")
+            end
+        end
+        clust_instance_path = joinpath(instances_path,instance)
+        mkpath(clust_instance_path);
+
+        # Creating the clusters instance
+        _ClustInstance = ClustDict[string(num_clusters)]
+        _SeriesInstance = SeriesDict[string(num_clusters)];
+
+        # Writing the weights in a csv
+        weights_df = DataFrame(Weights = _ClustInstance.weights) |> CSV.write(joinpath(clust_instance_path,"weights.csv"));
+
+        # Defining the path to data related to n and t
+        nodes_path = joinpath(instances_path,instance,"nodes")
+        mkpath(nodes_path)
+        cd(nodes_path)
+
+        # FTR series
+        series = _SeriesInstance.series
+
+        # Writing csv's
+        for n in 1:num_nodes
+            Demand = _ClustInstance.k_cent[:,n]
+            Avail_Wind_On = _ClustInstance.k_cent[:,num_nodes + n]
+            Avail_Wind_Off = _ClustInstance.k_cent[:,2*num_nodes + n]
+            Avail_Sol = _ClustInstance.k_cent[:,3*num_nodes + n]
+            (Hyd_In,) = aggreg1D(ParamsDict["AH_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            (HydRoR_In,) = aggreg1D(ParamsDict["AR_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            node_df = DataFrame(Demand=Demand, Avail_Sol=Avail_Sol, Avail_Wind_On=Avail_Wind_On, Avail_Wind_Off=Avail_Wind_Off, Hyd_In=Hyd_In[:,1], HydRoR_In=HydRoR_In[:,1]) |> CSV.write("$n.csv")
+        end
+        
+        # Writing representative periods .JSON
+        rep_periods = Dict("T" => num_clusters)
+        save_json(rep_periods,joinpath(instances_path,instance,"rep_periods.json"))
+    end
 end
