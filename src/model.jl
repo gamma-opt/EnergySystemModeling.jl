@@ -318,7 +318,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
-        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) +
         sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t])/1000 
         == max_dem_n[n]*D_nt[n,t]/1000)
     elseif specs.transmission && specs.storage && !(specs.hydro || specs.hydro_simple)            # Trans/Stor
@@ -326,7 +326,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
         sum(e_l[l]*f_lt[l,t] for l in L⁻(n)) - sum(e_l[l]*f_lt[l,t] for l in L⁺(n)) +
-        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S))/1000
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S))/1000
         == max_dem_n[n]*D_nt[n,t]/1000)
     elseif specs.transmission && !(specs.storage) && (specs.hydro || specs.hydro_simple)            # Trans/Hydro
         @constraint(model,
@@ -350,7 +350,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
-        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S))/1000
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S))/1000
         == max_dem_n[n]*D_nt[n,t]/1000)
     elseif !(specs.transmission) && !(specs.storage) && (specs.hydro || specs.hydro_simple)         # Hydro
         @constraint(model,
@@ -362,8 +362,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         @constraint(model,
         b1[n in N, t in T],
         (sum(p_gnt[g,n,t] for g in G) + σ_nt[n,t] + 
-        sum(τ_t[t]*(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t]) for s in S) +
-        sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t] )/1000
+        sum(ξ_s[s]*b⁻_snt[s,n,t] - b⁺_snt[s,n,t] for s in S) +
+        sum(h_hnt[h,n,t] for h in H) + hr_nt[n,t])/1000
         == max_dem_n[n]*D_nt[n,t]/1000)
     end
 

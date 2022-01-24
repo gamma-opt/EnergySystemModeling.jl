@@ -1,6 +1,6 @@
 name = "EnergySystemModeling"
 uuid = "2f1a2cda-0a35-11ea-0485-13adf048beb5"
-authors = ["Jaan Tollander de Balsch <jaan@hey.com>"]
+authors = ["Lucas Dias Condeixa <ldcondeixa@gmail.com>","Jaan Tollander de Balsch <jaan@hey.com>"]
 version = "0.1.0"
 
 [deps]
