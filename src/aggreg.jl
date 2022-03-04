@@ -34,6 +34,7 @@ Attributes:
 - rep_value::Symbol: function to assign a representative value for each cluster (by default, the mean of values inside the cluster)
 - lseries::Int: length of series
 - nseries::Int: number of series
+- series_dc::VecOrMat{T}: original time series duration curves
 """
 mutable struct SeriesInstance{T<:Float64,S<:Int}
     series::VecOrMat{T}
@@ -44,6 +45,7 @@ mutable struct SeriesInstance{T<:Float64,S<:Int}
     rep_value::Symbol
     lseries::S
     nseries::S
+    series_dc::VecOrMat{T}
 end
 
 """
@@ -55,13 +57,15 @@ Fields:
 - series_clust::Vector{<:Int}: clusters assignment for the original series (vector with the from-to relationship between the original series and the clusters)
 - nclusters::Int: current number of clusters
 - search_range::UnitRange: range in which the clusters can be merged, considering the amount of clusters and the block_size (generally equals to 1:(nclusters-block_size+1))
+- dc_mode::Bool: false by default, this attribute determines if we use the duration curves order to perform the clustering
 """
-mutable struct ClustInstance{T<:Float64,S<:Int}
+@with_kw mutable struct ClustInstance{T<:Float64,S<:Int}
     k_cent::VecOrMat{T}
     weights::Vector{S}
     series_clust::Vector{S}
     nclusters::S
     search_range::UnitRange
+    dc_mode::Bool = false
 end
 
 """
@@ -266,13 +270,14 @@ function load_series_instance(series::VecOrMat{T},
     dm::Symbol = :ward,
     rep_value::Symbol = :mean,
     lseries::S = size(series,1),
-    nseries::S = size(series,2)
+    nseries::S = size(series,2),
+    series_dc::VecOrMat{T} = copy(series)
 ) where {T<:Float64, S<:Int}
 
     @assert block_size <= current_k - stopping_k + 1 "Aggregation not possible: block_size $block_size and stopping_k $stopping_k need to be checked."
 
     # Create an object of type SeriesInstance
-    _SeriesInstance = SeriesInstance(series,block_size,stopping_k,current_k,dm,rep_value,lseries,nseries)
+    _SeriesInstance = SeriesInstance(series,block_size,stopping_k,current_k,dm,rep_value,lseries,nseries,series_dc)
 
     return _SeriesInstance
 end
@@ -285,13 +290,14 @@ Function to load the clusters attributes.
 function load_clust_instance(k_cent::VecOrMat{T},
     series_clust::Vector{S},
     weights::Vector{S} = ones(size(k_cent,1)),
-    search_range::UnitRange = collect(1:size(k_cent,1))
+    search_range::UnitRange = collect(1:size(k_cent,1)),
+    dc_mode::Bool = false
 ) where {T<:Float64,S<:Int}
 
     nclusters = size(k_cent,1)
 
-    # Create an object of type SeriesInstance
-    _ClustInstance = ClustInstance(k_cent,weights,series_clust,nclusters,search_range)
+    # Create an object of type ClustInstance
+    _ClustInstance = ClustInstance(k_cent,weights,series_clust,nclusters,search_range, dc_mode)
 
     return _ClustInstance
 end
@@ -307,10 +313,13 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
     dm = _SeriesInstance.dm
     rep_value = _SeriesInstance.rep_value
     nseries = _SeriesInstance.nseries
+    series_dc = _SeriesInstance.series_dc
 
     # Unpacking ClustInstance
+    k_cent = _ClustInstance.k_cent
     series_clust = _ClustInstance.series_clust
     search_range = _ClustInstance.search_range
+    dc_mode = _ClustInstance.dc_mode
 
     # Vector with distances (to be updated as it goes)
     dist = Vector{Float64}(undef,length(search_range))
@@ -321,14 +330,29 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
 
     # Compute the distance for each aggregation (i.e., changing the merging_clust)
     @inbounds for k in K
-        # Merging to be tested
+        # Merging to be tested (neighbouring hypothesis)
+        # TODO: implement non-neighbouring hypothesis
         merging_clust = k:k+block_size-1
         # Create a temporary marker to merge the clusters tested
         marker_temp = [sc in merging_clust for sc in series_clust]
-        # Part of series compared
-        series_comp = series[marker_temp,:]
-        # Centroids of the temporarily formed cluster (TODO: implement another method for aggreg1D receiving the clusters with respective weights)
-        (k_cent_comp,) = aggreg1D(series_comp, rep_value)
+
+        # Separation needed for duration curves analysis
+        if dc_mode
+            # Using duration curves
+            series_comp = copy(series_dc)
+            # Forming the centroids
+            k_cent_comp = copy(series)
+            (k_cent_comp[marker_temp,:],) = aggreg1D(k_cent[series_clust,:][marker_temp,:], rep_value)
+            # Ordering clustered series in a decrescent order
+            for n in N
+                k_cent_comp[:,n] = sort(k_cent_comp[:,n], rev = true)
+            end
+        else
+            # Part of series compared
+            series_comp = series[marker_temp,:]
+            # Centroids of the temporarily formed cluster (TODO: implement another method for aggreg1D receiving the clusters with respective weights)
+            (k_cent_comp,) = aggreg1D(series_comp, rep_value)
+        end
 
         # Distance computation
         dist[k] = compute_dist(N, dm, series_comp, k_cent_comp)
