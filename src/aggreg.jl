@@ -35,6 +35,7 @@ Attributes:
 - lseries::Int: length of series
 - nseries::Int: number of series
 - series_dc::VecOrMat{T}: original time series duration curves
+- ord_dc::VecOrMat{S}: original order of the elements
 """
 mutable struct SeriesInstance{T<:Float64,S<:Int}
     series::VecOrMat{T}
@@ -46,6 +47,7 @@ mutable struct SeriesInstance{T<:Float64,S<:Int}
     lseries::S
     nseries::S
     series_dc::VecOrMat{T}
+    ord_dc::VecOrMat{S}
 end
 
 """
@@ -329,6 +331,7 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
     K = copy(search_range)
 
     # Compute the distance for each aggregation (i.e., changing the merging_clust)
+    # TODO: implement parallelisation such as '@async Threads.@threads @inbounds for k in K'
     @inbounds for k in K
         # Merging to be tested (neighbouring hypothesis)
         # TODO: implement non-neighbouring hypothesis
@@ -338,15 +341,17 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
 
         # Separation needed for duration curves analysis
         if dc_mode
-            # Using duration curves
-            series_comp = copy(series_dc)
+            # Create a temp marker for the elements in between clustered [min,max] order
+            marker_temp_dc = minimum(ord_dc[marker_temp,:]):maximum(ord_dc[marker_temp,:])
+            # Using duration curves chunks (in between the min and max values of marker_temp)
+            series_comp = series_dc[marker_temp_dc,:]
             # Forming the centroids
-            k_cent_comp = copy(series)
+            k_cent_comp = k_cent[series_clust,:]
             (k_cent_comp[marker_temp,:],) = aggreg1D(k_cent[series_clust,:][marker_temp,:], rep_value)
             # Ordering clustered series in a decrescent order
-            for n in N
-                k_cent_comp[:,n] = sort(k_cent_comp[:,n], rev = true)
-            end
+            k_cent_comp = sort(k_cent_comp, dims=1, rev=true)
+            # Taking the chunk to be compared
+            k_cent_comp = k_cent_comp[marker_temp_dc,:]
         else
             # Part of series compared
             series_comp = series[marker_temp,:]
