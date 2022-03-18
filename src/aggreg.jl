@@ -279,7 +279,7 @@ function load_series_instance(series::VecOrMat{T},
     @assert block_size <= current_k - stopping_k + 1 "Aggregation not possible: block_size $block_size and stopping_k $stopping_k need to be checked."
 
     # Create an object of type SeriesInstance
-    _SeriesInstance = SeriesInstance(series,block_size,stopping_k,current_k,dm,rep_value,lseries,nseries,series_dc)
+    _SeriesInstance = SeriesInstance(series,block_size,stopping_k,current_k,dm,rep_value,lseries,nseries,series_dc,ord_dc)
 
     return _SeriesInstance
 end
@@ -316,6 +316,7 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
     rep_value = _SeriesInstance.rep_value
     nseries = _SeriesInstance.nseries
     series_dc = _SeriesInstance.series_dc
+    ord_dc = _SeriesInstance.ord_dc
 
     # Unpacking ClustInstance
     k_cent = _ClustInstance.k_cent
