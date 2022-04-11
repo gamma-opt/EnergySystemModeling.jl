@@ -1,4 +1,4 @@
-using Statistics, OrderedCollections, Dates, Parameters
+using Statistics, OrderedCollections, Dates, Parameters, Base.Threads
 
 abstract type SData end
 
@@ -249,7 +249,7 @@ they are ordered.
 function cdad(u::Vector{T},v::Vector{T}) where {T<:Float64}
     # Error control
     @assert length(u) == length(v) "Vectors need to have an equal length."
-    @assert sum(u) ≈ sum(v) "Vectors need to have an equal mass."
+    # @assert round(sum(u);digits=3) ≈ round(sum(v);digits=3) "Vectors need to have an equal mass."
     
     # Compute the differences between pairs of successive values from u and v.
     deltas = u .- v
@@ -261,7 +261,7 @@ function cdad(u::Vector{T},v::Vector{T}) where {T<:Float64}
 end
 
 """
-load_series_instance(series::VecOrMat{T}, block_size::S, current_k::S, stopping_k::S = 1, dm::Symbol = :ward, rep_value::Symbol = :mean, lseries::S = size(series,1), nseries::S = size(series,2)
+load_series_instance(series::VecOrMat{T}, block_size::S, current_k::S, stopping_k::S = 1, dm::Symbol = :ed, rep_value::Symbol = :mean, lseries::S = size(series,1), nseries::S = size(series,2)
 ) where {T<:Float64, S<:Int}
 Function to load the data provided and fit into a struct SeriesInstance().
 """
@@ -269,11 +269,12 @@ function load_series_instance(series::VecOrMat{T},
     block_size::S,
     current_k::S,
     stopping_k::S = 1,
-    dm::Symbol = :ward,
+    dm::Symbol = :ed,
     rep_value::Symbol = :mean,
     lseries::S = size(series,1),
     nseries::S = size(series,2),
-    series_dc::VecOrMat{T} = copy(series)
+    series_dc::VecOrMat{T} = copy(series),
+    ord_dc::VecOrMat{S} = repeat(collect(1:lseries),1,nseries)
 ) where {T<:Float64, S<:Int}
 
     @assert block_size <= current_k - stopping_k + 1 "Aggregation not possible: block_size $block_size and stopping_k $stopping_k need to be checked."
@@ -305,6 +306,52 @@ function load_clust_instance(k_cent::VecOrMat{T},
 end
 
 """
+sorting_custom(series::VecOrMat{T},merging_interval::UnitRange,series_dc::VecOrMat{T},ord_dc::VecOrMat{S}
+) where {T<:Number,S<:Int}
+
+Customised function to replace `sort()` when the initial series_dc is known in advance.
+"""
+function sorting_custom(series::VecOrMat{T},merging_interval::UnitRange,series_dc::VecOrMat{T},ord_dc::VecOrMat{S}
+) where {T<:Number,S<:Int}
+    ## TODO: Implement methodology for mediods or other representative points
+
+    # Declaring ordered series without merged values
+    short_series_dc = Matrix{Float64}(undef,size(series,1)-length(merging_interval),size(series,2))
+
+    # Return object
+    ret_series_dc = copy(series_dc)
+
+    for j in 1:size(series,2)
+        # Forming plateaus
+        k_mean = mean(series[merging_interval,j])
+        
+        # Forming new series_dc without merged values
+        short_series_dc[:,j] = series[ord_dc[.![i in merging_interval for i in ord_dc[:,j]],j],j]
+
+        # Finding where to allocate the new k_mean
+        line_aux = 1 |> Int       # Number of the line tested
+        keep_it = true            # Iteration auxiliar variable
+
+        # Forming ordered series
+        while keep_it && line_aux < size(short_series_dc,1)
+            # If we reached the point where the centroid should be ordered or the end and we haven't replaced any lines we add a repetition of
+            # k_mean equal to the size of the merging_interval
+            if short_series_dc[line_aux,j] <= k_mean || line_aux == size(short_series_dc,1)
+                ret_series_dc[line_aux:end,j] = vcat(repeat([k_mean],length(merging_interval)),short_series_dc[line_aux:end,j])
+                keep_it = false
+            else
+                ret_series_dc[line_aux,j] = short_series_dc[line_aux,j]
+            end
+
+            # Keep iterating
+            line_aux += 1
+        end    
+    end
+
+    return ret_series_dc
+end
+
+"""
 search_min_dist(_SeriesInstance, _ClustInstance)
 Search minimal distance and return the marker, the min_dist position, and the clusters to be merged.
 """
@@ -314,12 +361,12 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
     block_size = _SeriesInstance.block_size
     dm = _SeriesInstance.dm
     rep_value = _SeriesInstance.rep_value
+    lseries = _SeriesInstance.lseries
     nseries = _SeriesInstance.nseries
     series_dc = _SeriesInstance.series_dc
     ord_dc = _SeriesInstance.ord_dc
 
     # Unpacking ClustInstance
-    k_cent = _ClustInstance.k_cent
     series_clust = _ClustInstance.series_clust
     search_range = _ClustInstance.search_range
     dc_mode = _ClustInstance.dc_mode
@@ -333,26 +380,19 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
 
     # Compute the distance for each aggregation (i.e., changing the merging_clust)
     # TODO: implement parallelisation such as '@async Threads.@threads @inbounds for k in K'
-    @inbounds for k in K
+    @inbounds Threads.@threads for k_search in K
         # Merging to be tested (neighbouring hypothesis)
         # TODO: implement non-neighbouring hypothesis
-        merging_clust = k:k+block_size-1
+        # merging_clust = k:k+block_size-1
         # Create a temporary marker to merge the clusters tested
-        marker_temp = [sc in merging_clust for sc in series_clust]
+        marker_temp = [sc in k_search:k_search+block_size-1 for sc in series_clust]
 
         # Separation needed for duration curves analysis
         if dc_mode
-            # Create a temp marker for the elements in between clustered [min,max] order
-            marker_temp_dc = minimum(ord_dc[marker_temp,:]):maximum(ord_dc[marker_temp,:])
-            # Using duration curves chunks (in between the min and max values of marker_temp)
-            series_comp = series_dc[marker_temp_dc,:]
-            # Forming the centroids
-            k_cent_comp = k_cent[series_clust,:]
-            (k_cent_comp[marker_temp,:],) = aggreg1D(k_cent[series_clust,:][marker_temp,:], rep_value)
-            # Ordering clustered series in a decrescent order
-            k_cent_comp = sort(k_cent_comp, dims=1, rev=true)
-            # Taking the chunk to be compared
-            k_cent_comp = k_cent_comp[marker_temp_dc,:]
+            # Using duration curves as the comparison series
+            series_comp = copy(series_dc)
+            # Forming the centroids in a decrescent order
+            k_cent_comp = sorting_custom!(series,minimum(collect(1:lseries)[marker_temp]):maximum(collect(1:lseries)[marker_temp]),series_dc,ord_dc)
         else
             # Part of series compared
             series_comp = series[marker_temp,:]
@@ -361,7 +401,7 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
         end
 
         # Distance computation
-        dist[k] = compute_dist(N, dm, series_comp, k_cent_comp)
+        dist[k_search] = compute_dist(N, dm, series_comp, k_cent_comp)
     end
 
     # Find whenever the min_dist occurs first (i.e., using findmin()[2])
@@ -405,7 +445,7 @@ function compute_dist(N::UnitRange, dm::Symbol, series_comp::VecOrMat{T}, k_cent
     # Distances matrix designation (TODO: add more discrepancy metrics (e.g., DTW and others) and wrap their calculation in a function)
     if dm == :wd  # Wasserstein distance (or cumulative distribution absolute difference) between the agglomerated cluster and the original series
         dist = sum(cdad(series_comp[:,n], k_cent_comp[:,n]) for n in N)
-    elseif dm == :ward  # Ward's cluster criterion (min variance proxy) for the original series when clustering `series_range`
+    elseif dm == :ed  # Ward's cluster criterion (min variance proxy) for the original series when clustering `series_range`
         dist = sum(sum((series_comp[:,n] .- k_cent_comp[:,n]).^2 for n in N))
     else
         @assert false "Distance metric not defined."
