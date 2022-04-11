@@ -392,7 +392,7 @@ function search_min_dist(_SeriesInstance, _ClustInstance)
             # Using duration curves as the comparison series
             series_comp = copy(series_dc)
             # Forming the centroids in a decrescent order
-            k_cent_comp = sorting_custom!(series,minimum(collect(1:lseries)[marker_temp]):maximum(collect(1:lseries)[marker_temp]),series_dc,ord_dc)
+            k_cent_comp = sorting_custom(series,minimum(collect(1:lseries)[marker_temp]):maximum(collect(1:lseries)[marker_temp]),series_dc,ord_dc)
         else
             # Part of series compared
             series_comp = series[marker_temp,:]
