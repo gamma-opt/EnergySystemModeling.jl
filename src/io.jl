@@ -209,7 +209,7 @@ end
 - `params_path_ftr::AbstractString`: Path to the FTR parameters
 - `instance_path_clust::AbstractString`: Path to the instance folder.
 """
-function change_time_parameters(params_path_ftr::AbstractString, instance_path_clust::AbstractString)
+function change_time_parameters(params_path_ftr::AbstractString, instance_path_clust::AbstractString; nosun::Bool = false)
     # Reading FTR parameters (assuming perform_Params was ran and the dictionary parameters.jld2 is available)
     ParamsDict = load(joinpath(params_path_ftr,"parameters.jld2"))
 
@@ -245,6 +245,11 @@ function change_time_parameters(params_path_ftr::AbstractString, instance_path_c
     ParamsDict["D_nt"] = D_nt
     ParamsDict["AH_nt"] = AH_nt
     ParamsDict["AR_nt"] = AR_nt
+
+    if nosun
+        gsun = 3
+        ParamsDict["A_gnt"][gsun,:,:] .= 0
+    end
 
     # Forming parameters struct
     parameters = Params(
