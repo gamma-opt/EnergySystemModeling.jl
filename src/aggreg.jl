@@ -584,8 +584,6 @@ function update_k!(_SeriesInstance, new_current_k::Int)
 end
 
 """
-update_k!(_SeriesInstance, new_current_k::Int)
-Updates number of clusters in the _SeriesInstance object.
 """
 function write_clust_instance!(steps_per_block::Int,num_hours::Int,rep::String,dm::String,instances_path::AbstractString, ParamsDict, ClustDict, SeriesDict, ClustersRange::Vector{Int}, num_nodes::Int)
     for i in ClustersRange
@@ -637,4 +635,67 @@ function write_clust_instance!(steps_per_block::Int,num_hours::Int,rep::String,d
         rep_periods = Dict("T" => num_clusters)
         save_json(rep_periods,joinpath(instances_path,instance,"rep_periods.json"))
     end
+end
+
+"""
+Read different clustering instances and return time-dependent parameters.
+"""
+function read_clust_instance(clust_instance_path::AbstractString, instance::AbstractString, ParamsDict; nosun::Bool = false)
+    # Unpack parameters needed from ParamsDict
+    G = ParamsDict["G"]
+    N = ParamsDict["N"]
+
+    # Loading clusters dictionary
+    ClustDict = load(clust_instance_path)
+
+    # Declaring clustering instance
+    _ClustInstance = ClustDict[string(instance)]
+
+    # Declare rep. periods
+    # rep_periods = Dict("T" => num_clusters)
+    T = 1:_ClustInstance.nclusters
+    ParamsDict["T"] = T
+
+    # Clusters weight
+    τ_t = _ClustInstance.weights
+
+    # Optimisation objects
+    D_nt = zeros(length(N), length(T))
+    A_gnt = ones(length(G), length(N), length(T))
+    AH_nt = zeros(length(N), length(T))
+    AR_nt = zeros(length(N), length(T))
+
+    for n in N
+        # Time-dependent parameters
+        (D_nt[n, :],) = aggreg1D(ParamsDict["D_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        (A_gnt[1, n, :],) = aggreg1D(ParamsDict["A_gnt"][1,n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        (A_gnt[2, n, :],) = aggreg1D(ParamsDict["A_gnt"][2,n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        (A_gnt[3, n, :],) = aggreg1D(ParamsDict["A_gnt"][3,n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        (AH_nt[n,:],) = aggreg1D(ParamsDict["AH_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        (AR_nt[n,:],) = aggreg1D(ParamsDict["AR_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+    end
+    # Rounding to improve numerical stability
+    D_nt = round.(D_nt; digits = 5)
+    A_gnt = round.(A_gnt;digits = 5)
+    A_gnt[A_gnt .< 0.001] .= 0
+    AH_nt = round.(AH_nt;digits=0)
+    AR_nt = round.(AR_nt;digits=0)
+
+    # Producing nosun
+    if nosun
+        gsun = 3
+        A_gnt[gsun,:,:] .= 0
+    end
+
+    # Forming parameters struct
+    parameters = Params(
+        ParamsDict["region_n"], ParamsDict["max_dem_n"], ParamsDict["technology_g"], ParamsDict["G"], ParamsDict["G_r"], ParamsDict["N"], ParamsDict["L"], ParamsDict["L_ind"], 
+        T, ParamsDict["S"], ParamsDict["H"], ParamsDict["κ"], ParamsDict["μ"], ParamsDict["C"], ParamsDict["C̄"], ParamsDict["C_E"], ParamsDict["R_E"], τ_t,
+        ParamsDict["Gmin_gn"], ParamsDict["Gmax_gn"], A_gnt, D_nt, ParamsDict["I_g"], ParamsDict["M_g"], ParamsDict["C_g"], ParamsDict["e_g"], ParamsDict["E_g"],
+        ParamsDict["r⁻_g"], ParamsDict["r⁺_g"], ParamsDict["I_l"], ParamsDict["M_l"], ParamsDict["C_l"], ParamsDict["B_l"], ParamsDict["e_l"], ParamsDict["Tmin_l"], ParamsDict["Tmax_l"],
+        ParamsDict["ξ_s"], ParamsDict["I_s"], ParamsDict["C_s"], ParamsDict["Smin_sn"], ParamsDict["Smax_sn"], ParamsDict["Wmax_hn"], ParamsDict["Wmin_hn"], ParamsDict["Hmax_hn"],
+        ParamsDict["Hmin_hn"], ParamsDict["HRmax_n"], ParamsDict["Fmin_n"], AH_nt, AR_nt, ParamsDict["I_h"], ParamsDict["M_h"], ParamsDict["C_h"],
+        ParamsDict["e_h"], ParamsDict["E_h"], ParamsDict["r⁻_h"], ParamsDict["r⁺_h"]
+    );
+    return parameters
 end

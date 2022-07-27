@@ -53,5 +53,6 @@ export SeriesInstance,
     update_clust!,
     update_k!,
     find_clusters!,
-    write_clust_instance!
+    write_clust_instance!,
+    read_clust_instance
 end # module
