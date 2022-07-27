@@ -12,9 +12,9 @@ function perform_plotting(Plots_specs::Dict{String, Bool}, parameters::Params, v
     if Plots_specs["p1"]
         ## Plotting part 1: Objective function values
         @info "Plotting OF"
-        savefig(plot_objective_values(objectives),
+        savefig(plot_objective_values(objectives,parameters.τ_t,parameters.T),
                 joinpath(plots_output_path, "pdf", "objectives.pdf"))
-        savefig(plot_objective_values(objectives),
+        savefig(plot_objective_values(objectives,parameters.τ_t,parameters.T),
                 joinpath(plots_output_path, "png", "objectives.png"))
     end
 
@@ -185,11 +185,18 @@ function plot_balance_stacked(p_gnt, p̄_gn, h_hnt, h̄_hn, HRmax_n, G, n, T, re
     return p
 end
 
-function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E)
+function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, technology_g, κ, C_E, κ′, C′_E, τ_t::Vector{Integer}, T::Vector{Integer})
+
+    if sum(τ_t.>1)>0
+        title_string = "Generation capacity ($(T[end]) clusters) by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E"
+    else
+        title_string = "Generation capacity (FTR) by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E"
+    end
+
     StatsPlots.bar([G;9], [[p̄_gn[g, n] for g in G]; [h̄_hn[n] + HRmax_n[n]]],
         xticks=([G;9], [technology_g;"hydro"]),
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
-        title = "Generation capacity by technology in $(region_n[n])\nRenewables share = $(round(κ′,digits=3)) ≥ $κ\nCO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
+        title = title_string,
         titlefontsize = 10,
         color=techcolors,
         alpha=0.7,
@@ -197,16 +204,20 @@ function plot_generation_capacities(p̄_gn, h̄_hn, HRmax_n, G, n, region_n, tec
         size = (800,600))
 end
 
-function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, region_n, technology_g, κ, C_E, κ′, C′_E)
-    p̄_gn
+function plot_generation_capacities_stacked(p̄_gn, h̄_hn, HRmax_n, N, H, region_n, technology_g, κ, C_E, κ′, C′_E, τ_t::Vector{Integer}, T::Vector{Integer})
     H_tot = sum(h̄_hn[h,:] for h in H) .+ HRmax_n
-    dispatches = permutedims([p̄_gn; permutedims(H_tot)])
-    StatsPlots.groupedbar(dispatches,
+    gen_capacities = permutedims([p̄_gn; permutedims(H_tot)])
+    if sum(τ_t.>1)>0
+        title_string = "Generation capacity ($(T[end]) clusters) by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E"
+    else
+        title_string = "Generation capacity (FTR) by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E"
+    end
+    StatsPlots.groupedbar(gen_capacities,
         bar_position = :stack,
         bar_width=0.7,
         xticks=(N, region_n),
         ylabel=L"\bar{p}_{g,n}\,\mathrm{[MW]}",
-        title = "Generation capacity by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
+        title = title_string,
         titlefontsize = 10,
         color=techcolors,
         labels=permutedims([technology_g;"hydro"]),
@@ -366,17 +377,23 @@ function plot_box_all(p_gnt, h_hnt, G, H, technology_g, κ, C_E, κ′, C′_E)
     return p
 end
 
-function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, technology_g, κ, C_E, κ′, C′_E)
-    p_gn = sum(p_gnt[:,:,t] for t in T)
-    h_n = sum(h_hnt[h,:,t] for h in H, t in T)
-    D_n = sum(max_dem_n[:].*D_nt[:,t] for t in T)
+function plot_dispatch_bars(max_dem_n, p_gnt, h_hnt, D_nt, N, T, H, region_n, technology_g, κ, C_E, κ′, C′_E, τ_t)
+    p_gn = sum(p_gnt[:,:,t]*τ_t[t] for t in T)
+    h_n = sum(h_hnt[h,:,t]*τ_t[t] for h in H, t in T)
+    D_n = sum(max_dem_n[:].*D_nt[:,t]*τ_t[t] for t in T)
     dispatches = permutedims([p_gn; permutedims(h_n)])
+    if sum(τ_t.>1)>0
+        title_string = "Generation dispatch ($(T[end]) clusters) by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E"
+    else
+        title_string = "Generation dispatch (FTR) by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E"
+    end
+
     groupedbar(dispatches,
         bar_position = :stack,
         bar_width=0.7,
         ylabel=L"\sum_t p_{g,n,t}\,\mathrm{[MWh]}",
         xticks=(N, region_n),
-        title = "Generation dispatch by region and technology\n Renewables share = $(round(κ′,digits=3)) ≥ $κ\n CO2 reduction = $(round(C′_E,digits=3)) ≥ $C_E",
+        title = title_string,
         titlefontsize = 10,
         color=techcolors,
         labels=permutedims([technology_g;"hydro"]),
@@ -390,7 +407,7 @@ end
 # Overload functions for signature: parameters::Params, model::Model, ...
 
 """Plot objective value and individual objective values."""
-function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{String, Any}})
+function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{String, Any}}, τ_t::Vector{Integer}, T::Vector{Integer})
     obj_names = [
     "gen_inv",
     "gen_oc",
@@ -405,12 +422,16 @@ function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{Str
     fs = keys(objectives)
     vs = [objectives[i] for i in fs]
     nms = [ObjNames[i] for i in fs]
-    title = string("Objective value: ", round(sum(vs), sigdigits = 2))
+    if sum(τ_t.>1)>0
+        title_string = string("Objective value ($(T[end]) clusters): ", round(sum(vs), sigdigits = 5))
+    else
+        title_string = string("Objective value (FTR): ", round(sum(vs), sigdigits = 5))
+    end
     bar(vs,
         xlabel="Objective function",
         xticks = ([1:1:8;],nms),
         ylabel="EUR",
-        title=title,
+        title=title_string,
         legend=false,
         size = (800,600))
 end
@@ -424,14 +445,14 @@ end
 """Plot generation capacities."""
 function plot_generation_capacities(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Any}, Dict{String, Any}}, n::Integer)
     plot_generation_capacities(variables["p̄_gn"], variables["h̄_hn"], parameters.HRmax_n, parameters.G, n, parameters.region_n,
-                               parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
+                               parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"], parameters.τ_t, parameters.T)
 end
 
 
 """Plot stacked generation capacities as a stacked graph."""
 function plot_generation_capacities_stacked(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
     plot_generation_capacities_stacked(variables["p̄_gn"], variables["h̄_hn"], parameters.HRmax_n, parameters.N, parameters.H,
-                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
+                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"], parameters.τ_t, parameters.T)
 end
 
 
@@ -480,5 +501,5 @@ end
 
 function plot_dispatch_bars(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}})
     plot_dispatch_bars(parameters.max_dem_n, variables["p_gnt"], variables["h_hnt"], parameters.D_nt, parameters.N, parameters.T, parameters.H,
-                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
+                       parameters.region_n, parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"],parameters.τ_t)
 end
