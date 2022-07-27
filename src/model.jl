@@ -379,13 +379,13 @@ function EnergySystemModel(parameters::Params, specs::Specs)
     # Minimum renewables share
     if specs.renewable_target
         if (specs.hydro || specs.hydro_simple)
-            @constraint(model, g3,
-                ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T)) + sum(hr_nt[n,t]*τ_t[t] for n in N, t in T)) ≥
-                κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, n in N, t in T) + sum(hr_nt[n,t]*τ_t[t] for n in N, t in T)))
+            @constraint(model, g3[n in N],
+                ((sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, t in T)) + sum(hr_nt[n,t]*τ_t[t] for t in T)) ≥
+                κ * (sum(p_gnt[g,n,t]*τ_t[t] for g in G, t in T) + sum(h_hnt[h,n,t]*τ_t[t] for h in H, t in T) + sum(hr_nt[n,t]*τ_t[t] for t in T)))
         else
-            @constraint(model, g3,
-                sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, n in N, t in T) ≥
-                κ * sum(p_gnt[g,n,t]*τ_t[t] for g in G, n in N, t in T))
+            @constraint(model, g3[n in N],
+                sum(p_gnt[g,n,t]*τ_t[t] for g in G_r, t in T) ≥
+                κ * sum(p_gnt[g,n,t]*τ_t[t] for g in G, t in T))
         end
     end
 
@@ -399,8 +399,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
     #Carbon cap
     if specs.carbon_cap
-        @constraint(model, g5,
-            (sum(E_g[g] * sum(p_gnt[g,n,t]*τ_t[t] for n in N, t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * R_E / 1000)
+        @constraint(model, g5[n in N],
+            (sum(E_g[g] * sum(p_gnt[g,n,t]*τ_t[t] for t in T) / e_g[g] for g in G)) / 1000 ≤ (1-C_E) * R_E / 1000)
     end
   
     # Shedding upper bound
