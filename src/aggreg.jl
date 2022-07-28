@@ -654,7 +654,6 @@ function read_clust_instance(clust_instance_path::AbstractString, instance::Abst
     # Declare rep. periods
     # rep_periods = Dict("T" => num_clusters)
     T = 1:_ClustInstance.nclusters
-    ParamsDict["T"] = T
 
     # Clusters weight
     τ_t = _ClustInstance.weights
