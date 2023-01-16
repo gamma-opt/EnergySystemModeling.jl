@@ -640,45 +640,109 @@ end
 """
 Read different clustering instances and return time-dependent parameters.
 """
-function read_clust_instance(clust_instance_path::AbstractString, instance::AbstractString, ParamsDict; nosun::Bool = false)
+function read_clust_instance(clust_method::AbstractString, clust_method_path::AbstractString, instance_clust::AbstractString, ParamsDict::Dict{String, Any}; nosun::Bool = false)
     # Unpack parameters needed from ParamsDict
     G = ParamsDict["G"]
     N = ParamsDict["N"]
 
     # Loading clusters dictionary
-    ClustDict = load(clust_instance_path)
+    ClustDict = load(clust_method_path)
 
-    # Declaring clustering instance
-    _ClustInstance = ClustDict[string(instance)]
+    # Number of representative hours from the instance_clust
+    rep_hours = parse(Int,instance_clust[9:12])
 
-    # Declare rep. periods
-    # rep_periods = Dict("T" => num_clusters)
-    T = 1:_ClustInstance.nclusters
+    if clust_method == "day"
+        # Number of days from the instance_clust
+        hours_day = 24
+        days_year = 365
 
-    # Clusters weight
-    τ_t = _ClustInstance.weights
+        @assert rep_hours%hours_day == 0 "Non-integer number of days"
+        num_days = rep_hours/hours_day |> Int
+        @assert num_days < days_year "More days than possible in an year"
 
-    # Optimisation objects
-    D_nt = zeros(length(N), length(T))
-    A_gnt = ones(length(G), length(N), length(T))
-    AH_nt = zeros(length(N), length(T))
-    AR_nt = zeros(length(N), length(T))
+        # Declaring clustering instance dictionary
+        _ClustInstance = ClustDict[string(num_days)]
 
-    for n in N
-        # Time-dependent parameters
-        (D_nt[n, :],) = aggreg1D(ParamsDict["D_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
-        (A_gnt[1, n, :],) = aggreg1D(ParamsDict["A_gnt"][1,n,:]|>Vector{Float64},_ClustInstance.series_clust)
-        (A_gnt[2, n, :],) = aggreg1D(ParamsDict["A_gnt"][2,n,:]|>Vector{Float64},_ClustInstance.series_clust)
-        (A_gnt[3, n, :],) = aggreg1D(ParamsDict["A_gnt"][3,n,:]|>Vector{Float64},_ClustInstance.series_clust)
-        (AH_nt[n,:],) = aggreg1D(ParamsDict["AH_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
-        (AR_nt[n,:],) = aggreg1D(ParamsDict["AR_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        # Change the num_clusters from num_days to num_hours
+        _ClustInstance.nclusters = hours_day*num_days
+        # Declare rep. periods
+        T = 1:_ClustInstance.nclusters
+
+        # Availability generation series to be considered (1: Wind-on, 2: Wind-off, 3: Solar)
+        A_range = 1:3
+
+        # Transforming k_cent (rep. days) into D_nt and A_gnt
+        D_nt = reshape(permutedims(_ClustInstance.k_cent[:,1:length(N)*24],[2,1]),(length(N),hours_day*num_days))
+        A_gnt = reshape(permutedims(_ClustInstance.k_cent[:,length(N)*hours_day+1:length(N)*24+length(A_range)*length(N)*hours_day],[2,1]),
+        (length(A_range),length(N),hours_day*num_days));
+        A_gnt[A_gnt .< 0.001] .= 0
+
+        # Increase size of A_gnt to include availability of non-renewable generation techs.
+        A_gnt_new = zeros(length(G),size(A_gnt,2),size(A_gnt,3))
+        A_gnt_new[A_range,:,:] = A_gnt
+        A_gnt_new[length(A_range)+1:length(G),:,:] .= 1
+        A_gnt = A_gnt_new
+
+        # Updating clusters weights and series_clust
+        τ_t = zeros(Int,hours_day*length(_ClustInstance.weights))
+
+        for i in 1:num_days
+            τ_t[hours_day*(i-1)+1:hours_day*i] .= _ClustInstance.weights[i]
+        end
+
+        # Demand and availability matrices (arranged in days and hours)
+        AH_dn = permutedims(reshape(ParamsDict["AH_nt"],(Int(length(N)*hours_day),days_year)),[2,1]) |> Matrix{Float64};
+        AR_dn = permutedims(reshape(ParamsDict["AR_nt"],(Int(length(N)*hours_day),days_year)),[2,1]) |> Matrix{Float64};
+
+        # New AH_dn matrix to store aggregated values (in rep. days)
+        AH_dn_new = zeros(num_days,length(N)*hours_day)
+        AR_dn_new = zeros(num_days,length(N)*hours_day)
+
+        # Aggregate values in rep. days
+        for i in 1:length(N)*hours_day
+            (AH_dn_new[:,i],) = aggreg1D(AH_dn[:,i]|>Vector{Float64},_ClustInstance.series_clust)
+            (AR_dn_new[:,i],) = aggreg1D(AR_dn[:,i]|>Vector{Float64},_ClustInstance.series_clust)
+        end
+
+        # Turn rep. days in rep. hours
+        AH_nt = reshape(permutedims(AH_dn_new[:,1:length(N)*24],[2,1]),(length(N),hours_day*num_days))
+        AR_nt = reshape(permutedims(AR_dn_new[:,1:length(N)*24],[2,1]),(length(N),hours_day*num_days))
+    else
+        # Declaring clustering instance dictionary
+        _ClustInstance = ClustDict[string(rep_hours)]
+
+        # Clusters weight
+        τ_t = _ClustInstance.weights
+
+        # Declare rep. periods
+        # rep_periods = Dict("T" => num_clusters)
+        T = 1:_ClustInstance.nclusters
+
+        # Clusters weight
+        τ_t = _ClustInstance.weights
+
+        # Optimisation objects
+        D_nt = zeros(length(N), length(T))
+        A_gnt = ones(length(G), length(N), length(T))
+        AH_nt = zeros(length(N), length(T))
+        AR_nt = zeros(length(N), length(T))
+
+        for n in N
+            # Time-dependent parameters
+            (D_nt[n, :],) = aggreg1D(ParamsDict["D_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            (A_gnt[1, n, :],) = aggreg1D(ParamsDict["A_gnt"][1,n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            (A_gnt[2, n, :],) = aggreg1D(ParamsDict["A_gnt"][2,n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            (A_gnt[3, n, :],) = aggreg1D(ParamsDict["A_gnt"][3,n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            (AH_nt[n,:],) = aggreg1D(ParamsDict["AH_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+            (AR_nt[n,:],) = aggreg1D(ParamsDict["AR_nt"][n,:]|>Vector{Float64},_ClustInstance.series_clust)
+        end
+        # Rounding to improve numerical stability
+        D_nt = round.(D_nt; digits = 5)
+        A_gnt = round.(A_gnt;digits = 5)
+        A_gnt[A_gnt .< 0.001] .= 0
+        AH_nt = round.(AH_nt;digits=0)
+        AR_nt = round.(AR_nt;digits=0)
     end
-    # Rounding to improve numerical stability
-    D_nt = round.(D_nt; digits = 5)
-    A_gnt = round.(A_gnt;digits = 5)
-    A_gnt[A_gnt .< 0.001] .= 0
-    AH_nt = round.(AH_nt;digits=0)
-    AR_nt = round.(AR_nt;digits=0)
 
     # Producing nosun
     if nosun
@@ -686,7 +750,7 @@ function read_clust_instance(clust_instance_path::AbstractString, instance::Abst
         A_gnt[gsun,:,:] .= 0
     end
 
-    # Forming parameters struct
+    # Forming parameters struct with updated T, τ_t, A_gnt, and D_nt
     parameters = Params(
         ParamsDict["region_n"], ParamsDict["max_dem_n"], ParamsDict["technology_g"], ParamsDict["G"], ParamsDict["G_r"], ParamsDict["N"], ParamsDict["L"], ParamsDict["L_ind"], 
         T, ParamsDict["S"], ParamsDict["H"], ParamsDict["κ"], ParamsDict["μ"], ParamsDict["C"], ParamsDict["C̄"], ParamsDict["C_E"], ParamsDict["R_E"], τ_t,
