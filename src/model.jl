@@ -436,7 +436,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Initial storage policy
         ## TODO: pass the battery storage factor via input argument
         @constraint(model,
-            s0[s in S, n in N, t in [1]],
+            s0[s in S, n in N, t in T[1]],
             b_snt[s,n,t]/1000 == 0.5*b̄_sn[s,n]/1000)
         # Storage capacity
         @constraint(model,
@@ -444,12 +444,12 @@ function EnergySystemModel(parameters::Params, specs::Specs)
             b_snt[s,n,t]/1000 ≤ b̄_sn[s,n]/1000)
         # Discharge limits (t = 1)
         @constraint(model,
-            s2[s in S, n in N, t in [1]],
-            τ_t[t]*ξ_s[s]*b⁻_snt[s,n,t]/1000 ≤ b_snt[s,n,t]/1000)
+            s2[s in S, n in N, t in T[1]],
+            τ_t[t]*b⁻_snt[s,n,t]/1000 ≤ b_snt[s,n,t]/1000)
         # Discharge limits (t > 1)
         @constraint(model,
             s3[s in S, n in N, t in T[T.>1]],
-            τ_t[t]*ξ_s[s]*b⁻_snt[s,n,t]/1000 ≤ τ_t[t-1]*b_snt[s,n,t-1]/1000)
+            τ_t[t]*b⁻_snt[s,n,t]/1000 ≤ τ_t[t-1]*b_snt[s,n,t-1]/1000)
         # Charge
         @constraint(model,
             s4[s in S, n in N, t in T],
@@ -457,7 +457,7 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Storage balance
         @constraint(model,
             s5[s in S, n in N, t in T[T.>1]],
-            b_snt[s,n,t] == (b_snt[s,n,t-1] + τ_t[t]*(b⁺_snt[s,n,t] - ξ_s[s]*b⁻_snt[s,n,t])))
+            b_snt[s,n,t] == (b_snt[s,n,t-1] + τ_t[t]*(b⁺_snt[s,n,t] - b⁻_snt[s,n,t])))
         # Storage continuity
         @constraint(model,
             s6[s in S, n in N],
@@ -490,8 +490,8 @@ function EnergySystemModel(parameters::Params, specs::Specs)
 
         # Full reservoir policy
         @constraint(model, 
-            h0[h in H, n in N],
-            w_hnt[h,n,1]/1000 == Wmax_hn[h,n]/1000)
+            h0[h in H, n in N, t in T[1]],
+            w_hnt[h,n,t]/1000 == Wmax_hn[h,n]/1000)
         # Maximum reservoir level
         @constraint(model,
             h1[h in H, n in N, t in T],
@@ -499,11 +499,11 @@ function EnergySystemModel(parameters::Params, specs::Specs)
         # Reservoir balance
         @constraint(model,
             h2[n in N, t in T[T.>1]],
-            sum(w_hnt[h,n,t] for h in H)/1000 ≤ (sum(w_hnt[h,n,t-1] for h in H) + (AH_nt[n,t-1] - sum(h_hnt[h,n,t-1] for h in H))*τ_t[t])/1000)
+            sum(w_hnt[h,n,t] for h in H)/1000 ≤ (sum(w_hnt[h,n,t-1] for h in H) + (AH_nt[n,t-1] - sum(h_hnt[h,n,t-1] for h in H))*τ_t[t-1])/1000)
         # Reservoir temporal continuity
         @constraint(model,
             h3[n in N, h in H],
-            w_hnt[h,n,1]/1000 == w_hnt[h,n,T[end]]/1000)
+            w_hnt[h,n,T[1]]/1000 == w_hnt[h,n,T[end]]/1000)
         # Define the minimum hydro flow possible to be used
         α_nt = zeros(length(N),length(T))
         for n in N, t in T
