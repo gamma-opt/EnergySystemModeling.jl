@@ -6,12 +6,12 @@ using Gurobi
 using Dates
 using DelimitedFiles
 
-@info string("Starting instance ",ARGS[1]," @ ",now()) 
+@info string("Starting instance ",ARGS[1]," @ ",now())
 
 WRKDIR = "/scratch/work/condeil1/EnergySystemModeling.jl/examples"
 cd(WRKDIR)
 
-@info "Loading parameters"
+@info "Defining constants and instance files path"
 constants_dir = "constants"
 constants_path = joinpath(WRKDIR,constants_dir)
 structure_dir = "8nodes"
@@ -20,21 +20,9 @@ instances_path = joinpath(structures_path,"instances/.big_files")
 instance_clust = ARGS[1]
 instance_path_clust = joinpath(instances_path,instance_clust)
 instance_ftr = "08n8760h_ftr"
-
-@info "Creating output directories"
-output_path = joinpath(instance_path_clust,"output_tri")
-results_dir = "results"
 params_path_ftr = joinpath(instances_path,instance_ftr,".big_files","parameters")
-# csv_dir = "csv"
-# model_dir = joinpath(".big_files","model")
-
-mkpath(output_path)
-mkpath(joinpath(output_path,results_dir))
 
 @info "Creating specifications"
-# Updating the parameters to the clustering instance
-parameters = change_time_parameters(params_path_ftr, instance_path_clust)
-
 # Model specifications
 specs = Specs(
         transmission=true,
@@ -47,6 +35,16 @@ specs = Specs(
         hydro=true,
         hydro_simple=false
 )
+
+@info "Taking solar energy availability away from the optimisation"
+# Updating the parameters to the clustering instance
+parameters = change_time_parameters(params_path_ftr, instance_path_clust;nosun=false)
+
+@info "Creating output directories"
+output_path = joinpath(instance_path_clust,"output_tri_nodal_rd")
+mkpath(output_path)
+results_dir = "results"
+mkpath(joinpath(output_path,results_dir))
 
 @info "Creating the energy system model"
 (model, VariablesDict, ObjectivesDict) = EnergySystemModel(parameters, specs)

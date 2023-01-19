@@ -20,7 +20,9 @@ nosun = parse(Bool,ARGS[3])             # Boolean regarding solar availability
 WRKDIR = "/scratch/work/condeil1/EnergySystemModeling.jl/examples"
 cd(WRKDIR)
 
-@info "Loading parameters"
+# dalsjkdkla
+
+@info "Defining constants and instance files path"
 constants_dir = "constants"
 constants_path = joinpath(WRKDIR,constants_dir)
 structure_dir = "8nodes"
