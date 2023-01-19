@@ -38,6 +38,8 @@ Manifest.toml
 
 # Triton files
 .triton/
+!.triton/exe/opt/*.jl
+!.triton/exe/opt/*.sh
 
 # Directory with basic structure files
 .basic_specs/
