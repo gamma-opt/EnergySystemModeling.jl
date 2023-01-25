@@ -6,7 +6,15 @@ using Gurobi
 using Dates
 using DelimitedFiles
 
-@info string("Starting instance (fixed capacity)",ARGS[1]," @ ",now())
+# Define optimisation time limit
+opt_tlim = 60*60*72
+
+@info string("Starting instance (fixed capacity) ",ARGS[1]," @ ",now())
+
+# Instance including clustering info
+instance_clust = ARGS[1]                # Clustering instance with info
+clust_method = ARGS[2]                  # Clustering method ("","dc"/"dc_new"/"dc_nosun"/"day")
+nosun = parse(Bool,ARGS[3])             # Boolean regarding solar availability
 
 WRKDIR = "/scratch/work/condeil1/EnergySystemModeling.jl/examples"
 cd(WRKDIR)
@@ -17,13 +25,10 @@ constants_path = joinpath(WRKDIR,constants_dir)
 structure_dir = "8nodes"
 structures_path = joinpath(WRKDIR,"structures",structure_dir)
 instances_path = joinpath(structures_path,"instances/.big_files")
-instance_clust = ARGS[1]
 instance_path_clust = joinpath(instances_path,instance_clust)
 instance_ftr = "08n8760h_ftr"
+instance_path_ftr = joinpath(instances_path,instance_ftr)
 params_path_ftr = joinpath(instances_path,instance_ftr,".big_files","parameters")
-
-# NOTE: Change the output folder's name accordingly to the instance
-instance_dir = "output_tri_nodal_rd"
 results_dir = "results"
 
 @info "Creating specifications"
@@ -40,8 +45,40 @@ specs = Specs(
         hydro_simple=false
 )
 
-@info "Reading variables directories"
-results_path = joinpath(instance_path_clust,instance_dir,results_dir)
+@info "Create output directories path and directories"
+if nosun && clust_method == "day" && specs.transmission
+# Each case is specified below
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_day_nosun"))
+elseif nosun && clust_method == "day"
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_nodal_day_nosun"))
+elseif nosun && specs.transmission
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_nosun"))
+elseif nosun
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_nodal_nosun"))
+elseif clust_method == "day" && specs.transmission
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_day"))
+elseif clust_method == "day"
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_nodal_day"))
+elseif specs.transmission
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri"))
+else
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    results_clust_path = joinpath(instance_path_clust,string("output_tri_nodal"))
+end
+
+output_path = results_clust_path * "_fix"
+mkpath(output_path)
+mkpath(joinpath(output_path,results_dir));
+
+@info "Reading clust variables directories"
+results_path = joinpath(results_clust_path,results_dir)
 variables_clust = load(joinpath(results_path, "variables.jld2"));
 
 @info "Reading parameters FTR"
@@ -49,8 +86,7 @@ variables_clust = load(joinpath(results_path, "variables.jld2"));
 # Updating the parameters to the clustering instance
 
 ## TODO: revise parameters (check if they are FTR)
-# parameters_clust = change_time_parameters(params_path_ftr, instance_path_clust;nosun=false)
-parameters = change_time_parameters(params_path_ftr, params_path_ftr;nosun=false);
+parameters = change_time_parameters(params_path_ftr, instance_path_ftr)
 
 @info "Creating the energy system model"
 (model, VariablesDict, ObjectivesDict) = EnergySystemModel(parameters, specs)

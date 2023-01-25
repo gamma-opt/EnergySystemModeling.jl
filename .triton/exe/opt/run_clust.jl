@@ -1,4 +1,4 @@
-## Code for running the nodal optimisation linking it to the clustering technique
+## Code for running optimisation linked it to the clustering technique
 using Logging
 using EnergySystemModeling
 using JLD2
@@ -14,13 +14,11 @@ opt_tlim = 60*60*72
 
 # Instance including clustering info
 instance_clust = ARGS[1]                # Clustering instance with info
-clust_method = ARGS[2]                  # Clustering method ("","dc"/"dc_new"/"dc_nosun"/"day")
+clust_method = ARGS[2]                  # Clustering method (e.g., "","dc"/"dc_new"/"dc_nosun"/"day")
 nosun = parse(Bool,ARGS[3])             # Boolean regarding solar availability
 
 WRKDIR = "/scratch/work/condeil1/EnergySystemModeling.jl/examples"
 cd(WRKDIR)
-
-# dalsjkdkla
 
 @info "Defining constants and instance files path"
 constants_dir = "constants"
@@ -30,7 +28,7 @@ structures_path = joinpath(WRKDIR,"structures",structure_dir)
 instances_path = joinpath(structures_path,"instances/.big_files")
 instance_path_clust = joinpath(instances_path,instance_clust)
 instance_ftr = "08n8760h_ftr"
-params_path_ftr = joinpath(instances_path,instance_ftr,".big_files","parameters")
+params_path_ftr = joinpath(instances_path,instance_ftr,".big_files","parameters");
 
 @info "Clustering parameters"
 aggregation_path = "/scratch/work/condeil1/EnergySystemModeling.jl/.triton/exe/aggregation/"
@@ -50,10 +48,15 @@ elseif string(instance_clust[end-1]) == "w"
         end
 end
 
+# NOTE: Change the output folder's name accordingly to the instance
+instance_dir = "output_tri_day"
+results_dir = "results"
+
 @info "Creating specifications"
 # Model specifications
+# NOTE: to run nodal, disable transmission
 specs = Specs(
-        transmission=false,
+        transmission=true,
         renewable_target=true,
         carbon_cap=true,
         nuclear_limit=false,
@@ -83,22 +86,35 @@ if clust_method == "day"
 end
 
 @info "Creating output directories"
-if nosun
-        if clust_method == ""
-                output_path = joinpath(instance_path_clust,string("output_tri_nodal_nosun"))
-        else
-                output_path = joinpath(instance_path_clust,string("output_tri_nodal_",clust_method))
-        end
+if nosun && clust_method == "day" && specs.transmission
+# Each case is specified below
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_day_nosun"))
+elseif nosun && clust_method == "day"
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_nodal_day_nosun"))
+elseif nosun && specs.transmission
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_nosun"))
+elseif nosun
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_nodal_nosun"))
+elseif clust_method == "day" && specs.transmission
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_day"))
+elseif clust_method == "day"
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_nodal_day"))
+elseif specs.transmission
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri"))
 else
-        if clust_method == ""
-                output_path = joinpath(instance_path_clust,string("output_tri_nodal"))
-        else
-                output_path = joinpath(instance_path_clust,string("output_tri_nodal_",clust_method))
-        end
+    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_nodal"))
 end
 mkpath(output_path)
 results_dir = "results"
-mkpath(joinpath(output_path,results_dir))
+mkpath(joinpath(output_path,results_dir));
 
 @info "Creating energy system model"
 (model, VariablesDict, ObjectivesDict) = EnergySystemModel(parameters, specs)
@@ -115,7 +131,7 @@ if clust_method == "day"
         @constraint(model, 
             h0_rd[h in parameters.H, n in parameters.N, t in T_sto],
             model[:w_hnt][h,n,t]/1000 == parameters.Wmax_hn[h,n]/1000)
-end
+end;
 
 @info "Optimizing the model"
 optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => opt_tlim,
@@ -129,16 +145,16 @@ set_optimizer_attributes(model, "ScaleFlag" => 2)
 # set_optimizer_attributes(model, "Method" => 0)
 # set_optimizer_attributes(model, "Crossover" => 1)
 
-optimize!(model)
+optimize!(model);
 
 @info "Extracting results"
 variables = JuMPVar(model, VariablesDict)
 objectives = JuMPObj(model, ObjectivesDict)
-expressions = Expressions(parameters, specs, variables)
+expressions = Expressions(parameters, specs, variables);
 
 @info "Saving results (JLD2)"
 JLD2.save(joinpath(output_path, results_dir, "variables.jld2"), variables; compress = true)
 JLD2.save(joinpath(output_path, results_dir, "objectives.jld2"), objectives; compress = true)
-JLD2.save(joinpath(output_path, results_dir, "expressions.jld2"), expressions; compress = true)
+JLD2.save(joinpath(output_path, results_dir, "expressions.jld2"), expressions; compress = true);
 
-@info string("Ended instance ",ARGS[1]," @ ",now())
+@info string("Ended instance ",ARGS[1]," @ ",now());
