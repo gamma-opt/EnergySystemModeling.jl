@@ -18,7 +18,8 @@ export EnergySystemModel,
     getdispatch,
     read_clusters,
     unpack_clusters_features,
-    change_time_parameters
+    change_time_parameters,
+    break_FTR_parameters_in_periods
 
 include("plotting.jl")
 export plot_objective_values,

@@ -208,6 +208,7 @@ end
 # Arguments
 - `params_path_ftr::AbstractString`: Path to the FTR parameters
 - `instance_path_clust::AbstractString`: Path to the instance folder.
+- `nosun::Bool`: When true, it equals solar availability to zero.
 """
 function change_time_parameters(params_path_ftr::AbstractString, instance_path_clust::AbstractString; nosun::Bool = false)
     # Reading FTR parameters (assuming perform_Params was ran and the dictionary parameters.jld2 is available)
@@ -239,6 +240,74 @@ function change_time_parameters(params_path_ftr::AbstractString, instance_path_c
             A_gnt[A_gnt .< 0.001] .= 0
             AH_nt[n,:] = round.(nodes.Hyd_In[T]; digits = 0)
             AR_nt[n,:] = round.(nodes.HydRoR_In[T]; digits = 0)
+    end
+
+    ParamsDict["A_gnt"] = A_gnt
+    ParamsDict["D_nt"] = D_nt
+    ParamsDict["AH_nt"] = AH_nt
+    ParamsDict["AR_nt"] = AR_nt
+
+    if nosun
+        gsun = 3
+        ParamsDict["A_gnt"][gsun,:,:] .= 0
+    end
+
+    # Forming parameters struct
+    parameters = Params(
+        ParamsDict["region_n"], ParamsDict["max_dem_n"], ParamsDict["technology_g"], ParamsDict["G"], ParamsDict["G_r"], ParamsDict["N"], ParamsDict["L"], ParamsDict["L_ind"], 
+        ParamsDict["T"], ParamsDict["S"], ParamsDict["H"], ParamsDict["κ"], ParamsDict["μ"], ParamsDict["C"], ParamsDict["C̄"], ParamsDict["C_E"], ParamsDict["R_E"], ParamsDict["τ_t"],
+        ParamsDict["Gmin_gn"], ParamsDict["Gmax_gn"], ParamsDict["A_gnt"], ParamsDict["D_nt"], ParamsDict["I_g"], ParamsDict["M_g"], ParamsDict["C_g"], ParamsDict["e_g"], ParamsDict["E_g"],
+        ParamsDict["r⁻_g"], ParamsDict["r⁺_g"], ParamsDict["I_l"], ParamsDict["M_l"], ParamsDict["C_l"], ParamsDict["B_l"], ParamsDict["e_l"], ParamsDict["Tmin_l"], ParamsDict["Tmax_l"],
+        ParamsDict["ξ_s"], ParamsDict["I_s"], ParamsDict["C_s"], ParamsDict["Smin_sn"], ParamsDict["Smax_sn"], ParamsDict["Wmax_hn"], ParamsDict["Wmin_hn"], ParamsDict["Hmax_hn"],
+        ParamsDict["Hmin_hn"], ParamsDict["HRmax_n"], ParamsDict["Fmin_n"], ParamsDict["AH_nt"], ParamsDict["AR_nt"], ParamsDict["I_h"], ParamsDict["M_h"], ParamsDict["C_h"],
+        ParamsDict["e_h"], ParamsDict["E_h"], ParamsDict["r⁻_h"], ParamsDict["r⁺_h"]
+    );
+    return parameters
+end
+
+"""Read time-dependent parameters (i.e., T, D_nt, A_gnt, AH_nt, AR_nt) and create a new parameters struct.
+# Arguments
+- `params_path_ftr::AbstractString`: Path to the FTR parameters
+- `instance_path_clust::AbstractString`: Path to the instance folder.
+- `nosun::Bool`: When true, it equals solar availability to zero.
+"""
+
+## TODO (28/03/23)
+
+function break_FTR_parameters_in_periods(params_path_ftr::AbstractString, instance_path_clust::AbstractString; nosun::Bool = false, periods_range::StepRange{Int, Int})
+    # Reading FTR parameters (assuming perform_Params was ran and the dictionary parameters.jld2 is available)
+    ParamsDict = load(joinpath(params_path_ftr,"parameters.jld2"))
+
+    # Number of time steps (e.g., hours) used
+    num_ts = length(periods_range)
+
+    # Declare representative periods
+    T = 1:num_ts
+    ParamsDict["T"] = T
+
+    # Load weights (number of days comprised in the original series)
+    num_hours = JSON.parsefile(joinpath(instance_path_clust,"rep_periods.json"))
+    num_days = Int(num_hours["T"]/24)
+
+    τ_t = repeat([num_days],num_ts)
+    ParamsDict["τ_t"] = τ_t
+
+    # Read time-dependent parameters
+    D_nt = zeros(length(ParamsDict["N"]), length(T))
+    A_gnt = ones(length(ParamsDict["G"]), length(ParamsDict["N"]), length(T))
+    AH_nt = zeros(length(ParamsDict["N"]), length(T))
+    AR_nt = zeros(length(ParamsDict["N"]), length(T))
+
+    for n in ParamsDict["N"]
+            # Load node values from CSV files.
+            nodes = CSV.File(joinpath(instance_path_clust,"nodes","$n.csv")) |> DataFrame
+            D_nt[n, :] = round.(nodes.Demand[periods_range]; digits = 5)
+            A_gnt[1, n, :] = round.(nodes.Avail_Wind_On[periods_range]; digits = 5)
+            A_gnt[2, n, :] = round.(nodes.Avail_Wind_Off[periods_range]; digits = 5)
+            A_gnt[3, n, :] = round.(nodes.Avail_Sol[periods_range]; digits = 5)
+            A_gnt[A_gnt .< 0.001] .= 0
+            AH_nt[n,:] = round.(nodes.Hyd_In[periods_range]; digits = 0)
+            AR_nt[n,:] = round.(nodes.HydRoR_In[periods_range]; digits = 0)
     end
 
     ParamsDict["A_gnt"] = A_gnt
