@@ -651,7 +651,7 @@ function read_clust_instance(clust_method::AbstractString, clust_method_path::Ab
     # Number of representative hours from the instance_clust
     rep_hours = parse(Int,instance_clust[9:12])
 
-    if clust_method == "day"
+    if occursin("day",clust_method)
         # Number of days from the instance_clust
         hours_day = 24
         days_year = 365
@@ -671,7 +671,7 @@ function read_clust_instance(clust_method::AbstractString, clust_method_path::Ab
         # Availability generation series to be considered (1: Wind-on, 2: Wind-off, 3: Solar)
         A_range = 1:3
 
-        # Transforming k_cent (rep. days) into D_nt and A_gnt
+        # Transforming k_cent (rep. days) into D_nt and A_gnt (here additional columns, e.g., RMSE columns, will not be considered)
         D_nt = reshape(permutedims(_ClustInstance.k_cent[:,1:length(N)*24],[2,1]),(length(N),hours_day*num_days))
         A_gnt = reshape(permutedims(_ClustInstance.k_cent[:,length(N)*hours_day+1:length(N)*24+length(A_range)*length(N)*hours_day],[2,1]),
         (length(A_range),length(N),hours_day*num_days));

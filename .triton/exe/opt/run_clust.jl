@@ -14,8 +14,12 @@ opt_tlim = 60*60*72
 
 # Instance including clustering info
 instance_clust = ARGS[1]                # Clustering instance with info
-clust_method = ARGS[2]                  # Clustering method (e.g., "","dc"/"dc_new"/"dc_nosun"/"day")
+clust_method = ARGS[2]                  # Clustering method (e.g., "","dc"/"dc_new"/"dc_nosun"/"day_RMSE")
 nosun = parse(Bool,ARGS[3])             # Boolean regarding solar availability
+
+# NOTE: Change the output folder's name accordingly to the instance
+instance_dir = string("output_tri_",clust_method)
+results_dir = "results"
 
 WRKDIR = "/scratch/work/condeil1/EnergySystemModeling.jl/examples"
 cd(WRKDIR)
@@ -35,22 +39,18 @@ aggregation_path = "/scratch/work/condeil1/EnergySystemModeling.jl/.triton/exe/a
 
 # Defining the clustering results path
 if string(instance_clust[end-1]) == "m"
-        if clust_method == "day"
+        if occursin("day",clust_method)
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_ed_",clust_method),string("clust_out_ed_",clust_method,".jld2"));
         else
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_ed",clust_method),string("clust_out_ed",clust_method,".jld2"));
         end
 elseif string(instance_clust[end-1]) == "w"
-        if clust_method == "day"
+        if occursin("day",clust_method)
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_wd_",clust_method),string("clust_out_wd_",clust_method,".jld2"));
         else
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_wd",clust_method),string("clust_out_wd",clust_method,".jld2"));
         end
 end
-
-# NOTE: Change the output folder's name accordingly to the instance
-instance_dir = "output_tri_day"
-results_dir = "results"
 
 @info "Creating specifications"
 # Model specifications
@@ -72,7 +72,7 @@ specs = Specs(
 ParamsDict = load(joinpath(params_path_ftr,"parameters.jld2"));
 parameters = read_clust_instance(clust_method, clust_method_path, instance_clust, ParamsDict ; nosun=nosun);
 
-if clust_method == "day"
+if occursin("day",clust_method)
         # Number of representative hours from the instance_clust
         rep_hours = parse(Int,instance_clust[9:12])
 
@@ -86,11 +86,11 @@ if clust_method == "day"
 end
 
 @info "Creating output directories"
-if nosun && clust_method == "day" && specs.transmission
+if nosun && occursin("day",clust_method) && specs.transmission
 # Each case is specified below
     # No solar series, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_day_nosun"))
-elseif nosun && clust_method == "day"
+elseif nosun && occursin("day",clust_method)
     # No solar series, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_nodal_day_nosun"))
 elseif nosun && specs.transmission
@@ -99,19 +99,24 @@ elseif nosun && specs.transmission
 elseif nosun
     # No solar series, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_nodal_nosun"))
-elseif clust_method == "day" && specs.transmission
-    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+elseif occursin("day",clust_method) && occursin("RMSE",clust_method) && specs.transmission
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_day_RMSE"))
+elseif occursin("day",clust_method) && specs.transmission
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_day"))
-elseif clust_method == "day"
-    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+elseif occursin("day",clust_method)
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_nodal_day"))
 elseif specs.transmission
-    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri"))
 else
-    # No solar series, rep. days method, connected network, standard clustering method (Ward's)
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_nodal"))
 end
+
+@info string("Output directory path created/updated: ", output_path)
 mkpath(output_path)
 results_dir = "results"
 mkpath(joinpath(output_path,results_dir));
@@ -120,7 +125,8 @@ mkpath(joinpath(output_path,results_dir));
 (model, VariablesDict, ObjectivesDict) = EnergySystemModel(parameters, specs)
 # write_to_file(model,joinpath(output_path, model_dir,"model.mps"))
 
-if clust_method == "day"
+if occursin("day",clust_method)
+        # Adjust storage levels for rep. days method
         @info "Adjusting storage levels and hydro reservoirs levels to rep. days"
         T_sto = sort(vcat(((collect(2:num_days+1).-1)*hours_day),((collect(1:num_days-1)*hours_day).-1)))
 
