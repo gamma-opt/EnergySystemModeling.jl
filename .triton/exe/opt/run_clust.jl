@@ -14,7 +14,7 @@ opt_tlim = 60*60*72
 
 # Instance including clustering info
 instance_clust = ARGS[1]                # Clustering instance with info
-clust_method = ARGS[2]                  # Clustering method (e.g., "","dc"/"dc_new"/"dc_nosun"/"day_RMSE")
+clust_method = ARGS[2]                  # Clustering method (e.g., "","dc"/"dc_new"/"dc_nosun"/"day_RMSE"/"RMSE"/"FIT")
 nosun = parse(Bool,ARGS[3])             # Boolean regarding solar availability
 
 # NOTE: Change the output folder's name accordingly to the instance
@@ -39,13 +39,13 @@ aggregation_path = "/scratch/work/condeil1/EnergySystemModeling.jl/.triton/exe/a
 
 # Defining the clustering results path
 if string(instance_clust[end-1]) == "m"
-        if occursin("day",clust_method)
+        if occursin("day",clust_method)||occursin("RMSE",clust_method)||occursin("FIT",clust_method)
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_ed_",clust_method),string("clust_out_ed_",clust_method,".jld2"));
         else
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_ed",clust_method),string("clust_out_ed",clust_method,".jld2"));
         end
 elseif string(instance_clust[end-1]) == "w"
-        if occursin("day",clust_method)
+        if occursin("day",clust_method)||occursin("RMSE",clust_method)||occursin("FIT",clust_method)
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_wd_",clust_method),string("clust_out_wd_",clust_method,".jld2"));
         else
                 clust_method_path = joinpath(aggregation_path,string("aggreg_output_wd",clust_method),string("clust_out_wd",clust_method,".jld2"));
@@ -102,6 +102,15 @@ elseif nosun
 elseif occursin("day",clust_method) && occursin("RMSE",clust_method) && specs.transmission
     # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_day_RMSE"))
+elseif occursin("day",clust_method) && occursin("FIT",clust_method) && specs.transmission
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_day_FIT"))
+elseif occursin("RMSE",clust_method) && specs.transmission
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_RMSE"))
+elseif occursin("FIT",clust_method) && specs.transmission
+    # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
+    output_path = joinpath(instance_path_clust,string("output_tri_FIT"))
 elseif occursin("day",clust_method) && specs.transmission
     # Solar series included, rep. days method, connected network, standard clustering method (Ward's)
     output_path = joinpath(instance_path_clust,string("output_tri_day"))
@@ -158,9 +167,9 @@ variables = JuMPVar(model, VariablesDict)
 objectives = JuMPObj(model, ObjectivesDict)
 expressions = Expressions(parameters, specs, variables);
 
-@info "Saving results (JLD2)"
+@info "Saving results (JLD2) @ $output_path"
 JLD2.save(joinpath(output_path, results_dir, "variables.jld2"), variables; compress = true)
 JLD2.save(joinpath(output_path, results_dir, "objectives.jld2"), objectives; compress = true)
 JLD2.save(joinpath(output_path, results_dir, "expressions.jld2"), expressions; compress = true);
 
-@info string("Ended instance ",ARGS[1]," @ ",now());
+@info string("Ended instance ",ARGS[1]," @ ",now(),"\n");
