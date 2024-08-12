@@ -1,3 +1,5 @@
+__precompile__(false)
+
 module EnergySystemModeling
 
 include("model.jl")

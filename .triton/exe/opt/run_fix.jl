@@ -13,7 +13,7 @@ opt_tlim = 60*60*72
 
 # Instance including clustering info
 instance_clust = ARGS[1]                # Clustering instance with info
-clust_method = ARGS[2]                  # Clustering method ("","dc"/"dc_new"/"dc_nosun"/"day")
+clust_method = ARGS[2]                  # Clustering method ("","dc"/"dc_new"/"dc_nosun"/"day"/etc.)
 nosun = parse(Bool,ARGS[3])             # Boolean regarding solar availability
 
 WRKDIR = "/scratch/work/condeil1/EnergySystemModeling.jl/examples"
