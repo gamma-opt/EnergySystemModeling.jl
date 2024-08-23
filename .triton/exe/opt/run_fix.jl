@@ -73,6 +73,11 @@ else
     results_clust_path = joinpath(instance_path_clust,string("output_tri_nodal"))
 end
 
+if occursin("min_cap",clust_method)
+    # Adding 'min_cap' in the output directory name if 2-stages
+    results_clust_path = results_clust_path * "_min_cap"
+end
+
 output_path = results_clust_path * "_fix"
 mkpath(output_path)
 mkpath(joinpath(output_path,results_dir));
