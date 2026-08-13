@@ -437,13 +437,13 @@ function plot_objective_values(objectives::Union{Dict{String, Float64}, Dict{Str
 end
 
 """Plot generation dispatch."""
-function plot_generation_dispatch(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Any}, Dict{String, Any}}, n::Integer)
+function plot_generation_dispatch(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
     plot_generation_dispatch(variables["p_gnt"], variables["h_hnt"], parameters.G, n, parameters.T, parameters.region_n, 
                              parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"])
 end
 
 """Plot generation capacities."""
-function plot_generation_capacities(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Any}, Dict{String, Any}}, n::Integer)
+function plot_generation_capacities(parameters::Params, variables::Union{Dict{String, Any}, Dict{String, Array{Float64}}}, expressions::Union{Dict{String, Float64}, Dict{String, Any}}, n::Integer)
     plot_generation_capacities(variables["p̄_gn"], variables["h̄_hn"], parameters.HRmax_n, parameters.G, n, parameters.region_n,
                                parameters.technology_g, parameters.κ, parameters.C_E, expressions["κ′"], expressions["C′_E"], parameters.τ_t, parameters.T)
 end

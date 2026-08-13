@@ -1,17 +1,23 @@
 using Logging
 push!(LOAD_PATH, dirname(@__DIR__))
 using EnergySystemModeling
-cd("D:\\Eigene Dateien\\Documents\\GitHub\\EnergySystemModeling.jl\\examples")
+
+ENV["GKSwstype"]="nul"                      # Prevent opening plots windows (must be set before Plots loads)
+cd(@__DIR__)
 
 @info "Loading parameters"
 constants_path = "constants"
 structure = "8nodes"
 structures_path = joinpath("structures",structure)
-instance = "small"
+# Instance directory, relative to structures/<structure>/instances.
+# Defaults to the 168-hour instance, which solves in a couple of minutes; pass
+# another as the first argument, e.g. `julia --project=. examples/run.jl ftr/08n8760h_ftr`.
+instance = isempty(ARGS) ? joinpath(".big_files","08n0168h_ftr") : ARGS[1]
 instances_path = joinpath(structures_path,"instances",instance)
+isdir(instances_path) || error("Instance directory not found: $(abspath(instances_path))")
 
 @info "Creating output directory"
-output_dir = joinpath(instances_path,"output")
+output_dir = joinpath(instances_path,"output_local")
 results_dir = "results"
 plots_dir = "plots"
 csv_dir = "csv"
@@ -44,15 +50,23 @@ optimizer = optimizer_with_attributes(Gurobi.Optimizer, "TimeLimit" => 60*60*2,
                                       "LogFile" => joinpath(output_dir, "gurobi.log"))
 set_optimizer(model, optimizer)
 set_optimizer_attributes(model, "Method" => 2)
-set_optimizer_attributes(model, "Crossover" => 0)
 set_optimizer_attributes(model, "NumericFocus" => 1)
+# Crossover is disabled in the cluster runs (see .triton/exe/opt) to save time on the
+# full-year instances. Locally it is worth keeping: without it the barrier hits
+# "Numerical trouble encountered" on these instances and returns no solution.
+# set_optimizer_attributes(model, "Crossover" => 0)
 
 optimize!(model)
+
+if !has_values(model)
+    error("No solution available: termination status $(termination_status(model)). " *
+          "See $(joinpath(output_dir, "gurobi.log")).")
+end
 
 @info "Extracting results"
 variables = JuMPVar(model, VariablesDict)
 objectives = JuMPObj(model, ObjectivesDict)
-expressions = Expressions(parameters, variables)
+expressions = Expressions(parameters, specs, variables)
 
 @info "Saving results (JSON)"
 save_json(specs, joinpath(output_dir, results_dir, "specs.json"))
@@ -62,15 +76,14 @@ save_json(objectives, joinpath(output_dir, results_dir, "objectives.json"))
 
 @info "Plotting"
 using Plots
-ENV["GKSwstype"]="nul"                      # Prevent opening plots windows
 using StatsPlots
 gr()
 
 ## Plotting part 1: Objective function values
 @info "Plotting OF"
-savefig(plot_objective_values(objectives),
+savefig(plot_objective_values(objectives, parameters.τ_t, parameters.T),
         joinpath(output_dir, plots_dir, "pdf", "objectives.pdf"))
-savefig(plot_objective_values(objectives),
+savefig(plot_objective_values(objectives, parameters.τ_t, parameters.T),
         joinpath(output_dir, plots_dir, "png", "objectives.png"))
 
 ## Plotting part 2: Dispatch and storage
